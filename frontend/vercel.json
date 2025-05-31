@@ -8,12 +8,7 @@
   "env": {
     "VITE_API_URL": "https://meu-backend-2eb1.onrender.com"
   },
-  "functions": {
-    "src/pages/**": {
-      "runtime": "@vercel/node@1.15.0"
-    }
-  },
-  "rewrites": [
+   "rewrites": [
     {
       "source": "/(.*)",
       "destination": "/index.html"
