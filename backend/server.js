@@ -77,6 +77,7 @@ app.use("/api/imoveis", imovelRoutes);
 app.use("/api/juridico", juridicoRoutes);
 app.use("/api/contratos", contratoRoutes);
 app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/contato", contatoRoutes);
 
 // Verificação de saúde do servidor
 app.get("/api/status", (req, res) => {
@@ -88,7 +89,7 @@ app.get("/api/status", (req, res) => {
 });
 
 // =============================================
-// 5. SWAGGER (OPCIONAL - DESCOMENTE SE USAR)
+// 5. SWAGGER 
 // =============================================
 
 const swaggerJsdoc = require("swagger-jsdoc");
@@ -123,9 +124,9 @@ app.use("/api-docs",
 // =============================================
 // 6. ARQUIVOS ESTÁTICOS (FRONTEND)
 // =============================================
-app.use("/uploads", verificarToken, express.static(path.join(__dirname, "uploads"))); // Protegido
-app.use(express.static(path.join(__dirname, "../frontend/public")));
-app.use("/admin", express.static(path.join(__dirname, "../frontend/admin")));
+//app.use("/uploads", verificarToken, express.static(path.join(__dirname, "uploads"))); // Protegido
+//app.use(express.static(path.join(__dirname, "../frontend/public")));
+//app.use("/admin", express.static(path.join(__dirname, "../frontend/admin")));
 
 // Redirecionamentos
 app.get("/login.html", (req, res) => {
@@ -138,7 +139,7 @@ app.get("/login.html", (req, res) => {
 app.use((req, res) => {
   res.status(404).json({ 
     erro: "Rota não encontrada",
-    sugestao: "Verifique a documentação em /api-docs" // Ativar se usar Swagger
+    //sugestao: "Verifique a documentação em /api-docs" // Ativar se usar Swagger
   });
 });
 
@@ -158,6 +159,10 @@ app.use((err, req, res, next) => {
   if (err.name === 'JsonWebTokenError') {
     return res.status(401).json({ erro: "Token JWT inválido" });
   }
+  // Erros de validação do express-validator (para melhor feedback no frontend)
+  if (err.errors && Array.isArray(err.errors)) {
+      return res.status(400).json({ erros: err.errors.map(e => ({ [e.path]: e.msg })) });
+  }
 
   res.status(500).json({ 
     erro: "Erro interno no servidor",
@@ -172,11 +177,5 @@ const PORT = process.env.PORT || 5000;
 const server = app.listen(PORT, () => {
   console.log(`
 🚀 Servidor rodando na porta ${PORT}
-🔗 Endpoints:
-   - API Imóveis:    http://localhost:${PORT}/api/imoveis
-   - API Jurídico:   http://localhost:${PORT}/api/juridico
-   - Auth:          http://localhost:${PORT}/auth
-   - Admin:         http://localhost:${PORT}/admin
-   - Docs:          http://localhost:${PORT}/api-docs  ${'// Descomente o Swagger para ativar'}
-  `);
+`);
 });

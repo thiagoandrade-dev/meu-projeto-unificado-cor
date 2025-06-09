@@ -9,7 +9,14 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff, LogIn, UserPlus } from "lucide-react";
-import { userService } from "@/services/userService";
+import { userService, AuthResponse } from "@/services/userService"; // Importar AuthResponse se definido lá
+import { AxiosError } from "axios"; // Importar AxiosError se userService usa Axios
+
+// Interface para o erro esperado da API (opcional, mas bom para tipagem)
+interface ApiErrorResponse {
+  erro?: string;
+  erros?: { [key: string]: string }[];
+}
 
 const Login = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -21,15 +28,14 @@ const Login = () => {
   
   const [loginCredentials, setLoginCredentials] = useState({
     email: "",
-    password: ""
+    password: "" 
   });
   
   const [registerCredentials, setRegisterCredentials] = useState({
     nome: "",
     email: "",
-    password: "",
+    password: "", 
     confirmPassword: "",
-    telefone: ""
   });
   
   const handleLoginSubmit = async (e: React.FormEvent) => {
@@ -37,19 +43,22 @@ const Login = () => {
     setLoading(true);
     
     try {
-      const response = await userService.login(loginCredentials.email, loginCredentials.password);
-      const { token, usuario } = response.data;
+      // Correção: Acessar token e usuario diretamente da resposta
+      const response: AuthResponse = await userService.login(loginCredentials.email, loginCredentials.password);
+      // Verificar se a resposta contém os dados esperados (ajuste conforme a estrutura real de AuthResponse)
+      if (!response || !response.token || !response.usuario) {
+          throw new Error("Resposta inválida da API de login.");
+      }
+      const { token, usuario } = response; 
       
-      // Salvar token no localStorage
       localStorage.setItem("token", token);
       localStorage.setItem("user", JSON.stringify(usuario));
       
-      // Atualizar contexto - converter ID para string
       setUser({
-        id: String(usuario._id || usuario.id || ""),
+        id: String(usuario.id || usuario._id), 
         nome: usuario.nome,
         email: usuario.email,
-        tipo: usuario.tipo === "Administrador" ? "admin" : "locatario"
+        tipo: (usuario.perfil === "Administrador" || usuario.perfil === "Funcionário") ? "admin" : "locatario"
       });
       
       toast({
@@ -58,18 +67,26 @@ const Login = () => {
         duration: 3000,
       });
       
-      // Redirecionar baseado no tipo de usuário
-      if (usuario.tipo === "Administrador" || usuario.tipo === "Funcionário") {
-        navigate("/admin");
+      if (usuario.perfil === "Administrador" || usuario.perfil === "Funcionário") { 
+        navigate("/admin/dashboard"); 
       } else {
-        navigate("/locatario");
+        navigate("/locatario"); 
       }
       
-    } catch (error: any) {
+    } catch (error) { // Correção: Usar 'unknown' ou tipo específico como AxiosError
       console.error("Erro no login:", error);
+      let errorMessage = "Email ou senha incorretos."; // Mensagem padrão
+      
+      // Tentar extrair mensagem de erro específica da API (exemplo com AxiosError)
+      const axiosError = error as AxiosError<ApiErrorResponse>; // Type assertion
+      if (axiosError.response?.data) {
+          const data = axiosError.response.data;
+          errorMessage = data.erro || (data.erros && data.erros[0] ? Object.values(data.erros[0])[0] : errorMessage);
+      }
+      
       toast({
         title: "Erro no login",
-        description: error.response?.data?.erro || "Email ou senha incorretos.",
+        description: errorMessage,
         variant: "destructive",
         duration: 3000,
       });
@@ -82,7 +99,6 @@ const Login = () => {
     e.preventDefault();
     setLoading(true);
     
-    // Verificando se as senhas conferem
     if (registerCredentials.password !== registerCredentials.confirmPassword) {
       toast({
         title: "Erro no registro",
@@ -95,13 +111,12 @@ const Login = () => {
     }
     
     try {
+      // Correção: Enviar 'perfil' - o erro TS2353 será resolvido ajustando o tipo em userService.ts
       await userService.register({
         nome: registerCredentials.nome,
         email: registerCredentials.email,
-        senha: registerCredentials.password,
-        telefone: registerCredentials.telefone,
-        tipo: "Locatário",
-        status: "Ativo"
+        senha: registerCredentials.password, 
+        perfil: "Locatário" 
       });
       
       toast({
@@ -110,20 +125,29 @@ const Login = () => {
         duration: 3000,
       });
       
-      setIsLogin(true);
-      setRegisterCredentials({
+      setIsLogin(true); 
+      setRegisterCredentials({ 
         nome: "",
         email: "",
         password: "",
         confirmPassword: "",
-        telefone: ""
       });
+      setLoginCredentials(prev => ({ ...prev, email: registerCredentials.email, password: "" }));
       
-    } catch (error: any) {
+    } catch (error) { // Correção: Usar 'unknown' ou tipo específico como AxiosError
       console.error("Erro no registro:", error);
+      let errorMessage = "Erro ao criar conta. Tente novamente."; // Mensagem padrão
+
+      // Tentar extrair mensagem de erro específica da API (exemplo com AxiosError)
+      const axiosError = error as AxiosError<ApiErrorResponse>; // Type assertion
+      if (axiosError.response?.data) {
+          const data = axiosError.response.data;
+          errorMessage = data.erro || (data.erros && data.erros[0] ? Object.values(data.erros[0])[0] : errorMessage);
+      }
+
       toast({
         title: "Erro no registro",
-        description: error.response?.data?.erro || "Erro ao criar conta. Tente novamente.",
+        description: errorMessage,
         variant: "destructive",
         duration: 3000,
       });
@@ -132,6 +156,15 @@ const Login = () => {
     }
   };
   
+  const handleForgotPassword = () => {
+    toast({
+        title: "Funcionalidade Indisponível",
+        description: "A recuperação de senha ainda não foi implementada.",
+        variant: "default", 
+        duration: 4000,
+      });
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -139,7 +172,7 @@ const Login = () => {
       <div className="flex-grow flex items-center justify-center bg-gray-50 py-12 px-4">
         <div className="w-full max-w-md">
           <div className="bg-white p-8 rounded-lg shadow-md">
-            <Tabs defaultValue="login" onValueChange={(value) => setIsLogin(value === "login")}>
+            <Tabs defaultValue="login" value={isLogin ? "login" : "register"} onValueChange={(value) => setIsLogin(value === "login")}>
               <TabsList className="grid grid-cols-2 w-full mb-6">
                 <TabsTrigger value="login" className="text-base">Entrar</TabsTrigger>
                 <TabsTrigger value="register" className="text-base">Registrar</TabsTrigger>
@@ -160,11 +193,15 @@ const Login = () => {
                   </div>
                   
                   <div className="space-y-2">
-                    <div className="flex justify-between">
+                    <div className="flex justify-between items-center">
                       <Label htmlFor="password">Senha</Label>
-                      <Link to="#" className="text-sm text-imobiliaria-azul hover:underline">
+                      <button 
+                        type="button" 
+                        onClick={handleForgotPassword} 
+                        className="text-sm text-imobiliaria-azul hover:underline focus:outline-none"
+                      >
                         Esqueceu a senha?
-                      </Link>
+                      </button>
                     </div>
                     <div className="relative">
                       <Input
@@ -177,8 +214,9 @@ const Login = () => {
                       />
                       <button
                         type="button"
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 focus:outline-none"
                         onClick={() => setShowPassword(!showPassword)}
+                        aria-label={showPassword ? "Esconder senha" : "Mostrar senha"}
                       >
                         {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                       </button>
@@ -228,17 +266,7 @@ const Login = () => {
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="telefone">Telefone</Label>
-                    <Input
-                      id="telefone"
-                      placeholder="(11) 99999-9999"
-                      value={registerCredentials.telefone}
-                      onChange={(e) => setRegisterCredentials({ ...registerCredentials, telefone: e.target.value })}
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="register-password">Senha</Label>
+                    <Label htmlFor="register-password">Senha (mínimo 6 caracteres)</Label>
                     <div className="relative">
                       <Input
                         id="register-password"
@@ -247,11 +275,13 @@ const Login = () => {
                         value={registerCredentials.password}
                         onChange={(e) => setRegisterCredentials({ ...registerCredentials, password: e.target.value })}
                         required
+                        minLength={6}
                       />
                       <button
                         type="button"
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 focus:outline-none"
                         onClick={() => setShowPassword(!showPassword)}
+                        aria-label={showPassword ? "Esconder senha" : "Mostrar senha"}
                       >
                         {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                       </button>

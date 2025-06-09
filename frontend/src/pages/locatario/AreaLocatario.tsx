@@ -1,13 +1,13 @@
 import { useState, useContext, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { AuthContext } from "@/App";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, Home, Receipt, Bell, Download, Calendar, CreditCard, FileIcon } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { FileText, Receipt, Bell, Download, Calendar, CreditCard, FileIcon } from "lucide-react";
+import { Badge } from "@/components/ui/badge"; // Importar Badge
 import { useToast } from "@/hooks/use-toast";
 import asaasService, { Boleto, Contrato } from "@/services/asaasService";
 
@@ -15,23 +15,26 @@ const AreaLocatario = () => {
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [boletos, setBoletos] = useState<Boleto[]>([]);
   const [contratos, setContratos] = useState<Contrato[]>([]);
-  
-  // Redirecionar se não estiver logado
-  if (!user) {
-    navigate("/login");
-    return null;
-  }
-  
-  // Buscar boletos e contratos
+
   useEffect(() => {
+    if (!user) {
+      toast({ title: "Acesso Negado", description: "Faça login para acessar esta área.", variant: "destructive" });
+      navigate("/login");
+      return;
+    }
+
     const fetchData = async () => {
       setLoading(true);
       try {
-        // Em um caso real, usaríamos o ID real do usuário
-        const clienteId = "cus_000005113026";
+        const clienteId = "cus_000005113026"; // Substituir pelo ID real do usuário logado
+        
+        if (!clienteId) {
+            throw new Error("ID do cliente não encontrado para buscar dados.");
+        }
+
         const boletosData = await asaasService.getBoletos(clienteId);
         const contratosData = await asaasService.getContratos(clienteId);
         
@@ -41,7 +44,7 @@ const AreaLocatario = () => {
         console.error("Erro ao carregar dados:", error);
         toast({
           title: "Erro ao carregar dados",
-          description: "Não foi possível carregar seus boletos e contratos",
+          description: error instanceof Error ? error.message : "Não foi possível carregar seus boletos e contratos",
           variant: "destructive",
         });
       } finally {
@@ -50,9 +53,10 @@ const AreaLocatario = () => {
     };
     
     fetchData();
-  }, [toast]);
-  
-  // Dados fictícios de um inquilino
+    
+  }, [user, navigate, toast]);
+
+  // Dados fictícios (manter por enquanto)
   const contratoAtual = {
     id: "C-2023-0125",
     endereco: "Av. Paulista, 1000, Apto. 501",
@@ -70,7 +74,6 @@ const AreaLocatario = () => {
     { id: 3, titulo: "Vistoria agendada", mensagem: "Uma vistoria foi agendada para o dia 15/07", data: "28/05/2023", lida: true },
   ];
   
-  // Função para baixar boleto
   const handleDownloadBoleto = async (boleto: Boleto) => {
     try {
       toast({
@@ -78,20 +81,16 @@ const AreaLocatario = () => {
         description: "Estamos gerando o seu boleto para download",
       });
       
-      // Em uma implementação real, faríamos o download do PDF
-      // Por enquanto, apenas simulamos o processo
       setTimeout(() => {
         toast({
           title: "Boleto pronto!",
           description: `Boleto #${boleto.invoiceNumber} disponível para download`,
         });
         
-        // Simular download (em produção, usaríamos a URL real do boleto)
-        const link = document.createElement('a');
-        link.href = boleto.bankSlipUrl !== '#' ? 
-          boleto.bankSlipUrl : 
-          'https://sandbox.asaas.com/api/v3/payments/{boleto.id}/bankSlipBarCode';
-        link.target = '_blank';
+        const link = document.createElement("a");
+        link.href = boleto.bankSlipUrl || "#";
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
         link.click();
       }, 1500);
     } catch (error) {
@@ -104,7 +103,6 @@ const AreaLocatario = () => {
     }
   };
   
-  // Função para baixar contrato
   const handleDownloadContrato = async (contrato: Contrato) => {
     try {
       toast({
@@ -112,19 +110,17 @@ const AreaLocatario = () => {
         description: "Estamos preparando seu contrato para download",
       });
       
-      // Em uma implementação real, faríamos o download do PDF
-      // Por enquanto, apenas simulamos o processo
       setTimeout(() => {
         toast({
           title: "Contrato pronto!",
           description: `Contrato ${contrato.titulo} disponível para download`,
         });
         
-        // Simular download
-        const link = document.createElement('a');
-        link.href = contrato.arquivo;
-        link.target = '_blank';
-        link.download = `${contrato.titulo.replace(/ /g, '_')}.pdf`;
+        const link = document.createElement("a");
+        link.href = contrato.arquivo || "#";
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.download = `${contrato.titulo.replace(/ /g, "_")}.pdf`;
         link.click();
       }, 1500);
     } catch (error) {
@@ -137,6 +133,10 @@ const AreaLocatario = () => {
     }
   };
 
+  if (!user) {
+      return <div className="min-h-screen flex items-center justify-center">Verificando acesso...</div>;
+  }
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -144,7 +144,7 @@ const AreaLocatario = () => {
       <div className="flex-grow bg-gray-50">
         <div className="container-page py-8">
           <div className="flex items-center justify-between mb-6">
-            <h1 className="text-2xl font-bold text-gray-800">Olá, {user.nome}</h1>
+            <h1 className="text-2xl font-bold text-gray-800">Olá, {user?.nome || "Locatário"}</h1>
             <div className="relative">
               <Button variant="outline" size="icon" className="relative">
                 <Bell size={20} />
@@ -195,7 +195,7 @@ const AreaLocatario = () => {
                           <span className="text-gray-500">Contrato Nº:</span>
                           <span className="font-semibold">{contratoAtual.id}</span>
                         </div>
-                        <div className="flex justify-between items-center pb-4 border-b">
+                         <div className="flex justify-between items-center pb-4 border-b">
                           <span className="text-gray-500">Endereço:</span>
                           <span className="font-semibold">{contratoAtual.endereco}</span>
                         </div>
@@ -218,12 +218,13 @@ const AreaLocatario = () => {
                         <div className="flex justify-between items-center pb-4 border-b">
                           <span className="text-gray-500">Valor do Aluguel:</span>
                           <span className="font-semibold">
-                            {contratoAtual.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                            {contratoAtual.valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
                           </span>
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-gray-500">Status:</span>
-                          <Badge className="bg-green-500">{contratoAtual.status}</Badge>
+                          {/* Usar variante válida para o status do contrato */}
+                          <Badge variant={contratoAtual.status === "Ativo" ? "default" : "secondary"}>{contratoAtual.status}</Badge>
                         </div>
                       </div>
                     </CardContent>
@@ -247,21 +248,12 @@ const AreaLocatario = () => {
                           </div>
                           <p className="text-sm">Vencimento do aluguel</p>
                         </div>
-                        
-                        <div className="bg-blue-50 p-3 rounded-md border border-blue-200">
+                         <div className="bg-blue-50 p-3 rounded-md border border-blue-200">
                           <div className="flex items-center gap-2 mb-1">
                             <Calendar size={16} className="text-blue-600" />
                             <span className="text-sm font-medium">15/07/2023</span>
                           </div>
                           <p className="text-sm">Vistoria agendada</p>
-                        </div>
-                        
-                        <div className="bg-purple-50 p-3 rounded-md border border-purple-200">
-                          <div className="flex items-center gap-2 mb-1">
-                            <Calendar size={16} className="text-purple-600" />
-                            <span className="text-sm font-medium">14/01/2024</span>
-                          </div>
-                          <p className="text-sm">Vencimento do contrato</p>
                         </div>
                       </div>
                     </CardContent>
@@ -287,50 +279,49 @@ const AreaLocatario = () => {
                     <div className="flex justify-center py-8">
                       <p>Carregando seus boletos...</p>
                     </div>
+                  ) : boletos.length === 0 ? (
+                     <p className="text-center text-gray-500 py-8">Nenhum boleto encontrado.</p>
                   ) : (
                     <div className="overflow-x-auto">
-                      <table className="w-full">
+                      <table className="w-full text-sm">
                         <thead>
                           <tr className="text-left border-b">
-                            <th className="pb-2 font-medium text-gray-500">Descrição</th>
-                            <th className="pb-2 font-medium text-gray-500">Valor</th>
-                            <th className="pb-2 font-medium text-gray-500">Vencimento</th>
-                            <th className="pb-2 font-medium text-gray-500">Status</th>
-                            <th className="pb-2 font-medium text-gray-500">Ações</th>
+                            <th className="p-2 font-medium text-gray-500">Descrição</th>
+                            <th className="p-2 font-medium text-gray-500">Valor</th>
+                            <th className="p-2 font-medium text-gray-500">Vencimento</th>
+                            <th className="p-2 font-medium text-gray-500">Status</th>
+                            <th className="p-2 font-medium text-gray-500">Ações</th>
                           </tr>
                         </thead>
                         <tbody>
                           {boletos.map((boleto) => (
-                            <tr key={boleto.id} className="border-b">
-                              <td className="py-4">{boleto.description}</td>
-                              <td className="py-4">
-                                {boleto.value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                            <tr key={boleto.id} className="border-b hover:bg-gray-100">
+                              <td className="p-2">{boleto.description}</td>
+                              <td className="p-2">
+                                {boleto.value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
                               </td>
-                              <td className="py-4">{new Date(boleto.dueDate).toLocaleDateString('pt-BR')}</td>
-                              <td className="py-4">
-                                <Badge className={
-                                  boleto.status === "RECEIVED" ? "bg-green-500" : 
-                                  boleto.status === "PENDING" ? "bg-yellow-500" : "bg-gray-500"
+                              <td className="p-2">{new Date(boleto.dueDate).toLocaleDateString("pt-BR")}</td>
+                              <td className="p-2">
+                                {/* Correção: Mapear status para variantes válidas do Badge */}
+                                <Badge variant={ 
+                                  boleto.status === "RECEIVED" ? "default" : // Usar default para 'pago' (geralmente verde)
+                                  boleto.status === "PENDING" ? "secondary" : // Usar secondary para 'pendente' (geralmente cinza/amarelo)
+                                  "secondary" // Usar secondary para outros status
                                 }>
                                   {boleto.status === "RECEIVED" ? "Pago" : 
                                    boleto.status === "PENDING" ? "Pendente" : boleto.status}
                                 </Badge>
                               </td>
-                              <td className="py-4">
-                                {boleto.status === "RECEIVED" ? (
-                                  <Button variant="outline" size="sm" onClick={() => handleDownloadBoleto(boleto)}>
-                                    <Download size={16} className="mr-1" />
-                                    Recibo
-                                  </Button>
-                                ) : (
-                                  <Button variant="default" size="sm" 
-                                    className="bg-imobiliaria-dourado text-imobiliaria-azul hover:bg-imobiliaria-dourado/90"
-                                    onClick={() => handleDownloadBoleto(boleto)}
-                                  >
-                                    <Download size={16} className="mr-1" />
-                                    Boleto
-                                  </Button>
-                                )}
+                              <td className="p-2">
+                                <Button 
+                                  variant={boleto.status === "RECEIVED" ? "outline" : "default"} 
+                                  size="sm" 
+                                  onClick={() => handleDownloadBoleto(boleto)}
+                                  className={boleto.status !== "RECEIVED" ? "bg-imobiliaria-dourado text-imobiliaria-azul hover:bg-imobiliaria-dourado/90" : ""}
+                                >
+                                  <Download size={16} className="mr-1" />
+                                  {boleto.status === "RECEIVED" ? "Recibo" : "Boleto"}
+                                </Button>
                               </td>
                             </tr>
                           ))}
@@ -348,51 +339,39 @@ const AreaLocatario = () => {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <FileIcon size={20} className="text-imobiliaria-azul" />
-                    Contratos e Documentos
+                    Documentos Importantes
                   </CardTitle>
                   <CardDescription>
-                    Acesse e baixe todos os seus documentos
+                    Acesse cópias do seu contrato e outros documentos
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {loading ? (
+                 {loading ? (
                     <div className="flex justify-center py-8">
                       <p>Carregando seus documentos...</p>
                     </div>
+                  ) : contratos.length === 0 ? (
+                     <p className="text-center text-gray-500 py-8">Nenhum documento encontrado.</p>
                   ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-3">
                       {contratos.map((contrato) => (
-                        <Card key={contrato.id} className="overflow-hidden">
-                          <div className="bg-gray-100 p-4 flex justify-between items-center">
-                            <div className="flex items-center gap-3">
-                              <div className="bg-imobiliaria-azul rounded-full p-2">
-                                <FileText size={20} className="text-white" />
-                              </div>
-                              <div>
-                                <h3 className="font-medium">{contrato.titulo}</h3>
-                                <p className="text-sm text-gray-500">
-                                  Data: {contrato.data}
-                                </p>
-                              </div>
-                            </div>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleDownloadContrato(contrato)}
-                              className="ml-2"
-                            >
-                              <Download size={16} className="mr-1" />
-                              Baixar
-                            </Button>
+                        <div key={contrato.id} className="flex items-center justify-between p-3 border rounded-md hover:bg-gray-100">
+                          <div className="flex items-center gap-3">
+                            <FileIcon size={18} className="text-gray-500" />
+                            <span>{contrato.titulo}</span>
                           </div>
-                        </Card>
+                          <Button variant="outline" size="sm" onClick={() => handleDownloadContrato(contrato)}>
+                            <Download size={16} className="mr-1" />
+                            Baixar
+                          </Button>
+                        </div>
                       ))}
                     </div>
                   )}
                 </CardContent>
               </Card>
             </TabsContent>
-            
+
             {/* Aba de Notificações */}
             <TabsContent value="notificacoes">
               <Card>
@@ -402,31 +381,29 @@ const AreaLocatario = () => {
                     Notificações
                   </CardTitle>
                   <CardDescription>
-                    Avisos importantes da administração
+                    Avisos e comunicados importantes
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    {notificacoes.map((notificacao) => (
-                      <div
-                        key={notificacao.id}
-                        className={`p-4 rounded-md border ${
-                          notificacao.lida ? "bg-white" : "bg-blue-50 border-blue-200"
-                        }`}
-                      >
-                        <div className="flex justify-between items-start mb-2">
-                          <h3 className={`font-medium ${!notificacao.lida ? "text-imobiliaria-azul" : ""}`}>
-                            {notificacao.titulo}
-                          </h3>
-                          <span className="text-xs text-gray-500">{notificacao.data}</span>
+                  {notificacoes.length === 0 ? (
+                    <p className="text-center text-gray-500 py-8">Nenhuma notificação no momento.</p>
+                  ) : (
+                    <div className="space-y-4">
+                      {notificacoes.map((notificacao) => (
+                        <div key={notificacao.id} className={`p-4 border rounded-md ${notificacao.lida ? 'bg-gray-100 border-gray-200' : 'bg-blue-50 border-blue-200'}`}>
+                          <div className="flex justify-between items-center mb-1">
+                            <span className={`font-semibold ${notificacao.lida ? 'text-gray-700' : 'text-blue-800'}`}>{notificacao.titulo}</span>
+                            <span className="text-xs text-gray-500">{notificacao.data}</span>
+                          </div>
+                          <p className={`text-sm ${notificacao.lida ? 'text-gray-600' : 'text-blue-700'}`}>{notificacao.mensagem}</p>
                         </div>
-                        <p className="text-gray-600 text-sm">{notificacao.mensagem}</p>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
+
           </Tabs>
         </div>
       </div>

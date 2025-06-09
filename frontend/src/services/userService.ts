@@ -7,34 +7,42 @@ const getApiBaseUrl = (): string => {
     return import.meta.env.VITE_API_URL;
   }
   
-  // 2. Fallback para produção
+  // 2. Fallback para produção (Verifique se esta URL está correta!)
   if (import.meta.env.PROD) {
-    return 'https://meu-backend-2eb1.onrender.com';
+    // Use a URL real do seu backend no Render
+    return 'https://imobiliaria-firenze-backend.onrender.com'; // <-- CONFIRME ESTA URL
   }
   
   // 3. Default para desenvolvimento
   return 'http://localhost:5000';
 };
 
-const API_URL = getApiBaseUrl();
+const API_URL = getApiBaseUrl( );
 
-// Definição do tipo de usuário
+// Definição do tipo de usuário (Sincronizado com backend)
 export interface User {
-  _id?: string;
-  id?: number | string;
+  _id?: string; // Vem do MongoDB
+  id?: string; // Pode ser o mesmo que _id
   nome: string;
   email: string;
-  tipo: "Administrador" | "Locatário" | "Funcionário";
-  telefone?: string;
-  status: "Ativo" | "Inativo";
+  perfil: "Administrador" | "Locatário" | "Funcionário"; // <-- Corrigido de 'tipo' para 'perfil'
+  // telefone?: string; // Removido se não for usado consistentemente
+  // status?: "Ativo" | "Inativo"; // Removido se não for usado consistentemente
   dataRegistro?: string;
-  senha?: string;
+  // senha?: string; // Senha não deve ser parte do tipo User retornado pela API
 }
 
-interface AuthResponse {
+// Correção: Exportar AuthResponse
+export interface AuthResponse {
   token: string;
-  usuario: User;
+  usuario: User; // Usa a interface User atualizada
 }
+
+// Tipo para os dados enviados no registro (apenas os campos necessários)
+// Correção: Incluir 'perfil' e 'senha', omitir campos gerados
+export type RegisterUserData = Pick<User, "nome" | "email" | "perfil"> & {
+  senha: string; // Senha é obrigatória para registro
+};
 
 // Configuração do axios com tipagem forte
 const apiClient: AxiosInstance = axios.create({
@@ -45,7 +53,7 @@ const apiClient: AxiosInstance = axios.create({
   })
 });
 
-// Interceptor para autenticação com tratamento correto de headers
+// Interceptor para autenticação
 apiClient.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
   if (token) {
@@ -55,105 +63,91 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
-// Interceptor para tratamento de erros
+// Interceptor para tratamento de erros (exemplo básico)
 apiClient.interceptors.response.use(
   (response: AxiosResponse) => response,
   (error: AxiosError) => {
     if (error.response?.status === 401) {
+      // Limpar dados locais em caso de não autorizado
       localStorage.removeItem("token");
       localStorage.removeItem("user");
-      window.location.href = "/login?session_expired=true";
+      // Redirecionar para login (opcional)
+      // window.location.href = "/login?session_expired=true";
+      console.error("Erro 401: Não autorizado ou token expirado.");
     }
+    // Rejeitar a promessa para que o erro possa ser tratado no local da chamada
     return Promise.reject(error);
   }
 );
 
-// Serviço de usuário com tratamento de erros aprimorado
+// Função auxiliar para tratamento de erros (simplificada)
+function handleApiError(error: unknown, context: string): Error {
+  console.error(`Erro em ${context}:`, error);
+  if (axios.isAxiosError(error)) {
+    // Tenta extrair uma mensagem de erro mais útil do backend
+    const apiErrorMessage = error.response?.data?.erro || (error.response?.data?.erros && error.response?.data?.erros[0] ? Object.values(error.response?.data?.erros[0])[0] : null);
+    return new Error(apiErrorMessage || `Erro na comunicação com a API (${context}). Status: ${error.response?.status || 'N/A'}`);
+  }
+  return new Error(`Erro inesperado em ${context}.`);
+}
+
+// Serviço de usuário com tipos corrigidos
 export const userService = {
   // Autenticação
   login: async (email: string, senha: string): Promise<AuthResponse> => {
     try {
-      const response = await axios.post<AuthResponse>(`${API_URL}/auth/login`, { 
+      // Usar apiClient que já tem baseURL configurada
+      const response = await apiClient.post<AuthResponse>("/auth/login", { 
         email, 
-        senha 
+        senha // Backend espera 'senha'
       });
-      return response.data;
+      return response.data; // Axios já encapsula em 'data'
     } catch (error) {
-      throw handleAuthError(error, 'Falha no login');
+      throw handleApiError(error, 'login');
     }
   },
 
   // Registro
-  register: async (userData: Omit<User, "id" | "_id" | "dataRegistro">): Promise<User> => {
+  // Correção: Usar o tipo RegisterUserData que inclui 'perfil' e 'senha'
+  register: async (userData: RegisterUserData): Promise<User> => {
     try {
-      const response = await axios.post<User>(`${API_URL}/auth/register`, userData);
+      // Usar apiClient
+      const response = await apiClient.post<User>("/auth/register", userData);
       return response.data;
     } catch (error) {
-      throw handleAuthError(error, 'Falha no registro');
+      throw handleApiError(error, 'register');
     }
   },
 
-  // Operações CRUD
+  // Operações CRUD (Exemplo - ajuste os endpoints se necessário)
   getAll: async (): Promise<User[]> => {
     try {
-      const response = await apiClient.get<User[]>('/api/usuarios');
+      const response = await apiClient.get<User[]>('/api/usuarios'); // Endpoint de exemplo
       return response.data;
     } catch (error) {
-      throw handleAuthError(error, 'Falha ao buscar usuários');
+      throw handleApiError(error, 'buscar usuários');
     }
   },
 
-  getById: async (id: number | string): Promise<User> => {
+  getById: async (id: string): Promise<User> => {
     try {
-      const response = await apiClient.get<User>(`/api/usuarios/${id}`);
+      const response = await apiClient.get<User>(`/api/usuarios/${id}`); // Endpoint de exemplo
       return response.data;
     } catch (error) {
-      throw handleAuthError(error, 'Falha ao buscar usuário');
+      throw handleApiError(error, 'buscar usuário');
     }
   },
 
-  create: async (user: Omit<User, "id" | "_id" | "dataRegistro">): Promise<User> => {
-    try {
-      const response = await apiClient.post<User>('/api/usuarios', user);
-      return response.data;
-    } catch (error) {
-      throw handleAuthError(error, 'Falha ao criar usuário');
-    }
-  },
+  // create, update, delete - Implementar se necessário, seguindo o padrão
 
-  update: async (id: number | string, user: Partial<User>): Promise<User> => {
+  // Verificar token (exemplo, ajuste endpoint se necessário)
+  verifyToken: async (): Promise<boolean> => {
     try {
-      const response = await apiClient.put<User>(`/api/usuarios/${id}`, user);
-      return response.data;
-    } catch (error) {
-      throw handleAuthError(error, 'Falha ao atualizar usuário');
-    }
-  },
-
-  updateStatus: async (id: number | string, status: "Ativo" | "Inativo"): Promise<User> => {
-    try {
-      const response = await apiClient.patch<User>(`/api/usuarios/${id}/status`, { status });
-      return response.data;
-    } catch (error) {
-      throw handleAuthError(error, 'Falha ao atualizar status');
-    }
-  },
-
-  delete: async (id: number | string): Promise<void> => {
-    try {
-      await apiClient.delete(`/api/usuarios/${id}`);
-    } catch (error) {
-      throw handleAuthError(error, 'Falha ao deletar usuário');
-    }
-  },
-
-  verifyToken: async (token: string): Promise<boolean> => {
-    try {
-      await axios.get(`${API_URL}/auth/verify-token`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      // Usa apiClient que já envia o token
+      await apiClient.get('/auth/verify-token'); // Endpoint de exemplo
       return true;
     } catch (error) {
+      // Se der erro (ex: 401), o interceptor já pode ter limpado o token
       return false;
     }
   },
@@ -161,23 +155,17 @@ export const userService = {
   logout: () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+    // Opcional: redirecionar ou atualizar estado global
   },
 
-  // Método adicional para obter usuário atual
   getCurrentUser: (): User | null => {
-    const user = localStorage.getItem("user");
-    return user ? JSON.parse(user) : null;
+    const userJson = localStorage.getItem("user");
+    try {
+      return userJson ? JSON.parse(userJson) as User : null;
+    } catch (e) {
+      console.error("Erro ao parsear usuário do localStorage:", e);
+      localStorage.removeItem("user"); // Limpar dado inválido
+      return null;
+    }
   }
 };
-
-// Tratamento centralizado de erros
-function handleAuthError(error: unknown, defaultMessage: string): Error {
-  if (axios.isAxiosError(error)) {
-    const serverMessage = error.response?.data?.message;
-    const errorMessage = serverMessage || defaultMessage;
-    console.error(`${errorMessage}:`, error.response?.data || error.message);
-    return new Error(errorMessage);
-  }
-  console.error(defaultMessage, error);
-  return error instanceof Error ? error : new Error(defaultMessage);
-}

@@ -1,41 +1,51 @@
-
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import AdminSidebar from "@/components/AdminSidebar";
-import { Plus, Search, FileText, Eye, Download, Trash2, Calendar, DollarSign, Mail } from "lucide-react";
+import { Plus, Search, FileText, Eye, Download, Trash2, Calendar, DollarSign, Mail, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import contratoService, { Contrato } from "@/services/contratoService";
 import { imoveisService, Imovel } from "@/services/apiService";
 
-type FormDataType = {
-  numero: string;
+// Tipo para o formulário, permitindo strings para números inicialmente
+type FormDataType = Omit<Contrato, 
+  "_id" | "createdAt" | "updatedAt" | "pagamentos" | 
+  "valorAluguel" | "valorCondominio" | "valorIPTU" | "diaVencimento"
+> & {
+  valorAluguel: string | number;
+  valorCondominio: string | number;
+  valorIPTU: string | number;
+  diaVencimento: string | number;
+};
+
+const INITIAL_FORM_DATA: FormDataType = {
+  numero: "",
   inquilino: {
-    nome: string;
-    email: string;
-    telefone: string;
-    cpf: string;
-    rg: string;
-  };
+    nome: "",
+    email: "",
+    telefone: "",
+    cpf: "",
+    rg: ""
+  },
   imovel: {
-    id: string;
-    endereco: string;
-    bairro: string;
-    cidade: string;
-  };
-  dataInicio: string;
-  dataFim: string;
-  valorAluguel: number;
-  valorCondominio: number;
-  valorIPTU: number;
-  diaVencimento: number;
-  status: "Ativo" | "Finalizado" | "Cancelado" | "Pendente";
-  observacoes: string;
+    id: "",
+    endereco: "",
+    bairro: "",
+    cidade: ""
+  },
+  dataInicio: "",
+  dataFim: "",
+  valorAluguel: "",
+  valorCondominio: "",
+  valorIPTU: "",
+  diaVencimento: "",
+  status: "Ativo",
+  observacoes: ""
 };
 
 const AdminContratos = () => {
@@ -44,66 +54,43 @@ const AdminContratos = () => {
   const [contratos, setContratos] = useState<Contrato[]>([]);
   const [imoveis, setImoveis] = useState<Imovel[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingSubmit, setLoadingSubmit] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingContrato, setEditingContrato] = useState<string | null>(null);
+  const [editingContratoId, setEditingContratoId] = useState<string | null>(null);
   
-  const [formData, setFormData] = useState<FormDataType>({
-    numero: "",
-    inquilino: {
-      nome: "",
-      email: "",
-      telefone: "",
-      cpf: "",
-      rg: ""
-    },
-    imovel: {
-      id: "",
-      endereco: "",
-      bairro: "",
-      cidade: ""
-    },
-    dataInicio: "",
-    dataFim: "",
-    valorAluguel: 0,
-    valorCondominio: 0,
-    valorIPTU: 0,
-    diaVencimento: 5,
-    status: "Ativo",
-    observacoes: ""
-  });
+  const [formData, setFormData] = useState<FormDataType>(INITIAL_FORM_DATA);
 
-  // Carregar dados iniciais
-  useEffect(() => {
-    carregarContratos();
-    carregarImoveis();
-  }, []);
-
-  const carregarContratos = async () => {
+  const carregarContratos = useCallback(async () => {
     setLoading(true);
     try {
       const data = await contratoService.getAll();
       setContratos(data);
     } catch (error) {
+      console.error("Erro ao carregar contratos:", error);
       toast({
         title: "Erro ao carregar contratos",
-        description: "Não foi possível carregar os contratos",
+        description: error instanceof Error ? error.message : "Não foi possível carregar a lista de contratos.",
         variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
-  const carregarImoveis = async () => {
+  const carregarImoveis = useCallback(async () => {
     try {
       const data = await imoveisService.getAll();
-      setImoveis(data);
+      setImoveis(data.filter(imovel => imovel.statusAnuncio === "Disponível")); 
     } catch (error) {
       console.error("Erro ao carregar imóveis:", error);
     }
-  };
+  }, []);
 
-  // Filtra os contratos com base na pesquisa
+  useEffect(() => {
+    carregarContratos();
+    carregarImoveis();
+  }, [carregarContratos, carregarImoveis]);
+
   const contratosFiltrados = contratos.filter(
     (contrato) =>
       contrato.numero.toLowerCase().includes(search.toLowerCase()) ||
@@ -111,19 +98,77 @@ const AdminContratos = () => {
       contrato.imovel.endereco.toLowerCase().includes(search.toLowerCase())
   );
 
+  // Correção: Usar Generics para tipar corretamente as chaves aninhadas
+  const handleNestedChange = <K extends keyof FormDataType, CK extends keyof FormDataType[K]>(
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+    parentKey: K,
+    childKey: CK
+  ) => {
+    const { value } = e.target;
+    setFormData(prev => {
+      const parentObject = prev[parentKey];
+      // Garantir que o pai é um objeto antes de tentar espalhar
+      if (typeof parentObject === 'object' && parentObject !== null) {
+        return {
+          ...prev,
+          [parentKey]: {
+            ...parentObject,
+            [childKey]: value
+          }
+        };
+      } 
+      // Retornar estado anterior se o pai não for um objeto (prevenção)
+      console.warn(`Tentativa de atualizar chave aninhada em ${String(parentKey)} que não é um objeto.`);
+      return prev;
+    });
+  };
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | string,
+    fieldName?: keyof FormDataType | string
+  ) => {
+    if (typeof e === "string") {
+      if (fieldName) {
+        setFormData(prev => ({
+          ...prev,
+          [fieldName]: e as Contrato["status"]
+        }));
+      }
+    } else {
+      const { id, value } = e.target;
+      const key = id as keyof FormDataType;
+      setFormData(prev => ({
+        ...prev,
+        [key]: value
+      }));
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setLoadingSubmit(true);
+
+    const dataToSend: Contrato = {
+        ...formData,
+        valorAluguel: parseFloat(String(formData.valorAluguel)) || 0,
+        valorCondominio: parseFloat(String(formData.valorCondominio)) || 0,
+        valorIPTU: parseFloat(String(formData.valorIPTU)) || 0,
+        diaVencimento: parseInt(String(formData.diaVencimento), 10) || 5,
+        imovel: {
+            ...formData.imovel,
+            id: formData.imovel.id || ""
+        }
+    };
 
     try {
-      if (editingContrato) {
-        await contratoService.update(editingContrato, formData);
+      if (editingContratoId) {
+        await contratoService.update(editingContratoId, dataToSend);
         toast({
           title: "Contrato atualizado",
           description: "Contrato atualizado com sucesso",
         });
       } else {
-        await contratoService.create(formData);
+        await contratoService.create(dataToSend);
         toast({
           title: "Contrato criado",
           description: "Contrato criado com sucesso",
@@ -134,42 +179,20 @@ const AdminContratos = () => {
       resetForm();
       carregarContratos();
     } catch (error) {
+      console.error("Erro ao salvar contrato:", error);
       toast({
         title: "Erro ao salvar contrato",
-        description: "Não foi possível salvar o contrato",
+        description: error instanceof Error ? error.message : "Não foi possível salvar o contrato. Verifique os dados.",
         variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      setLoadingSubmit(false);
     }
   };
 
   const resetForm = () => {
-    setFormData({
-      numero: "",
-      inquilino: {
-        nome: "",
-        email: "",
-        telefone: "",
-        cpf: "",
-        rg: ""
-      },
-      imovel: {
-        id: "",
-        endereco: "",
-        bairro: "",
-        cidade: ""
-      },
-      dataInicio: "",
-      dataFim: "",
-      valorAluguel: 0,
-      valorCondominio: 0,
-      valorIPTU: 0,
-      diaVencimento: 5,
-      status: "Ativo",
-      observacoes: ""
-    });
-    setEditingContrato(null);
+    setFormData(INITIAL_FORM_DATA);
+    setEditingContratoId(null);
   };
 
   const handleEdit = (contrato: Contrato) => {
@@ -177,21 +200,21 @@ const AdminContratos = () => {
       numero: contrato.numero,
       inquilino: contrato.inquilino,
       imovel: contrato.imovel,
-      dataInicio: contrato.dataInicio,
-      dataFim: contrato.dataFim,
+      dataInicio: contrato.dataInicio.split("T")[0],
+      dataFim: contrato.dataFim.split("T")[0],
       valorAluguel: contrato.valorAluguel,
-      valorCondominio: contrato.valorCondominio || 0,
-      valorIPTU: contrato.valorIPTU || 0,
+      valorCondominio: contrato.valorCondominio || "",
+      valorIPTU: contrato.valorIPTU || "",
       diaVencimento: contrato.diaVencimento,
       status: contrato.status,
       observacoes: contrato.observacoes || ""
     });
-    setEditingContrato(contrato._id || "");
+    setEditingContratoId(contrato._id || "");
     setDialogOpen(true);
   };
 
   const handleDelete = async (id: string) => {
-    if (window.confirm("Tem certeza que deseja excluir este contrato?")) {
+    if (window.confirm("Tem certeza que deseja excluir este contrato? Esta ação não pode ser desfeita.")) {
       try {
         await contratoService.delete(id);
         toast({
@@ -200,9 +223,10 @@ const AdminContratos = () => {
         });
         carregarContratos();
       } catch (error) {
+        console.error("Erro ao excluir contrato:", error);
         toast({
           title: "Erro ao excluir contrato",
-          description: "Não foi possível excluir o contrato",
+          description: error instanceof Error ? error.message : "Não foi possível excluir o contrato.",
           variant: "destructive",
         });
       }
@@ -210,51 +234,30 @@ const AdminContratos = () => {
   };
 
   const handleGerarPagamentos = async (contratoId: string) => {
-    try {
-      await contratoService.gerarPagamentos(contratoId, 12);
-      toast({
-        title: "Pagamentos gerados",
-        description: "Os pagamentos foram gerados com sucesso",
-      });
-    } catch (error) {
-      toast({
-        title: "Erro ao gerar pagamentos",
-        description: "Não foi possível gerar os pagamentos",
-        variant: "destructive",
-      });
-    }
+     toast({ title: "Funcionalidade Pendente", description: "Gerar pagamentos ainda não implementado.", variant: "default" });
+     console.warn("Gerar pagamentos para", contratoId);
   };
 
   const handleEnviarCobranca = async (contrato: Contrato) => {
-    try {
-      // Simular envio de email de cobrança
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      toast({
-        title: "Cobrança enviada",
-        description: `Email de cobrança enviado para ${contrato.inquilino.email}`,
-      });
-    } catch (error) {
-      toast({
-        title: "Erro ao enviar cobrança",
-        description: "Não foi possível enviar a cobrança",
-        variant: "destructive",
-      });
-    }
+     toast({ title: "Funcionalidade Pendente", description: `Enviar cobrança para ${contrato.inquilino.email} ainda não implementado.`, variant: "default" });
+     console.warn("Enviar cobrança para", contrato.inquilino.email);
   };
 
   return (
     <div className="min-h-screen bg-gray-100 flex">
       <AdminSidebar />
       
-      <div className="flex-1 p-8">
-        <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex-1 p-6 md:p-8">
+        <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-800">Gerenciamento de Contratos</h1>
             <p className="text-gray-600">Cadastre e gerencie os contratos de locação</p>
           </div>
           
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <Dialog open={dialogOpen} onOpenChange={(isOpen) => { 
+              setDialogOpen(isOpen);
+              if (!isOpen) resetForm();
+            }}>
             <DialogTrigger asChild>
               <Button 
                 className="bg-imobiliaria-azul hover:bg-imobiliaria-azul/90 flex items-center gap-2"
@@ -265,377 +268,314 @@ const AdminContratos = () => {
               </Button>
             </DialogTrigger>
             
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto p-6">
               <DialogHeader>
-                <DialogTitle>
-                  {editingContrato ? "Editar Contrato" : "Novo Contrato"}
+                <DialogTitle className="text-xl">
+                  {editingContratoId ? "Editar Contrato" : "Novo Contrato"}
                 </DialogTitle>
               </DialogHeader>
               
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="numero">Número do Contrato</Label>
-                    <Input
-                      id="numero"
-                      value={formData.numero}
-                      onChange={(e) => setFormData({...formData, numero: e.target.value})}
-                      placeholder="C-2024-001"
-                      required
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="status">Status</Label>
-                    <Select 
-                      value={formData.status} 
-                      onValueChange={(value: any) => setFormData({...formData, status: value})}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Ativo">Ativo</SelectItem>
-                        <SelectItem value="Finalizado">Finalizado</SelectItem>
-                        <SelectItem value="Cancelado">Cancelado</SelectItem>
-                        <SelectItem value="Pendente">Pendente</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <h3 className="font-medium text-gray-800">Dados do Inquilino</h3>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="nome">Nome Completo</Label>
+              <form onSubmit={handleSubmit} className="space-y-6 mt-4">
+                <fieldset className="border p-4 rounded-md">
+                  <legend className="text-sm font-medium px-1">Informações Gerais</legend>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <Label htmlFor="numero">Número do Contrato</Label>
                       <Input
-                        id="nome"
-                        value={formData.inquilino.nome}
-                        onChange={(e) => setFormData({
-                          ...formData, 
-                          inquilino: {...formData.inquilino, nome: e.target.value}
-                        })}
+                        id="numero"
+                        value={formData.numero}
+                        onChange={(e) => handleChange(e, "numero")}
+                        placeholder="Ex: C-2024-001"
                         required
                       />
                     </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Email</Label>
+                    <div className="space-y-1">
+                      <Label htmlFor="status">Status</Label>
+                      <Select 
+                        value={formData.status} 
+                        onValueChange={(value: string) => handleChange(value, "status")}
+                      >
+                        <SelectTrigger id="status">
+                          <SelectValue placeholder="Selecione o status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Ativo">Ativo</SelectItem>
+                          <SelectItem value="Finalizado">Finalizado</SelectItem>
+                          <SelectItem value="Cancelado">Cancelado</SelectItem>
+                          <SelectItem value="Pendente">Pendente</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </fieldset>
+
+                <fieldset className="border p-4 rounded-md">
+                  <legend className="text-sm font-medium px-1">Dados do Inquilino</legend>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div className="space-y-1">
+                      <Label htmlFor="inquilino-nome">Nome Completo</Label>
                       <Input
-                        id="email"
+                        id="inquilino-nome"
+                        value={formData.inquilino.nome}
+                        // Correção: Passar tipos genéricos corretos
+                        onChange={(e) => handleNestedChange<'inquilino', 'nome'>(e, "inquilino", "nome")}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="inquilino-email">Email</Label>
+                      <Input
+                        id="inquilino-email"
                         type="email"
                         value={formData.inquilino.email}
-                        onChange={(e) => setFormData({
-                          ...formData, 
-                          inquilino: {...formData.inquilino, email: e.target.value}
-                        })}
+                        // Correção: Passar tipos genéricos corretos
+                        onChange={(e) => handleNestedChange<'inquilino', 'email'>(e, "inquilino", "email")}
                         required
                       />
                     </div>
                   </div>
-                  
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="telefone">Telefone</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                     <div className="space-y-1">
+                      <Label htmlFor="inquilino-telefone">Telefone</Label>
                       <Input
-                        id="telefone"
+                        id="inquilino-telefone"
                         value={formData.inquilino.telefone}
-                        onChange={(e) => setFormData({
-                          ...formData, 
-                          inquilino: {...formData.inquilino, telefone: e.target.value}
-                        })}
+                        // Correção: Passar tipos genéricos corretos
+                        onChange={(e) => handleNestedChange<'inquilino', 'telefone'>(e, "inquilino", "telefone")}
                         required
                       />
                     </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="cpf">CPF</Label>
+                    <div className="space-y-1">
+                      <Label htmlFor="inquilino-cpf">CPF</Label>
                       <Input
-                        id="cpf"
+                        id="inquilino-cpf"
                         value={formData.inquilino.cpf}
-                        onChange={(e) => setFormData({
-                          ...formData, 
-                          inquilino: {...formData.inquilino, cpf: e.target.value}
-                        })}
+                        // Correção: Passar tipos genéricos corretos
+                        onChange={(e) => handleNestedChange<'inquilino', 'cpf'>(e, "inquilino", "cpf")}
                         required
                       />
                     </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="rg">RG</Label>
+                    <div className="space-y-1">
+                      <Label htmlFor="inquilino-rg">RG</Label>
                       <Input
-                        id="rg"
+                        id="inquilino-rg"
                         value={formData.inquilino.rg}
-                        onChange={(e) => setFormData({
-                          ...formData, 
-                          inquilino: {...formData.inquilino, rg: e.target.value}
-                        })}
+                        // Correção: Passar tipos genéricos corretos
+                        onChange={(e) => handleNestedChange<'inquilino', 'rg'>(e, "inquilino", "rg")}
                         required
                       />
                     </div>
                   </div>
-                </div>
+                </fieldset>
 
-                <div className="space-y-4">
-                  <h3 className="font-medium text-gray-800">Dados do Imóvel</h3>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="imovel">Selecionar Imóvel</Label>
+                <fieldset className="border p-4 rounded-md">
+                   <legend className="text-sm font-medium px-1">Dados do Imóvel</legend>
+                   <div className="space-y-1">
+                    <Label htmlFor="imovel-id">Selecionar Imóvel</Label>
                     <Select 
                       value={formData.imovel.id} 
                       onValueChange={(value) => {
-                        const imovel = imoveis.find(i => i._id === value);
-                        if (imovel) {
+                        const imovelSelecionado = imoveis.find(i => i._id === value);
+                        if (imovelSelecionado) {
                           setFormData({
                             ...formData, 
                             imovel: {
-                              id: imovel._id || "",
-                              endereco: `${imovel.grupo}-${imovel.bloco}, Apto ${imovel.apartamento}`,
-                              bairro: "Centro", // Adapte conforme sua estrutura
-                              cidade: "São Paulo"
+                              id: imovelSelecionado._id || "",
+                              endereco: `Grupo ${imovelSelecionado.grupo} - Bloco ${imovelSelecionado.bloco}, Apto ${imovelSelecionado.apartamento}`,
+                              bairro: "Bairro Exemplo",
+                              cidade: "Cidade Exemplo"
                             }
                           });
                         }
                       }}
                     >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione um imóvel" />
+                      <SelectTrigger id="imovel-id">
+                        <SelectValue placeholder="Selecione um imóvel disponível" />
                       </SelectTrigger>
                       <SelectContent>
+                        {imoveis.length === 0 && <p className="p-2 text-sm text-gray-500">Nenhum imóvel disponível.</p>}
                         {imoveis.map((imovel) => (
                           <SelectItem key={imovel._id} value={imovel._id || ""}>
-                            Grupo {imovel.grupo} - Bloco {imovel.bloco}, Apto {imovel.apartamento}
+                            {`G${imovel.grupo}-B${imovel.bloco}-Apto${imovel.apartamento} (${imovel.statusAnuncio})`}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
+                    {formData.imovel.id && <p className="text-xs text-gray-600 mt-1">{formData.imovel.endereco}</p>}
                   </div>
-                </div>
+                </fieldset>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="dataInicio">Data de Início</Label>
-                    <Input
-                      id="dataInicio"
-                      type="date"
-                      value={formData.dataInicio}
-                      onChange={(e) => setFormData({...formData, dataInicio: e.target.value})}
-                      required
-                    />
+                <fieldset className="border p-4 rounded-md">
+                   <legend className="text-sm font-medium px-1">Datas e Valores</legend>
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div className="space-y-1">
+                      <Label htmlFor="dataInicio">Data de Início</Label>
+                      <Input
+                        id="dataInicio"
+                        type="date"
+                        value={formData.dataInicio}
+                        onChange={(e) => handleChange(e, "dataInicio")}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="dataFim">Data de Término</Label>
+                      <Input
+                        id="dataFim"
+                        type="date"
+                        value={formData.dataFim}
+                        onChange={(e) => handleChange(e, "dataFim")}
+                        required
+                      />
+                    </div>
                   </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="dataFim">Data de Término</Label>
-                    <Input
-                      id="dataFim"
-                      type="date"
-                      value={formData.dataFim}
-                      onChange={(e) => setFormData({...formData, dataFim: e.target.value})}
-                      required
-                    />
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="space-y-1">
+                      <Label htmlFor="valorAluguel">Aluguel (R$)</Label>
+                      <Input
+                        id="valorAluguel"
+                        type="number"
+                        step="0.01"
+                        value={formData.valorAluguel}
+                        onChange={(e) => handleChange(e, "valorAluguel")}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="valorCondominio">Condomínio (R$)</Label>
+                      <Input
+                        id="valorCondominio"
+                        type="number"
+                        step="0.01"
+                        value={formData.valorCondominio}
+                        onChange={(e) => handleChange(e, "valorCondominio")}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="valorIPTU">IPTU (R$)</Label>
+                      <Input
+                        id="valorIPTU"
+                        type="number"
+                        step="0.01"
+                        value={formData.valorIPTU}
+                        onChange={(e) => handleChange(e, "valorIPTU")}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="diaVencimento">Dia Vencimento</Label>
+                      <Input
+                        id="diaVencimento"
+                        type="number"
+                        min="1" max="31"
+                        value={formData.diaVencimento}
+                        onChange={(e) => handleChange(e, "diaVencimento")}
+                        required
+                      />
+                    </div>
                   </div>
-                </div>
+                </fieldset>
 
-                <div className="grid grid-cols-4 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="valorAluguel">Valor do Aluguel</Label>
-                    <Input
-                      id="valorAluguel"
-                      type="number"
-                      step="0.01"
-                      value={formData.valorAluguel}
-                      onChange={(e) => setFormData({...formData, valorAluguel: parseFloat(e.target.value)})}
-                      required
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="valorCondominio">Valor Condomínio</Label>
-                    <Input
-                      id="valorCondominio"
-                      type="number"
-                      step="0.01"
-                      value={formData.valorCondominio}
-                      onChange={(e) => setFormData({...formData, valorCondominio: parseFloat(e.target.value)})}
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="valorIPTU">Valor IPTU</Label>
-                    <Input
-                      id="valorIPTU"
-                      type="number"
-                      step="0.01"
-                      value={formData.valorIPTU}
-                      onChange={(e) => setFormData({...formData, valorIPTU: parseFloat(e.target.value)})}
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="diaVencimento">Dia Vencimento</Label>
-                    <Input
-                      id="diaVencimento"
-                      type="number"
-                      min="1"
-                      max="31"
-                      value={formData.diaVencimento}
-                      onChange={(e) => setFormData({...formData, diaVencimento: parseInt(e.target.value)})}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
+                <div className="space-y-1">
                   <Label htmlFor="observacoes">Observações</Label>
                   <Textarea
                     id="observacoes"
                     value={formData.observacoes}
-                    onChange={(e) => setFormData({...formData, observacoes: e.target.value})}
+                    onChange={(e) => handleChange(e, "observacoes")}
+                    placeholder="Detalhes adicionais, cláusulas específicas, etc."
                     rows={3}
                   />
                 </div>
 
-                <div className="flex justify-end gap-2 pt-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setDialogOpen(false)}
-                  >
-                    Cancelar
+                <DialogFooter>
+                  <DialogClose asChild>
+                     <Button type="button" variant="outline">Cancelar</Button>
+                  </DialogClose>
+                  <Button type="submit" disabled={loadingSubmit} className="bg-imobiliaria-azul hover:bg-imobiliaria-azul/90">
+                    {loadingSubmit ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    {editingContratoId ? "Salvar Alterações" : "Criar Contrato"}
                   </Button>
-                  <Button
-                    type="submit"
-                    disabled={loading}
-                    className="bg-imobiliaria-azul hover:bg-imobiliaria-azul/90"
-                  >
-                    {loading ? "Salvando..." : editingContrato ? "Atualizar" : "Criar"}
-                  </Button>
-                </div>
+                </DialogFooter>
               </form>
             </DialogContent>
           </Dialog>
         </div>
-        
-        <div className="bg-white p-6 rounded-lg shadow-sm">
-          <div className="mb-6">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-              <Input
-                placeholder="Buscar contratos por número, inquilino ou imóvel..."
-                className="pl-10"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
+
+        <div className="mb-6">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Input
+              type="text"
+              placeholder="Buscar por número, inquilino ou endereço..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-10 w-full sm:w-72"
+            />
           </div>
-          
+        </div>
+
+        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">Contrato</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">Inquilino</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">Imóvel</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">Período</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">Valor</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">Status</th>
-                  <th className="text-center py-3 px-4 font-medium text-gray-600">Ações</th>
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50">
+                <tr className="text-left text-gray-600">
+                  <th className="p-3 font-medium">Número</th>
+                  <th className="p-3 font-medium">Inquilino</th>
+                  <th className="p-3 font-medium">Imóvel</th>
+                  <th className="p-3 font-medium">Vigência</th>
+                  <th className="p-3 font-medium">Valor Total</th>
+                  <th className="p-3 font-medium">Status</th>
+                  <th className="p-3 font-medium text-center">Ações</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={7} className="py-4 text-center text-gray-500">
-                      Carregando contratos...
-                    </td>
+                    <td colSpan={7} className="p-6 text-center text-gray-500">Carregando contratos...</td>
                   </tr>
-                ) : contratosFiltrados.length > 0 ? (
+                ) : contratosFiltrados.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="p-6 text-center text-gray-500">Nenhum contrato encontrado.</td>
+                  </tr>
+                ) : (
                   contratosFiltrados.map((contrato) => (
                     <tr key={contrato._id} className="border-b hover:bg-gray-50">
-                      <td className="py-3 px-4">{contrato.numero}</td>
-                      <td className="py-3 px-4">
-                        <div>
-                          <p className="font-medium">{contrato.inquilino.nome}</p>
-                          <p className="text-xs text-gray-500">{contrato.inquilino.email}</p>
-                        </div>
+                      <td className="p-3">{contrato.numero}</td>
+                      <td className="p-3">{contrato.inquilino.nome}</td>
+                      <td className="p-3">{contrato.imovel.endereco}</td>
+                      <td className="p-3">
+                        {new Date(contrato.dataInicio).toLocaleDateString("pt-BR")} - {new Date(contrato.dataFim).toLocaleDateString("pt-BR")}
                       </td>
-                      <td className="py-3 px-4">
-                        <div>
-                          <p>{contrato.imovel.endereco}</p>
-                          <p className="text-xs text-gray-500">{contrato.imovel.bairro}, {contrato.imovel.cidade}</p>
-                        </div>
+                      <td className="p-3">
+                        {(contrato.valorAluguel + (contrato.valorCondominio || 0) + (contrato.valorIPTU || 0)).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
                       </td>
-                      <td className="py-3 px-4">
-                        <div>
-                          <p className="text-sm">{new Date(contrato.dataInicio).toLocaleDateString('pt-BR')}</p>
-                          <p className="text-xs text-gray-500">até {new Date(contrato.dataFim).toLocaleDateString('pt-BR')}</p>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4">
-                        {contrato.valorAluguel.toLocaleString("pt-BR", {
-                          style: "currency",
-                          currency: "BRL",
-                        })}
-                      </td>
-                      <td className="py-3 px-4">
-                        <Badge
-                          className={
-                            contrato.status === "Ativo"
-                              ? "bg-green-100 text-green-800"
-                              : contrato.status === "Pendente"
-                              ? "bg-yellow-100 text-yellow-800"
-                              : "bg-gray-100 text-gray-800"
-                          }
-                        >
+                      <td className="p-3">
+                        <Badge variant={ 
+                          contrato.status === "Ativo" ? "default" : 
+                          contrato.status === "Finalizado" ? "outline" : 
+                          contrato.status === "Cancelado" ? "destructive" : 
+                          "secondary"
+                        }>
                           {contrato.status}
                         </Badge>
                       </td>
-                      <td className="py-3 px-4">
-                        <div className="flex justify-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => handleEdit(contrato)}
-                            title="Editar"
-                          >
-                            <Eye size={16} className="text-blue-600" />
+                      <td className="p-3 text-center">
+                        <div className="flex justify-center items-center gap-1">
+                          <Button variant="ghost" size="icon" title="Visualizar/Editar" onClick={() => handleEdit(contrato)}>
+                            <Eye className="h-4 w-4 text-blue-600" />
                           </Button>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => handleGerarPagamentos(contrato._id || "")}
-                            title="Gerar Pagamentos"
-                          >
-                            <Calendar size={16} className="text-green-600" />
+                          <Button variant="ghost" size="icon" title="Gerar Pagamentos" onClick={() => handleGerarPagamentos(contrato._id || "")}>
+                            <DollarSign className="h-4 w-4 text-green-600" />
                           </Button>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => handleEnviarCobranca(contrato)}
-                            title="Enviar Cobrança"
-                          >
-                            <Mail size={16} className="text-orange-600" />
+                           <Button variant="ghost" size="icon" title="Enviar Cobrança" onClick={() => handleEnviarCobranca(contrato)}>
+                            <Mail className="h-4 w-4 text-orange-600" />
                           </Button>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => handleDelete(contrato._id || "")}
-                            title="Excluir"
-                          >
-                            <Trash2 size={16} className="text-red-600" />
+                          <Button variant="ghost" size="icon" title="Excluir" onClick={() => handleDelete(contrato._id || "")}>
+                            <Trash2 className="h-4 w-4 text-red-600" />
                           </Button>
                         </div>
                       </td>
                     </tr>
                   ))
-                ) : (
-                  <tr>
-                    <td colSpan={7} className="py-4 text-center text-gray-500">
-                      Nenhum contrato encontrado
-                    </td>
-                  </tr>
                 )}
               </tbody>
             </table>
