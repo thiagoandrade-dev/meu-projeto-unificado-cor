@@ -1,4 +1,6 @@
-import { useState, useEffect } from "react";
+// Local: frontend/src/pages/admin/Dashboard.tsx (Seu código, agora corrigido)
+
+import { useState, useEffect, useCallback } from "react"; // 1. IMPORTAR o useCallback
 import { Link } from "react-router-dom";
 import AdminSidebar from "@/components/AdminSidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -107,18 +109,15 @@ const Dashboard = () => {
     { categoria: 'Seguro', valor: 9000, percentual: 4 },
   ];
 
-  useEffect(() => {
-    carregarDadosDashboard();
-  }, []);
-
-  const carregarDadosDashboard = async () => {
+  // 2. ENVOLVER A SUA FUNÇÃO com useCallback
+  const carregarDadosDashboard = useCallback(async () => {
     setLoading(true);
     try {
       // Carregar dados dos imóveis
       const imoveis = await imoveisService.getAll();
       const totalImoveis = imoveis.length;
       const imoveisOcupados = imoveis.filter(i => i.statusAnuncio === "Alugado").length;
-      const ocupacao = Math.round((imoveisOcupados / totalImoveis) * 100);
+      const ocupacao = totalImoveis > 0 ? Math.round((imoveisOcupados / totalImoveis) * 100) : 0;
 
       // Carregar dados dos contratos
       const contratos = await contratoService.getAll();
@@ -149,7 +148,12 @@ const Dashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]); // A função 'toast' é a única dependência externa que precisa ser listada
+
+  // 3. ATUALIZAR O useEffect
+  useEffect(() => {
+    carregarDadosDashboard();
+  }, [carregarDadosDashboard]); // Agora a função está listada como dependência
 
   const enviarCobrancas = async () => {
     try {
@@ -367,7 +371,7 @@ const Dashboard = () => {
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="mes" />
                       <YAxis tickFormatter={(value) => `R$ ${value/1000}k`} />
-                      <Tooltip formatter={(value) => [`R$ ${value.toLocaleString()}`, '']} />
+                      <Tooltip formatter={(value) => [`R$ ${Number(value).toLocaleString()}`, '']} />
                       <Line type="monotone" dataKey="valor" stroke="#1A365D" strokeWidth={3} name="Receita" />
                       <Line type="monotone" dataKey="meta" stroke="#C69C6D" strokeWidth={2} strokeDasharray="5 5" name="Meta" />
                     </LineChart>
@@ -426,7 +430,7 @@ const Dashboard = () => {
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="categoria" />
                       <YAxis tickFormatter={(value) => `R$ ${value/1000}k`} />
-                      <Tooltip formatter={(value) => [`R$ ${value.toLocaleString()}`, 'Receita']} />
+                      <Tooltip formatter={(value) => [`R$ ${Number(value).toLocaleString()}`, 'Receita']} />
                       <Bar dataKey="receita" fill="#C69C6D" />
                     </BarChart>
                   </ResponsiveContainer>

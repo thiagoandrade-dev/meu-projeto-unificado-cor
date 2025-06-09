@@ -1,33 +1,12 @@
-import { useState, useEffect } from "react";
+// Local: frontend/src/pages/admin/Imoveis.tsx (Versão Final Corrigida)
+
+import { useState, useEffect, useCallback } from "react";
+import AdminSidebar from "@/components/AdminSidebar";
+// 1. IMPORTAR O TIPO 'Imovel' DO LOCAL CORRETO (apiService)
+import { imoveisService, Imovel } from "@/services/apiService";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import AdminSidebar from "@/components/AdminSidebar";
-import { Plus, Search, Pencil, Trash2, FileText, Upload, X } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle,
-  DialogFooter,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
 import {
   Table,
   TableBody,
@@ -36,575 +15,194 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import * as z from "zod";
-import { imoveisService, Imovel } from "@/services/apiService";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { MoreHorizontal, PlusCircle, Search } from "lucide-react";
 
-// Schema para validação do formulário
-const imovelFormSchema = z.object({
-  grupo: z.number().min(1, "Grupo é obrigatório"),
-  bloco: z.string().min(1, "Bloco é obrigatório"),
-  andar: z.number().min(0, "Andar deve ser um número válido"),
-  apartamento: z.number().min(1, "Apartamento é obrigatório"),
-  configuracaoPlanta: z.string().min(1, "Configuração da planta é obrigatória"),
-  areaUtil: z.number().min(1, "Área útil é obrigatória"),
-  numVagasGaragem: z.number().min(0, "Número de vagas deve ser válido"),
-  tipoVagaGaragem: z.string().min(1, "Tipo de vaga é obrigatório"),
-  preco: z.number().min(0, "Preço deve ser um valor válido"),
-  statusAnuncio: z.enum(["Disponível", "Alugado", "Manutenção", "Reservado"]),
-});
-
-type ImovelFormValues = z.infer<typeof imovelFormSchema>;
+// A 'interface Imovel' local foi REMOVIDA daqui para evitar duplicidade.
 
 const AdminImoveis = () => {
   const { toast } = useToast();
-  const [search, setSearch] = useState("");
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingImovel, setEditingImovel] = useState<null | Imovel>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  // Agora os estados usam o tipo 'Imovel' importado, que é a fonte da verdade.
   const [imoveis, setImoveis] = useState<Imovel[]>([]);
-  const [selectedImages, setSelectedImages] = useState<File[]>([]);
-  
-  const form = useForm<ImovelFormValues>({
-    resolver: zodResolver(imovelFormSchema),
-    defaultValues: {
-      grupo: 1,
-      bloco: "",
-      andar: 0,
-      apartamento: 1,
-      configuracaoPlanta: "",
-      areaUtil: 0,
-      numVagasGaragem: 0,
-      tipoVagaGaragem: "",
-      preco: 0,
-      statusAnuncio: "Disponível",
-    },
-  });
+  const [imovelSelecionado, setImovelSelecionado] = useState<Imovel | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
 
-  // Carrega os imóveis do backend
-  useEffect(() => {
-    loadImoveis();
-  }, []);
-
-  const loadImoveis = async () => {
-    setIsLoading(true);
+  const loadImoveis = useCallback(async () => {
     try {
-      const response = await imoveisService.getAll();
-      setImoveis(response);
+      setLoading(true);
+      const data = await imoveisService.getAll();
+      setImoveis(data); // Não precisa mais de conversão, pois os tipos já são os mesmos.
     } catch (error) {
-      console.error("Erro ao carregar imóveis:", error);
       toast({
         title: "Erro ao carregar imóveis",
-        description: "Não foi possível obter a lista de imóveis",
+        description: "Não foi possível buscar a lista de imóveis.",
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      setLoading(false);
+    }
+  }, [toast]);
+
+  useEffect(() => {
+    loadImoveis();
+  }, [loadImoveis]);
+
+  // A função handleDelete já usa o tipo correto importado.
+  const handleDelete = (imovel: Imovel) => {
+    setImovelSelecionado(imovel);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!imovelSelecionado) return;
+
+    try {
+      await imoveisService.delete(imovelSelecionado._id);
+      toast({
+        title: "Imóvel excluído!",
+        description: "O imóvel foi removido com sucesso.",
+      });
+      setIsDeleteDialogOpen(false);
+      setImovelSelecionado(null);
+      loadImoveis();
+    } catch (error) {
+      toast({
+        title: "Erro ao excluir",
+        description: "Não foi possível excluir o imóvel.",
+        variant: "destructive",
+      });
     }
   };
-  
-  // Filtra os imóveis com base na pesquisa
-  const imoveisFiltrados = imoveis.filter(
+
+  const filteredImoveis = imoveis.filter(
     (imovel) =>
-      `Bloco ${imovel.bloco} - Apt ${imovel.apartamento}`.toLowerCase().includes(search.toLowerCase()) ||
-      imovel.configuracaoPlanta.toLowerCase().includes(search.toLowerCase()) ||
-      imovel.statusAnuncio.toLowerCase().includes(search.toLowerCase())
+      imovel.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      imovel.endereco.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      imovel.cidade.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const openAddDialog = () => {
-    form.reset();
-    setEditingImovel(null);
-    setSelectedImages([]);
-    setDialogOpen(true);
-  };
-
-  const openEditDialog = (imovel: Imovel) => {
-    setEditingImovel(imovel);
-    form.reset({
-      grupo: imovel.grupo,
-      bloco: imovel.bloco,
-      andar: imovel.andar,
-      apartamento: imovel.apartamento,
-      configuracaoPlanta: imovel.configuracaoPlanta,
-      areaUtil: imovel.areaUtil,
-      numVagasGaragem: imovel.numVagasGaragem,
-      tipoVagaGaragem: imovel.tipoVagaGaragem,
-      preco: imovel.preco,
-      statusAnuncio: imovel.statusAnuncio as "Disponível" | "Alugado" | "Manutenção" | "Reservado",
-    });
-    setSelectedImages([]);
-    setDialogOpen(true);
-  };
-  
-  const handleDelete = async (id: string) => {
-    if (!confirm("Tem certeza que deseja remover este imóvel?")) return;
-    
-    try {
-      await imoveisService.delete(id);
-      
-      // Recarregar lista de imóveis
-      await loadImoveis();
-      
-      toast({
-        title: "Imóvel removido",
-        description: "O imóvel foi removido com sucesso",
-        duration: 3000,
-      });
-    } catch (error) {
-      console.error("Erro ao remover imóvel:", error);
-      toast({
-        title: "Erro ao remover",
-        description: "Não foi possível remover o imóvel",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (files) {
-      setSelectedImages(Array.from(files));
-    }
-  };
-
-  const onSubmit = async (data: ImovelFormValues) => {
-    setIsLoading(true);
-    try {
-      const formData = new FormData();
-      
-      // Adicionar dados do imóvel ao FormData
-      Object.entries(data).forEach(([key, value]) => {
-        formData.append(key, value.toString());
-      });
-      
-      // Adicionar imagens se selecionadas
-      selectedImages.forEach((image) => {
-        formData.append('imagens', image);
-      });
-      
-      if (editingImovel) {
-        await imoveisService.update(editingImovel._id!, formData);
-        
-        toast({
-          title: "Imóvel atualizado",
-          description: `O imóvel Bloco ${data.bloco} - Apt ${data.apartamento} foi atualizado com sucesso`,
-          duration: 3000,
-        });
-      } else {
-        await imoveisService.create(formData);
-        
-        toast({
-          title: "Imóvel criado",
-          description: `O imóvel Bloco ${data.bloco} - Apt ${data.apartamento} foi cadastrado com sucesso`,
-          duration: 3000,
-        });
-      }
-      
-      // Recarregar lista de imóveis
-      await loadImoveis();
-      setDialogOpen(false);
-    } catch (error: any) {
-      console.error("Erro ao salvar imóvel:", error);
-      toast({
-        title: editingImovel ? "Erro ao atualizar" : "Erro ao cadastrar",
-        description: error.response?.data?.erro || "Ocorreu um problema ao processar a operação",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-gray-100 flex">
+    <div className="flex bg-gray-100 min-h-screen">
       <AdminSidebar />
-      
-      <div className="flex-1 p-8">
-        <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-800">Gerenciamento de Imóveis</h1>
-            <p className="text-gray-600">Cadastre e gerencie os imóveis da imobiliária</p>
-          </div>
-          
-          <Button 
-            className="bg-imobiliaria-azul hover:bg-imobiliaria-azul/90 flex items-center gap-2"
-            onClick={openAddDialog}
-          >
-            <Plus size={16} />
-            Novo Imóvel
+      <div className="flex-1 p-6 lg:p-10">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-800">Gerenciamento de Imóveis</h1>
+          <Button>
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Adicionar Imóvel
           </Button>
         </div>
-        
-        <div className="bg-white p-6 rounded-lg shadow-sm">
-          <div className="mb-6">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <div className="flex items-center mb-4">
+            <div className="relative w-full max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
               <Input
-                placeholder="Buscar imóveis por bloco, apartamento ou configuração..."
+                placeholder="Buscar por título, endereço, cidade..."
                 className="pl-10"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
           </div>
-          
-          <div className="overflow-x-auto">
-            {isLoading ? (
-              <div className="text-center py-8">
-                <p className="text-gray-500">Carregando imóveis...</p>
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Identificação</TableHead>
-                    <TableHead>Configuração</TableHead>
-                    <TableHead>Área Útil</TableHead>
-                    <TableHead>Vagas</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Valor</TableHead>
-                    <TableHead className="text-center">Ações</TableHead>
+
+          {loading ? (
+            <div className="text-center py-10">
+              <p>Carregando imóveis...</p>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Título</TableHead>
+                  <TableHead>Endereço</TableHead>
+                  <TableHead>Cidade</TableHead>
+                  <TableHead>Valor (R$)</TableHead>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredImoveis.map((imovel) => (
+                  <TableRow key={imovel._id}>
+                    <TableCell className="font-medium">{imovel.titulo}</TableCell>
+                    <TableCell>{imovel.endereco}</TableCell>
+                    <TableCell>{imovel.cidade}</TableCell>
+                    <TableCell>{imovel.valor.toLocaleString()}</TableCell>
+                    <TableCell>{imovel.tipo}</TableCell>
+                    <TableCell>
+                      <span
+                        className={`px-2 py-1 text-xs rounded-full ${
+                          imovel.statusAnuncio === "Disponível"
+                            ? "bg-green-100 text-green-800"
+                            : "bg-red-100 text-red-800"
+                        }`}
+                      >
+                        {imovel.statusAnuncio}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" className="h-8 w-8 p-0">
+                            <span className="sr-only">Abrir menu</span>
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem>Editar</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleDelete(imovel)}>
+                            Excluir
+                          </DropdownMenuItem>
+                          <DropdownMenuItem>Ver Detalhes</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {imoveisFiltrados.length > 0 ? (
-                    imoveisFiltrados.map((imovel) => (
-                      <TableRow key={imovel._id}>
-                        <TableCell>
-                          <div>
-                            <span className="font-medium">Grupo {imovel.grupo}</span>
-                            <br />
-                            <span className="text-sm text-gray-500">
-                              Bloco {imovel.bloco} - Apt {imovel.apartamento}
-                            </span>
-                            <br />
-                            <span className="text-xs text-gray-400">
-                              {imovel.andar}º andar
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell>{imovel.configuracaoPlanta}</TableCell>
-                        <TableCell>{imovel.areaUtil}m²</TableCell>
-                        <TableCell>
-                          {imovel.numVagasGaragem} {imovel.tipoVagaGaragem}
-                        </TableCell>
-                        <TableCell>
-                          <span
-                            className={`inline-block py-1 px-2 rounded-full text-xs font-medium ${
-                              imovel.statusAnuncio === "Disponível"
-                                ? "bg-green-100 text-green-800"
-                                : imovel.statusAnuncio === "Alugado"
-                                ? "bg-blue-100 text-blue-800"
-                                : imovel.statusAnuncio === "Reservado"
-                                ? "bg-yellow-100 text-yellow-800"
-                                : "bg-red-100 text-red-800"
-                            }`}
-                          >
-                            {imovel.statusAnuncio}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          {imovel.preco.toLocaleString("pt-BR", {
-                            style: "currency",
-                            currency: "BRL",
-                          })}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex justify-center gap-2">
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              onClick={() => openEditDialog(imovel)}
-                            >
-                              <Pencil size={16} className="text-blue-600" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              onClick={() => handleDelete(imovel._id!)}
-                            >
-                              <Trash2 size={16} className="text-red-600" />
-                            </Button>
-                            <Button variant="outline" size="icon">
-                              <FileText size={16} className="text-gray-600" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={7} className="text-center text-gray-500">
-                        Nenhum imóvel encontrado
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            )}
-          </div>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </div>
       </div>
 
-      {/* Modal para adicionar/editar imóvel */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+      {/* Modal de Confirmação de Exclusão */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editingImovel ? "Editar Imóvel" : "Novo Imóvel"}</DialogTitle>
+            <DialogTitle>Confirmar Exclusão</DialogTitle>
             <DialogDescription>
-              {editingImovel 
-                ? "Atualize as informações do imóvel nos campos abaixo." 
-                : "Preencha as informações do novo imóvel nos campos abaixo."}
+              Você tem certeza que deseja excluir o imóvel "
+              {imovelSelecionado?.titulo}"? Esta ação não pode ser desfeita.
             </DialogDescription>
           </DialogHeader>
-          
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="grupo"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Grupo</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="number" 
-                          placeholder="1" 
-                          {...field} 
-                          onChange={(e) => field.onChange(Number(e.target.value))}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="bloco"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Bloco</FormLabel>
-                      <FormControl>
-                        <Input placeholder="A" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="andar"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Andar</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="number" 
-                          placeholder="1" 
-                          {...field} 
-                          onChange={(e) => field.onChange(Number(e.target.value))}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="apartamento"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Apartamento</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="number" 
-                          placeholder="101" 
-                          {...field} 
-                          onChange={(e) => field.onChange(Number(e.target.value))}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              
-              <FormField
-                control={form.control}
-                name="configuracaoPlanta"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Configuração da Planta</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Ex: 2 quartos, 1 suíte, sala, cozinha" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="areaUtil"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Área Útil (m²)</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="number" 
-                          step="0.01"
-                          placeholder="85.50" 
-                          {...field} 
-                          onChange={(e) => field.onChange(Number(e.target.value))}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="preco"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Preço (R$)</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="number" 
-                          step="0.01"
-                          placeholder="2500.00" 
-                          {...field} 
-                          onChange={(e) => field.onChange(Number(e.target.value))}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="numVagasGaragem"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Número de Vagas</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="number" 
-                          placeholder="1" 
-                          {...field} 
-                          onChange={(e) => field.onChange(Number(e.target.value))}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="tipoVagaGaragem"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Tipo de Vaga</FormLabel>
-                      <Select 
-                        onValueChange={field.onChange} 
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione o tipo" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Coberta">Coberta</SelectItem>
-                          <SelectItem value="Descoberta">Descoberta</SelectItem>
-                          <SelectItem value="Box">Box</SelectItem>
-                          <SelectItem value="Não se aplica">Não se aplica</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              
-              <FormField
-                control={form.control}
-                name="statusAnuncio"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Status do Anúncio</FormLabel>
-                    <Select 
-                      onValueChange={field.onChange} 
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione o status" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="Disponível">Disponível</SelectItem>
-                        <SelectItem value="Alugado">Alugado</SelectItem>
-                        <SelectItem value="Manutenção">Manutenção</SelectItem>
-                        <SelectItem value="Reservado">Reservado</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <div>
-                <Label htmlFor="imagens">Imagens do Imóvel</Label>
-                <div className="mt-2">
-                  <Input
-                    id="imagens"
-                    type="file"
-                    multiple
-                    accept="image/*"
-                    onChange={handleImageSelect}
-                    className="cursor-pointer"
-                  />
-                  {selectedImages.length > 0 && (
-                    <p className="text-sm text-gray-500 mt-1">
-                      {selectedImages.length} imagem(ns) selecionada(s)
-                    </p>
-                  )}
-                </div>
-              </div>
-              
-              <DialogFooter className="pt-4 gap-2">
-                <Button 
-                  variant="outline" 
-                  type="button"
-                  onClick={() => setDialogOpen(false)}
-                  disabled={isLoading}
-                >
-                  Cancelar
-                </Button>
-                <Button 
-                  type="submit" 
-                  disabled={isLoading}
-                  className="bg-imobiliaria-azul hover:bg-imobiliaria-azul/90"
-                >
-                  {isLoading ? "Processando..." : editingImovel ? "Atualizar" : "Cadastrar"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsDeleteDialogOpen(false)}
+            >
+              Cancelar
+            </Button>
+            <Button variant="destructive" onClick={confirmDelete}>
+              Excluir
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

@@ -1,134 +1,107 @@
+// Local: frontend/src/App.tsx (Atualizado)
 
+import { useState, useEffect, useMemo, useContext } from "react";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { useState, createContext, useEffect } from "react";
+import { AuthContext, User } from "@/contexts/AuthContext"; // <-- IMPORTAÇÃO ATUALIZADA
 
 // Páginas Públicas
-import Index from "./pages/Index";
-import Imoveis from "./pages/Imoveis";
-import ImovelDetalhe from "./pages/ImovelDetalhe";
-import Sobre from "./pages/Sobre";
-import Contato from "./pages/Contato";
-import Login from "./pages/Login";
+import Index from "@/pages/Index";
+import Sobre from "@/pages/Sobre";
+import Contato from "@/pages/Contato";
+import Imoveis from "@/pages/Imoveis";
+import ImovelDetalhe from "@/pages/ImovelDetalhe";
+import Login from "@/pages/Login";
+import NotFound from "./pages/NotFound";
 
-// Páginas do Admin
-import AdminDashboard from "./pages/admin/Dashboard";
-import AdminImoveis from "./pages/admin/Imoveis";
-import AdminContratos from "./pages/admin/Contratos";
-import AdminJuridico from "./pages/admin/Juridico";
-import AdminUsuarios from "./pages/admin/Usuarios";
+// Páginas de Admin
+import AdminDashboard from "@/pages/admin/Dashboard";
+import AdminImoveis from "@/pages/admin/Imoveis";
+import AdminContratos from "@/pages/admin/Contratos";
+import AdminUsuarios from "@/pages/admin/Usuarios";
+import AdminJuridico from "@/pages/admin/Juridico";
 
 // Páginas do Locatário
 import AreaLocatario from "./pages/locatario/AreaLocatario";
 
-import NotFound from "./pages/NotFound";
-import { authService } from "./services/apiService";
+// Componente de Rota Protegida
+const ProtectedRoute = ({ children, requiredRole }: { children: JSX.Element, requiredRole: 'admin' | 'inquilino' }) => {
+    const { user, loading } = useContext(AuthContext);
 
-type User = {
-  id: string;
-  nome: string;
-  email: string;
-  tipo: "admin" | "locatario";
-} | null;
+    if (loading) {
+        return <div className="flex h-screen items-center justify-center">Carregando...</div>;
+    }
 
-export const AuthContext = createContext<{
-  user: User;
-  setUser: React.Dispatch<React.SetStateAction<User>>;
-}>({
-  user: null,
-  setUser: () => {},
-});
+    if (!user || user.tipo !== requiredRole) {
+        return <Navigate to="/login" replace />;
+    }
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 1,
-      refetchOnWindowFocus: false,
-    },
-  },
-});
+    return children;
+};
 
-const App = () => {
-  const [user, setUser] = useState<User>(null);
+function App() {
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Verificar se há um token salvo ao carregar a aplicação
-    const initAuth = async () => {
-      const token = localStorage.getItem("token");
-      const savedUser = localStorage.getItem("user");
-
-      if (token && savedUser) {
-        try {
-          // Verificar se o token ainda é válido
-          await authService.verifyToken(token);
-          const userData = JSON.parse(savedUser);
-          setUser({
-            id: userData._id || userData.id,
-            nome: userData.nome,
-            email: userData.email,
-            tipo: userData.tipo === "Administrador" || userData.tipo === "Funcionário" ? "admin" : "locatario"
-          });
-        } catch (error) {
-          console.error('Token inválido, fazendo logout:', error);
-          // Token inválido, limpar dados
-          authService.logout();
-        }
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      try {
+        const parsedUser = JSON.parse(storedUser);
+        setUser({
+            id: parsedUser.id || parsedUser._id,
+            nome: parsedUser.nome,
+            email: parsedUser.email,
+            tipo: parsedUser.perfil
+        });
+      } catch (error) {
+        console.error("Erro ao ler dados do usuário do localStorage", error);
+        localStorage.clear();
       }
-      setLoading(false);
-    };
-
-    initAuth();
+    }
+    setLoading(false);
   }, []);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Carregando aplicação...</p>
-        </div>
-      </div>
-    );
-  }
+  const authContextValue = useMemo(() => ({ user, setUser, loading }), [user, loading]);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <AuthContext.Provider value={{ user, setUser }}>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
+    <AuthContext.Provider value={authContextValue}>
+      <Router>
+        <div className="flex flex-col min-h-screen">
+          <main className="flex-grow">
             <Routes>
               {/* Rotas Públicas */}
               <Route path="/" element={<Index />} />
-              <Route path="/imoveis" element={<Imoveis />} />
-              <Route path="/imoveis/:id" element={<ImovelDetalhe />} />
               <Route path="/sobre" element={<Sobre />} />
+              <Route path="/imoveis" element={<Imoveis />} />
+              <Route path="/imovel/:id" element={<ImovelDetalhe />} />
               <Route path="/contato" element={<Contato />} />
               <Route path="/login" element={<Login />} />
-              
-              {/* Rotas Admin */}
-              <Route path="/admin" element={<AdminDashboard />} />
-              <Route path="/admin/imoveis" element={<AdminImoveis />} />
-              <Route path="/admin/contratos" element={<AdminContratos />} />
-              <Route path="/admin/juridico" element={<AdminJuridico />} />
-              <Route path="/admin/usuarios" element={<AdminUsuarios />} />
-              
-              {/* Rotas Locatário */}
-              <Route path="/locatario" element={<AreaLocatario />} />
-              
-              {/* Rota 404 */}
+
+              {/* Rotas Protegidas do Admin */}
+              <Route path="/admin" element={<ProtectedRoute requiredRole="admin"><AdminDashboard /></ProtectedRoute>} />
+              <Route path="/admin/imoveis" element={<ProtectedRoute requiredRole="admin"><AdminImoveis /></ProtectedRoute>} />
+              <Route path="/admin/contratos" element={<ProtectedRoute requiredRole="admin"><AdminContratos /></ProtectedRoute>} />
+              <Route path="/admin/usuarios" element={<ProtectedRoute requiredRole="admin"><AdminUsuarios /></ProtectedRoute>} />
+              <Route path="/admin/juridico" element={<ProtectedRoute requiredRole="admin"><AdminJuridico /></ProtectedRoute>} />
+
+              {/* Rota Protegida do Locatário/Inquilino */}
+              <Route path="/locatario" element={<ProtectedRoute requiredRole="inquilino"><AreaLocatario /></ProtectedRoute>} />
+
+              {/* Rota Not Found */}
               <Route path="*" element={<NotFound />} />
             </Routes>
-          </BrowserRouter>
-        </AuthContext.Provider>
-      </TooltipProvider>
-    </QueryClientProvider>
+          </main>
+          <Toaster />
+        </div>
+      </Router>
+    </AuthContext.Provider>
   );
-};
+}
 
 export default App;

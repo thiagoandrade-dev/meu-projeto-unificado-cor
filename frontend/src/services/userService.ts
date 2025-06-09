@@ -25,7 +25,7 @@ export interface User {
   id?: string; // Pode ser o mesmo que _id
   nome: string;
   email: string;
-  perfil: "Administrador" | "Locatário" | "Funcionário"; // <-- Corrigido de 'tipo' para 'perfil'
+  perfil: "admin" | "inquilino"; // <-- Corrigido de 'tipo' para 'perfil'
   // telefone?: string; // Removido se não for usado consistentemente
   // status?: "Ativo" | "Inativo"; // Removido se não for usado consistentemente
   dataRegistro?: string;

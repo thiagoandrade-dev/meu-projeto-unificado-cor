@@ -1,6 +1,6 @@
 import { useState, useContext } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { AuthContext } from "@/App";
+import { AuthContext } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -58,8 +58,8 @@ const Login = () => {
         id: String(usuario.id || usuario._id), 
         nome: usuario.nome,
         email: usuario.email,
-        tipo: (usuario.perfil === "Administrador" || usuario.perfil === "Funcionário") ? "admin" : "locatario"
-      });
+        tipo: usuario.perfil // <-- MUDANÇA PRINCIPAL AQUI
+});
       
       toast({
         title: "Login bem-sucedido!",
@@ -67,11 +67,11 @@ const Login = () => {
         duration: 3000,
       });
       
-      if (usuario.perfil === "Administrador" || usuario.perfil === "Funcionário") { 
-        navigate("/admin/dashboard"); 
-      } else {
-        navigate("/locatario"); 
-      }
+      if (usuario.perfil === "admin") {
+  navigate("/admin");
+} else {
+  navigate("/locatario");
+}
       
     } catch (error) { // Correção: Usar 'unknown' ou tipo específico como AxiosError
       console.error("Erro no login:", error);
@@ -116,7 +116,7 @@ const Login = () => {
         nome: registerCredentials.nome,
         email: registerCredentials.email,
         senha: registerCredentials.password, 
-        perfil: "Locatário" 
+        perfil: "inquilino" 
       });
       
       toast({
