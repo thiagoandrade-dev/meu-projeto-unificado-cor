@@ -40,17 +40,30 @@ app.use(
   })
 );
 
-app.use(cors({
-  origin: process.env.FRONTEND_URL || [
-    "http://localhost:3000", 
-    "http://127.0.0.1:5500", 
-    "http://localhost:5000",
-    "https://www.imobiliariafirenze.com.br" // ✅ ADICIONE SEU DOMÍNIO AQUI
-  ],
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-  credentials: true
-}));
+const whitelist = [
+  "http://localhost:3000",
+  "http://127.0.0.1:5500",
+  "http://localhost:5000",
+  "https://www.imobiliariafirenze.com.br",
+  "https://imobiliariafirenze.com.br",
+];
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (!origin || whitelist.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.warn("🌐 CORS bloqueado para origem:", origin);
+      callback(new Error("Não permitido por CORS"));
+    }
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+};
+
+app.use(cors(corsOptions));
+
 
 app.use(rateLimit({
   windowMs: 15 * 60 * 1000,
