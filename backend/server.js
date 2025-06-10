@@ -41,10 +41,15 @@ app.use(
 );
 
 app.use(cors({
-  origin: process.env.FRONTEND_URL || ["http://localhost:3000", "http://127.0.0.1:5500", "http://localhost:5000"],
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-  credentials: true // Adicionado para JWT
+  origin: process.env.FRONTEND_URL || [
+    "http://localhost:3000", 
+    "http://127.0.0.1:5500", 
+    "http://localhost:5000",
+    "https://www.imobiliariafirenze.com.br" // ✅ ADICIONE SEU DOMÍNIO AQUI
+  ],
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true
 }));
 
 app.use(rateLimit({

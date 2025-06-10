@@ -1,10 +1,10 @@
-// Local: backend/seed.js (VERSÃO FINAL CORRIGIDA)
+// Local: backend/seed.js (VERSÃO FINAL E CORRETA)
 
 require("dotenv").config();
 const mongoose = require("mongoose");
-const bcrypt = require("bcryptjs");
+// O bcrypt aqui não é mais necessário, pois o modelo fará o hash
+// const bcrypt = require("bcryptjs"); 
 
-// ✅ CORREÇÃO: Usando o nome do modelo correto que você descobriu!
 const Inquilino = require("./models/Inquilino");
 
 const DB_URI = process.env.MONGODB_URI || "mongodb://localhost:27017/firenzeImobiliaria";
@@ -14,32 +14,30 @@ const seedUsers = async () => {
     await mongoose.connect(DB_URI);
     console.log("Conectado ao MongoDB para seeding...");
 
-    // ✅ CORREÇÃO: Usando o modelo correto.
     await Inquilino.deleteMany({ email: { $in: ["admin@firenze.com", "inquilino@teste.com"] } });
     console.log("Usuários de teste antigos removidos.");
 
-    const senhaCriptografada = await bcrypt.hash("123456", 10);
-
+    // ✅ CORREÇÃO: Removida a criptografia daqui. A senha é enviada em texto plano.
+    // O modelo Inquilino.js irá criptografá-la automaticamente antes de salvar.
     const usuariosParaCriar = [
       {
         nome: "Admin Firenze",
         email: "admin@firenze.com",
-        senha: senhaCriptografada,
-        perfil: "admin", // Importante para diferenciar o usuário
+        senha: "123456", // Enviando a senha original
+        perfil: "admin",
         status: "Ativo"
       },
       {
         nome: "Thiago Inquilino",
         email: "inquilino@teste.com",
-        senha: senhaCriptografada,
-        perfil: "inquilino", // Importante para diferenciar o usuário
+        senha: "123456", // Enviando a senha original
+        perfil: "inquilino",
         status: "Ativo"
       }
     ];
 
-    // ✅ CORREÇÃO: Usando o modelo correto.
     await Inquilino.insertMany(usuariosParaCriar);
-    console.log("✅ Usuários de teste criados com sucesso!");
+    console.log("✅ Usuários de teste criados com sucesso (com senhas corretamente hasheadas pelo modelo)!");
     console.log("---");
     console.log("Admin: admin@firenze.com | Senha: 123456");
     console.log("Inquilino: inquilino@teste.com | Senha: 123456");
