@@ -2,7 +2,10 @@
 
 import axios, { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://imobiliaria-firenze-backend.onrender.com/api';
+const API_URL = import.meta.env.VITE_API_URL;
+if (!API_URL) {
+  throw new Error("API URL não definida (VITE_API_URL)");
+}
 
 export const api = axios.create({
   baseURL: API_URL,

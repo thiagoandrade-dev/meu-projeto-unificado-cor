@@ -46,6 +46,7 @@ const whitelist = [
   "http://localhost:5000",
   "https://www.imobiliariafirenze.com.br",
   "https://imobiliariafirenze.com.br",
+  "https://imobiliaria-firenze-backend.onrender.com"
 ];
 
 const corsOptions = {
