@@ -10,7 +10,7 @@ import {
   LogOut,
 } from "lucide-react";
 import { useContext } from "react";
-import { AuthContext } from "@/App";
+import { AuthContext } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { userService } from "@/services/userService";
 

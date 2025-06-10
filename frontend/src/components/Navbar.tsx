@@ -1,7 +1,7 @@
 
 import { Link } from "react-router-dom";
 import { useContext, useState } from "react";
-import { AuthContext } from "@/App";
+import { AuthContext } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
 
