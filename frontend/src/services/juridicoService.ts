@@ -10,19 +10,19 @@ export type DocumentoStatus = "Ativo" | "Arquivado" | "Pendente";
 export interface DocumentoJuridico {
   _id: string;
   titulo: string;
-  tipo: DocumentoTipo;
-  descricao?: string;
-  arquivoUrl: string;
-  tamanho?: string;
-  formato?: string;
-  autor?: string;
+  tipo: string;
+  descricao: string;
+  autor?: string;     // <-- Tornar autor opcional, pois o erro indicou que pode ser undefined
   contratoRelacionado?: string;
   imovelRelacionado?: string;
-  status: DocumentoStatus;
-  dataCriacao: string;
-  dataModificacao?: string;
-  tags?: string[];
+  status: string;
+  tags: string[];
   observacoes?: string;
+  dataCriacao: string; // <-- A propriedade que você usa é 'dataCriacao'
+  createdAt?: string;   // <-- Adicionar para consistência, se o backend enviar
+  updatedAt?: string;
+  arquivo?: string;     // ✅ Adicionar esta propriedade para o link de download
+  formato?: string;     // ✅ Adicionar esta propriedade para a extensão do arquivo
 }
 
 export type ProcessoTipo = "Despejo" | "Cobrança" | "Danos" | "Distrato" | "Renovação" | "Outros";
@@ -47,9 +47,12 @@ export interface ProcessoJuridico {
 }
 
 export interface NotificacaoJuridica {
-    destinatario: string;
-    mensagem: string;
-    remetente?: string; // Remetente é opcional aqui, será adicionado no serviço
+  tipo: string;
+  destinatario: string;
+  assunto?: string;      // ✅ Adicionado
+  corpo: string;          // ✅ 'mensagem' foi renomeada para 'corpo' para maior clareza
+  remetente?: string;
+  timestamp?: string;    // ✅ Adicionado
 }
 
 // --- SERVIÇO JURÍDICO PADRONIZADO ---

@@ -4,7 +4,7 @@ import axios, { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from 'ax
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://imobiliaria-firenze-backend.onrender.com/api';
 
-const api = axios.create({
+export const api = axios.create({
   baseURL: API_URL,
   headers: { 'Content-Type': 'application/json' },
   timeout: 10000,
@@ -58,6 +58,7 @@ export interface Imovel {
   apartamento?: number;
   andar?: number;
   bloco?: string;
+  grupo?: string;
   configuracaoPlanta?: string;
   tipoVagaGaragem?: string;
   caracteristicas?: string[];
@@ -85,7 +86,7 @@ export interface AuthResponse {
 }
 
 // --- FUNÇÃO AUXILIAR DE TRATAMENTO DE ERRO ---
-function handleApiError(error: unknown, context: string): Error {
+export function handleApiError(error: unknown, context: string): Error {
   console.error(`Erro na operação de ${context}:`, error);
   if (axios.isAxiosError(error)) {
     const apiErrorMessage = error.response?.data?.erro || error.response?.data?.message;

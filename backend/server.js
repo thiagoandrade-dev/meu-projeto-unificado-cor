@@ -16,7 +16,8 @@ const imovelRoutes = require("./routes/imovel");
 const juridicoRoutes = require("./routes/juridico");
 const dashboardRoutes = require("./routes/dashboard");
 const contratoRoutes = require("./routes/contrato");
-
+const contatoRoutes = require("./routes/contato");
+const notificacaoRoutes = require("./routes/notificacao.routes");
 const app = express();
 
 // =============================================
@@ -78,7 +79,7 @@ app.use("/api/juridico", juridicoRoutes);
 app.use("/api/contratos", contratoRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/contato", contatoRoutes);
-
+app.use("/api/notificacoes", notificacaoRoutes);
 // Verificação de saúde do servidor
 app.get("/api/status", (req, res) => {
   res.json({

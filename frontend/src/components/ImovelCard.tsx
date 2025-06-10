@@ -23,6 +23,7 @@ export type Imovel = {
   caracteristicas: string[];
   fotos: string[];
   destaque: boolean;
+  grupo?: string;
 };
 
 interface ImovelCardProps {
