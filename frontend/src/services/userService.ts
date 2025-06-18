@@ -97,7 +97,7 @@ export const userService = {
   login: async (email: string, senha: string): Promise<AuthResponse> => {
     try {
       // Usar apiClient que já tem baseURL configurada
-      const response = await apiClient.post<AuthResponse>("/auth/login", { 
+      const response = await apiClient.post<AuthResponse>("/api/auth/login", { 
         email, 
         senha // Backend espera 'senha'
       });
@@ -112,7 +112,7 @@ export const userService = {
   register: async (userData: RegisterUserData): Promise<User> => {
     try {
       // Usar apiClient
-      const response = await apiClient.post<User>("/auth/register", userData);
+      const response = await apiClient.post<User>("/api/auth/register", userData);
       return response.data;
     } catch (error) {
       throw handleApiError(error, 'register');

@@ -92,7 +92,7 @@ mongoose.connect(DB_URI, {
 // =============================================
 // 4. ROTAS PRINCIPAIS (API)
 // =============================================
-app.use("/auth", authRoutes);
+app.use("/api/auth", authRoutes);
 app.use("/api/imoveis", imovelRoutes);
 app.use("/api/juridico", juridicoRoutes);
 app.use("/api/contratos", contratoRoutes);
