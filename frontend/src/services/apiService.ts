@@ -190,3 +190,92 @@ export const usuariosService = {
     } catch (error) { throw handleApiError(error, `atualizar status do usuário ${id}`); }
   }
 };
+// --- SERVIÇO DE INTEGRAÇÃO COM ASAAS (via Backend) ---
+
+export interface ClienteAsaasPayload {
+  nome: string;
+  email: string;
+  cpfCnpj: string;
+  celular: string;
+  inquilinoId?: string;
+}
+
+export interface ClienteAsaasResponse {
+  id: string;
+  name: string;
+  email: string;
+  cpfCnpj: string;
+  phone: string;
+  // outros campos do Asaas, se necessário
+}
+
+export interface CobrancaAsaasPayload {
+  customerId: string;
+  valor: number;
+  vencimento: string;
+  descricao: string;
+}
+
+export interface CobrancaAsaasResponse {
+  id: string;
+  value: number;
+  dueDate: string;
+  customer: string;
+  status: string;
+  description: string;
+  invoiceUrl: string;
+  bankSlipUrl: string;
+  // outros campos do Asaas, se necessário
+}
+
+export interface BoletoAsaas {
+  id: string;
+  dateCreated: string;
+  dueDate: string;
+  value: number;
+  description: string;
+  status: string;
+  invoiceUrl: string;
+  bankSlipUrl: string;
+  invoiceNumber: string;
+}
+
+export const asaasService = {
+  criarCliente: async (payload: ClienteAsaasPayload): Promise<ClienteAsaasResponse> => {
+    try {
+      const response = await api.post<ClienteAsaasResponse>('/api/asaas/cliente', payload);
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error, 'criar cliente Asaas');
+    }
+  },
+
+  criarCobranca: async (payload: CobrancaAsaasPayload): Promise<CobrancaAsaasResponse> => {
+    try {
+      const response = await api.post<CobrancaAsaasResponse>('/api/asaas/cobranca', payload);
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error, 'criar cobrança Asaas');
+    }
+  },
+
+  listarBoletos: async (customerId: string): Promise<BoletoAsaas[]> => {
+    try {
+      const response = await api.get<BoletoAsaas[]>(`/api/asaas/boletos/${customerId}`);
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error, 'listar boletos Asaas');
+    }
+  },
+
+  baixarBoletoPDF: async (boletoId: string): Promise<Blob> => {
+    try {
+      const response = await api.get<Blob>(`/api/asaas/pdf/${boletoId}`, {
+        responseType: 'blob',
+      });
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error, 'baixar PDF do boleto Asaas');
+    }
+  },
+};

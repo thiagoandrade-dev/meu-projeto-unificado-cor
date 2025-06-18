@@ -17,7 +17,8 @@ const juridicoRoutes = require("./routes/juridico");
 const dashboardRoutes = require("./routes/dashboard");
 const contratoRoutes = require("./routes/contrato");
 const contatoRoutes = require("./routes/contato");
-//const notificacaoRoutes = require("./routes/notificacao.routes");
+const notificacaoRoutes = require("./routes/notificacao.routes");
+const asaasRoutes = require('./routes/asaasRoutes');
 const app = express();
 
 // =============================================
@@ -98,7 +99,8 @@ app.use("/api/juridico", juridicoRoutes);
 app.use("/api/contratos", contratoRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/contato", contatoRoutes);
-//app.use("/api/notificacoes", notificacaoRoutes);
+app.use("/api/notificacoes", notificacaoRoutes);
+app.use('/api', require('./routes/asaasRoutes'));
 // Verificação de saúde do servidor
 app.get("/api/status", (req, res) => {
   res.json({
