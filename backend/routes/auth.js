@@ -103,5 +103,10 @@ router.post("/login", [
     res.status(500).json({ erro: "Erro interno no servidor." });
   }
 });
+const verificarToken = require("../middlewares/authMiddleware");
+
+router.get("/verify-token", verificarToken, (req, res) => {
+  res.json({ mensagem: "Token válido!", usuario: req.usuario });
+});
 
 module.exports = router;

@@ -1,0 +1,9 @@
+POST https://imobiliaria-firenze-backend.onrender.com/auth/register
+Content-Type: application/json
+
+{
+  "nome": "Thiago",
+  "email": "thiago@email.com",
+  "senha": "123456",
+  "perfil": "admin"
+}

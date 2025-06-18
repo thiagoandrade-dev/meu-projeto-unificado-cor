@@ -97,7 +97,7 @@ export const userService = {
   login: async (email: string, senha: string): Promise<AuthResponse> => {
     try {
       // Usar apiClient que já tem baseURL configurada
-      const response = await apiClient.post<AuthResponse>("/usuarios/login", { 
+      const response = await apiClient.post<AuthResponse>("/auth/login", { 
         email, 
         senha // Backend espera 'senha'
       });
