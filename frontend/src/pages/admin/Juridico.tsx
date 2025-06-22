@@ -67,10 +67,10 @@ const AdminJuridico = () => {
       // ✅ CORREÇÃO: Chamada correta para o sub-serviço.
       const data = await juridicoService.documentos.getAll();
       setDocumentos(data);
-    } catch (error) {
+    } catch (error: AxiosError) {
       toast({
         title: "Erro ao carregar documentos",
-        description: (error as Error).message || "Não foi possível carregar os documentos",
+        description: error.message || "Não foi possível carregar os documentos",
         variant: "destructive",
       });
     } finally {
@@ -83,11 +83,11 @@ const AdminJuridico = () => {
       // ✅ CORREÇÃO: Chamada correta para o sub-serviço.
       const data = await juridicoService.processos.getAll();
       setProcessos(data);
-    } catch (error) {
+    } catch (error: AxiosError) {
       console.error("Erro ao carregar processos:", error);
       toast({
         title: "Erro ao carregar processos",
-        description: (error as Error).message || "Não foi possível carregar os processos",
+        description: error.message || "Não foi possível carregar os processos",
         variant: "destructive",
       });
     }
@@ -154,10 +154,10 @@ const AdminJuridico = () => {
       setDialogOpen(false);
       resetDocForm();
       carregarDocumentos();
-    } catch (error) {
+    } catch (error: AxiosError) {
       toast({
         title: "Erro ao salvar documento",
-        description: (error as Error).message || "Não foi possível salvar o documento",
+        description: error.message || "Não foi possível salvar o documento",
         variant: "destructive",
       });
     } finally {
@@ -189,10 +189,10 @@ const AdminJuridico = () => {
       setProcessoDialogOpen(false);
       resetProcessoForm();
       carregarProcessos();
-    } catch (error) {
+    } catch (error: AxiosError) {
       toast({
         title: "Erro ao salvar processo",
-        description: (error as Error).message || "Não foi possível salvar o processo",
+        description: error.message || "Não foi possível salvar o processo",
         variant: "destructive",
       });
     } finally {
@@ -244,10 +244,10 @@ const AdminJuridico = () => {
           description: "Documento excluído com sucesso",
         });
         carregarDocumentos();
-      } catch (error) {
+      } catch (error: AxiosError) {
         toast({
           title: "Erro ao excluir documento",
-          description: (error as Error).message || "Não foi possível excluir o documento",
+          description: error.message || "Não foi possível excluir o documento",
           variant: "destructive",
         });
       }
@@ -264,10 +264,10 @@ const AdminJuridico = () => {
           description: "Processo excluído com sucesso",
         });
         carregarProcessos();
-      } catch (error) {
+      } catch (error: AxiosError) {
         toast({
           title: "Erro ao excluir processo",
-          description: (error as Error).message || "Não foi possível excluir o processo",
+          description: error.message || "Não foi possível excluir o processo",
           variant: "destructive",
         });
       }
@@ -312,10 +312,10 @@ const AdminJuridico = () => {
         title: "Notificação enviada",
         description: `Email enviado para ${email}`,
       });
-    } catch (error) {
+    } catch (error: AxiosError) {
       toast({
         title: "Erro ao enviar notificação",
-        description: (error as Error).message || "Não foi possível enviar a notificação",
+        description: error.message || "Não foi possível enviar a notificação",
         variant: "destructive",
       });
     }

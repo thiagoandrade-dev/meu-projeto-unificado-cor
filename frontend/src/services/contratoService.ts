@@ -111,3 +111,7 @@ export const contratoService = {
     }
   },
 };
+
+
+export default contratoService;
+

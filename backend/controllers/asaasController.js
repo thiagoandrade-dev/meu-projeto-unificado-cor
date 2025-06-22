@@ -38,8 +38,9 @@ const criarCliente = async (req, res) => {
 
     res.status(201).json(customer);
   } catch (error) {
-    console.error('Erro ao criar cliente na Asaas:', error.response?.data || error.message);
-    res.status(500).json({ erro: 'Erro ao criar cliente na Asaas' });
+    const errorMessage = error.response?.data?.errors ? JSON.stringify(error.response.data.errors) : error.message;
+    console.error("Erro ao criar cliente na Asaas:", errorMessage);
+    res.status(500).json({ erro: `Erro ao criar cliente na Asaas: ${errorMessage}` });
   }
 };
 

@@ -41,9 +41,9 @@ router.post("/register", registerValidationRules(), validateAuth, async (req, re
       }
     });
 
-  } catch (erro) {
-    console.error("Erro no registro:", erro);
-    res.status(500).json({ erro: "Erro interno no servidor." });
+  } catch (error) {
+    console.error("Erro no registro:", error.message);
+    res.status(500).json({ erro: `Erro interno no servidor: ${error.message}` });
   }
 });
 
@@ -98,9 +98,9 @@ router.post("/login", [
       }
     });
 
-  } catch (erro) {
-    console.error("Erro no login:", erro);
-    res.status(500).json({ erro: "Erro interno no servidor." });
+  } catch (error) {
+    console.error("Erro no login:", error.message);
+    res.status(500).json({ erro: `Erro interno no servidor: ${error.message}` });
   }
 });
 const verificarToken = require("../middlewares/authMiddleware");

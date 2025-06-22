@@ -16,8 +16,8 @@ function verificarToken(req, res, next) {
     );
     req.usuario = decoded; // Adiciona os dados do usuário à requisição
     next();
-  } catch (erro) {
-    return res.status(401).json({ erro: "Token inválido ou expirado." });
+  } catch (error) {
+    return res.status(401).json({ erro: `Token inválido ou expirado: ${error.message}` });
   }
 }
 

@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Navbar from "@/components/Navbar";
+import Logo from "@/components/Logo";
 import Footer from "@/components/Footer";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff, LogIn, UserPlus } from "lucide-react";
@@ -73,7 +74,7 @@ const Login = () => {
   navigate("/locatario");
 }
       
-    } catch (error) { // Correção: Usar 'unknown' ou tipo específico como AxiosError
+    } catch (error) { // Correção: Usar \'unknown\' ou tipo específico como AxiosError
       console.error("Erro no login:", error);
       let errorMessage = "Email ou senha incorretos."; // Mensagem padrão
       
@@ -111,7 +112,7 @@ const Login = () => {
     }
     
     try {
-      // Correção: Enviar 'perfil' - o erro TS2353 será resolvido ajustando o tipo em userService.ts
+      // Correção: Enviar \'perfil\' - o erro TS2353 será resolvido ajustando o tipo em userService.ts
       await userService.register({
         nome: registerCredentials.nome,
         email: registerCredentials.email,
@@ -134,7 +135,7 @@ const Login = () => {
       });
       setLoginCredentials(prev => ({ ...prev, email: registerCredentials.email, password: "" }));
       
-    } catch (error) { // Correção: Usar 'unknown' ou tipo específico como AxiosError
+    } catch (error) { // Correção: Usar \'unknown\' ou tipo específico como AxiosError
       console.error("Erro no registro:", error);
       let errorMessage = "Erro ao criar conta. Tente novamente."; // Mensagem padrão
 
@@ -327,3 +328,5 @@ const Login = () => {
 };
 
 export default Login;
+
+

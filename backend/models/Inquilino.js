@@ -13,7 +13,8 @@ const InquilinoSchema = new mongoose.Schema({
   senha: {
     type: String,
     required: [true, "A senha é obrigatória."],
-    minlength: [6, "A senha deve ter pelo menos 6 caracteres."]
+    minlength: [6, "A senha deve ter pelo menos 6 caracteres."],
+    select: false // Não retorna a senha por padrão nas consultas
   },
   nome: {
     type: String,
@@ -26,9 +27,27 @@ const InquilinoSchema = new mongoose.Schema({
     enum: ["admin", "inquilino"],
     default: "inquilino"
   },
+  status: {
+    type: String,
+    enum: ["Ativo", "Inativo"],
+    default: "Ativo"
+  },
+  telefone: {
+    type: String,
+    trim: true
+  },
   imovelId: { 
     type: mongoose.Schema.Types.ObjectId, 
     ref: "Imovel" 
+  },
+  asaasCustomerId: {
+    type: String
+  },
+  resetPasswordToken: {
+    type: String
+  },
+  resetPasswordExpires: {
+    type: Date
   }
 }, {
   timestamps: true // Adiciona createdAt e updatedAt automaticamente

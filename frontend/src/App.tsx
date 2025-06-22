@@ -22,8 +22,11 @@ import NotFound from "./pages/NotFound";
 // Páginas de Admin
 import AdminDashboard from "@/pages/admin/Dashboard";
 import AdminImoveis from "@/pages/admin/Imoveis";
+import AdminNovoImovel from "@/pages/admin/NovoImovel";
+import AdminEditarImovel from "@/pages/admin/EditarImovel";
 import AdminContratos from "@/pages/admin/Contratos";
 import AdminUsuarios from "@/pages/admin/Usuarios";
+import AdminNovoUsuario from "@/pages/admin/NovoUsuario";
 import AdminJuridico from "@/pages/admin/Juridico";
 
 // Páginas do Locatário
@@ -86,8 +89,11 @@ function App() {
               {/* Rotas Protegidas do Admin */}
               <Route path="/admin" element={<ProtectedRoute requiredRole="admin"><AdminDashboard /></ProtectedRoute>} />
               <Route path="/admin/imoveis" element={<ProtectedRoute requiredRole="admin"><AdminImoveis /></ProtectedRoute>} />
+              <Route path="/admin/imoveis/novo" element={<ProtectedRoute requiredRole="admin"><AdminNovoImovel /></ProtectedRoute>} />
+              <Route path="/admin/imoveis/editar/:id" element={<ProtectedRoute requiredRole="admin"><AdminEditarImovel /></ProtectedRoute>} />
               <Route path="/admin/contratos" element={<ProtectedRoute requiredRole="admin"><AdminContratos /></ProtectedRoute>} />
               <Route path="/admin/usuarios" element={<ProtectedRoute requiredRole="admin"><AdminUsuarios /></ProtectedRoute>} />
+              <Route path="/admin/usuarios/novo" element={<ProtectedRoute requiredRole="admin"><AdminNovoUsuario /></ProtectedRoute>} />
               <Route path="/admin/juridico" element={<ProtectedRoute requiredRole="admin"><AdminJuridico /></ProtectedRoute>} />
 
               {/* Rota Protegida do Locatário/Inquilino */}
@@ -105,3 +111,4 @@ function App() {
 }
 
 export default App;
+
