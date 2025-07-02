@@ -4,10 +4,12 @@ const router = express.Router();
 const dashboardController = require('../controllers/dashboardController');
 const verificarToken = require('../middlewares/verificarToken');
 
-// As rotas não precisam do prefixo /api/dashboard aqui, pois ele será adicionado no server.js
+// MUDANÇA AQUI: Removido '/api/dashboard' do prefixo da rota.
+// A rota final será /api/dashboard quando montada no server.js
 router.get('/', verificarToken, dashboardController.getDashboardCompleto);
 
-// Rotas individuais para cada tipo de dado
+// Rotas individuais para cada tipo de dado.
+// MUDANÇA AQUI: Removido '/api/dashboard' dos prefixos.
 router.get('/estatisticas', verificarToken, dashboardController.getEstatisticas);
 router.get('/receita-mensal', verificarToken, dashboardController.getReceitaMensal);
 router.get('/ocupacao', verificarToken, dashboardController.getOcupacao);
