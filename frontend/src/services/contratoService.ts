@@ -4,7 +4,7 @@ export interface Contrato {
   _id?: string;
   numero: string;
   inquilino: Usuario & { cpf: string; rg: string };
-  imovel: Pick<Imovel, "titulo" | "endereco" | "cidade"> & { id: string };
+  imovel: Pick<Imovel, "titulo" | "endereco" | "cidade"> & { _id: string };
   dataInicio: string;
   dataFim: string;
   valorAluguel: number;

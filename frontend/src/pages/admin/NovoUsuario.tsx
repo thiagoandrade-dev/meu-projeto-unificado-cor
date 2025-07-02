@@ -23,6 +23,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { api } from "@/services/apiService";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import axios, { AxiosError } from "axios"; // Adicionado para correção
 
 const NovoUsuario = () => {
   const { toast } = useToast();
@@ -33,7 +34,7 @@ const NovoUsuario = () => {
     nome: "",
     email: "",
     telefone: "",
-    perfil: "",
+    perfil: "" as "admin" | "inquilino" | "proprietario" | "corretor", // Tipagem mais específica
     senha: "",
     confirmarSenha: ""
   });
@@ -56,7 +57,8 @@ const NovoUsuario = () => {
 
   // Atualizar campo select do formulário
   const handleSelectChange = (name: string, value: string) => {
-    setFormData(prev => ({ ...prev, [name]: value }));
+    // Casting para o tipo específico de perfil
+    setFormData(prev => ({ ...prev, [name]: value as typeof prev.perfil }));
     
     // Limpar erro do campo quando o usuário seleciona
     if (errors[name]) {
@@ -132,7 +134,7 @@ const NovoUsuario = () => {
       };
       
       // Enviar requisição
-      await apiClient.post('/usuarios', userData);
+      await api.post('/usuarios', userData);
       
       toast({
         title: "Usuário criado com sucesso",
@@ -141,21 +143,30 @@ const NovoUsuario = () => {
       
       // Redirecionar para a lista de usuários
       navigate('/admin/usuarios');
-    } catch (error: AxiosError) {
-      console.error("Erro ao criar usuário:", error);
-      
-      // Verificar se há erros específicos retornados pela API
-      if (error.response?.data?.errors) {
-        const apiErrors: Record<string, string> = {};
-        error.response.data.errors.forEach((err: Record<string, string>) => {
-          const field = Object.keys(err)[0];
-          apiErrors[field] = err[field];
-        });
-        setErrors(apiErrors);
-      } else {
+    } catch (error: unknown) { // Tipagem corrigida para unknown
+      if (axios.isAxiosError(error)) { 
+        console.error("Erro ao criar usuário:", error);
+        
+        // Verificar se há erros específicos retornados pela API
+        if (error.response?.data?.errors) {
+          const apiErrors: Record<string, string> = {};
+          (error.response.data.errors as Record<string, string>[]).forEach((err) => { // Removido 'any'
+            const field = Object.keys(err)[0];
+            apiErrors[field] = err[field];
+          });
+          setErrors(apiErrors);
+        } else {
+          toast({
+            title: "Erro ao criar usuário",
+            description: error.response?.data?.message || "Não foi possível criar o usuário",
+            variant: "destructive",
+          });
+        }
+      } else { 
+        console.error("Erro inesperado ao criar usuário:", error);
         toast({
-          title: "Erro ao criar usuário",
-          description: error.response?.data?.message || "Não foi possível criar o usuário",
+          title: "Erro inesperado",
+          description: "Ocorreu um erro inesperado ao criar o usuário.",
           variant: "destructive",
         });
       }
@@ -341,7 +352,7 @@ const NovoUsuario = () => {
                 </div>
                 
                 {/* Alerta de segurança */}
-                <Alert variant="warning">
+                <Alert variant="default"> {/* Alterado de "warning" para "default" */}
                   <AlertCircle className="h-4 w-4" />
                   <AlertTitle>Atenção</AlertTitle>
                   <AlertDescription>
@@ -387,4 +398,3 @@ const NovoUsuario = () => {
 };
 
 export default NovoUsuario;
-

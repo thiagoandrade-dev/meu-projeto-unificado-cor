@@ -67,7 +67,7 @@ const dashboardService = {
    */
   async getDashboardCompleto(): Promise<DashboardCompleto> {
     try {
-      const response = await apiClient.get<DashboardCompleto>('/dashboard');
+      const response = await api.get<DashboardCompleto>('/dashboard');
       return response.data;
     } catch (error) {
       console.error('Erro ao obter dados do dashboard:', error);

@@ -77,11 +77,13 @@ export interface Usuario {
   _id: string;
   nome: string;
   email: string;
-  perfil: 'admin' | 'inquilino';
-  telefone?: string;
-  status: 'Ativo' | 'Inativo'; // Adicionado
-  dataRegistro?: string;
+  telefone: string;
+  perfil: "inquilino" | "admin";
+  status: "Ativo" | "Inativo";
+  cpf: string;  
+  rg: string;   
 }
+
 
 export interface AuthResponse {
   token: string;

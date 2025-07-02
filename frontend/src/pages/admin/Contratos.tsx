@@ -10,10 +10,11 @@ import { Plus, Search, FileText, Eye, Download, Trash2, Calendar, DollarSign, Ma
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import contratoService, { Contrato } from "@/services/contratoService";
-import { imoveisService, Imovel } from "@/services/apiService";
+import { imoveisService, Imovel, Usuario } from "@/services/apiService";
 
-// Tipo para o formulário, permitindo strings para números inicialmente
-type FormDataType = Omit<Contrato, 
+// Tipo para o formulário, omitindo algumas propriedades, e ajustando imovel e inquilino para aceitar só os campos usados
+type FormDataType = Omit<
+  Contrato, 
   "_id" | "createdAt" | "updatedAt" | "pagamentos" | 
   "valorAluguel" | "valorCondominio" | "valorIPTU" | "diaVencimento"
 > & {
@@ -21,22 +22,28 @@ type FormDataType = Omit<Contrato,
   valorCondominio: string | number;
   valorIPTU: string | number;
   diaVencimento: string | number;
+
+  imovel: Pick<Imovel, "_id" | "endereco" | "cidade" | "titulo">;
+  inquilino: Pick<Usuario, "_id" | "nome" | "email" | "telefone" | "cpf" | "rg" | "perfil" | "status">;
 };
 
 const INITIAL_FORM_DATA: FormDataType = {
   numero: "",
   inquilino: {
+    _id: "",
     nome: "",
     email: "",
     telefone: "",
     cpf: "",
-    rg: ""
+    rg: "",
+    perfil: "inquilino", // certo
+    status: "Ativo"
   },
   imovel: {
-    id: "",
+    _id: "",
     endereco: "",
-    bairro: "",
-    cidade: ""
+    cidade: "",
+    titulo: ""
   },
   dataInicio: "",
   dataFim: "",
@@ -98,7 +105,7 @@ const AdminContratos = () => {
       contrato.imovel.endereco.toLowerCase().includes(search.toLowerCase())
   );
 
-  // Correção: Usar Generics para tipar corretamente as chaves aninhadas
+  // Atualiza campos aninhados (inquilino, imovel)
   const handleNestedChange = <K extends keyof FormDataType, CK extends keyof FormDataType[K]>(
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
     parentKey: K,
@@ -107,7 +114,6 @@ const AdminContratos = () => {
     const { value } = e.target;
     setFormData(prev => {
       const parentObject = prev[parentKey];
-      // Garantir que o pai é um objeto antes de tentar espalhar
       if (typeof parentObject === 'object' && parentObject !== null) {
         return {
           ...prev,
@@ -117,7 +123,6 @@ const AdminContratos = () => {
           }
         };
       } 
-      // Retornar estado anterior se o pai não for um objeto (prevenção)
       console.warn(`Tentativa de atualizar chave aninhada em ${String(parentKey)} que não é um objeto.`);
       return prev;
     });
@@ -148,15 +153,28 @@ const AdminContratos = () => {
     e.preventDefault();
     setLoadingSubmit(true);
 
+    // Formata dados convertendo string para número onde necessário
     const dataToSend: Contrato = {
         ...formData,
-        valorAluguel: parseFloat(String(formData.valorAluguel)) || 0,
-        valorCondominio: parseFloat(String(formData.valorCondominio)) || 0,
-        valorIPTU: parseFloat(String(formData.valorIPTU)) || 0,
-        diaVencimento: parseInt(String(formData.diaVencimento), 10) || 5,
+        valorAluguel: Number(formData.valorAluguel) || 0,
+        valorCondominio: Number(formData.valorCondominio) || 0,
+        valorIPTU: Number(formData.valorIPTU) || 0,
+        diaVencimento: Number(formData.diaVencimento) || 5,
         imovel: {
-            ...formData.imovel,
-            id: formData.imovel.id || ""
+          _id: formData.imovel._id || "",
+          endereco: formData.imovel.endereco,
+          cidade: formData.imovel.cidade,
+          titulo: formData.imovel.titulo
+        },
+        inquilino: {
+          _id: formData.inquilino._id || "",
+          nome: formData.inquilino.nome,
+          email: formData.inquilino.email,
+          telefone: formData.inquilino.telefone,
+          cpf: formData.inquilino.cpf,
+          rg: formData.inquilino.rg,
+          perfil: formData.inquilino.perfil,
+          status: formData.inquilino.status
         }
     };
 
@@ -317,7 +335,6 @@ const AdminContratos = () => {
                       <Input
                         id="inquilino-nome"
                         value={formData.inquilino.nome}
-                        // Correção: Passar tipos genéricos corretos
                         onChange={(e) => handleNestedChange<'inquilino', 'nome'>(e, "inquilino", "nome")}
                         required
                       />
@@ -328,7 +345,6 @@ const AdminContratos = () => {
                         id="inquilino-email"
                         type="email"
                         value={formData.inquilino.email}
-                        // Correção: Passar tipos genéricos corretos
                         onChange={(e) => handleNestedChange<'inquilino', 'email'>(e, "inquilino", "email")}
                         required
                       />
@@ -340,7 +356,6 @@ const AdminContratos = () => {
                       <Input
                         id="inquilino-telefone"
                         value={formData.inquilino.telefone}
-                        // Correção: Passar tipos genéricos corretos
                         onChange={(e) => handleNestedChange<'inquilino', 'telefone'>(e, "inquilino", "telefone")}
                         required
                       />
@@ -350,7 +365,6 @@ const AdminContratos = () => {
                       <Input
                         id="inquilino-cpf"
                         value={formData.inquilino.cpf}
-                        // Correção: Passar tipos genéricos corretos
                         onChange={(e) => handleNestedChange<'inquilino', 'cpf'>(e, "inquilino", "cpf")}
                         required
                       />
@@ -360,7 +374,6 @@ const AdminContratos = () => {
                       <Input
                         id="inquilino-rg"
                         value={formData.inquilino.rg}
-                        // Correção: Passar tipos genéricos corretos
                         onChange={(e) => handleNestedChange<'inquilino', 'rg'>(e, "inquilino", "rg")}
                         required
                       />
@@ -373,17 +386,17 @@ const AdminContratos = () => {
                    <div className="space-y-1">
                     <Label htmlFor="imovel-id">Selecionar Imóvel</Label>
                     <Select 
-                      value={formData.imovel.id} 
+                      value={formData.imovel._id} 
                       onValueChange={(value) => {
                         const imovelSelecionado = imoveis.find(i => i._id === value);
                         if (imovelSelecionado) {
                           setFormData({
                             ...formData, 
                             imovel: {
-                              id: imovelSelecionado._id || "",
+                              _id: imovelSelecionado._id || "",
                               endereco: `Grupo ${imovelSelecionado.grupo} - Bloco ${imovelSelecionado.bloco}, Apto ${imovelSelecionado.apartamento}`,
-                              bairro: "Bairro Exemplo",
-                              cidade: "Cidade Exemplo"
+                              cidade: imovelSelecionado.cidade,
+                              titulo: imovelSelecionado.titulo || ""
                             }
                           });
                         }
@@ -401,7 +414,7 @@ const AdminContratos = () => {
                         ))}
                       </SelectContent>
                     </Select>
-                    {formData.imovel.id && <p className="text-xs text-gray-600 mt-1">{formData.imovel.endereco}</p>}
+                    {formData.imovel._id && <p className="text-xs text-gray-600 mt-1">{formData.imovel.endereco}</p>}
                   </div>
                 </fieldset>
 
@@ -567,9 +580,9 @@ const AdminContratos = () => {
                             <DollarSign className="h-4 w-4 text-green-600" />
                           </Button>
                            <Button variant="ghost" size="icon" title="Enviar Cobrança" onClick={() => handleEnviarCobranca(contrato)}>
-                            <Mail className="h-4 w-4 text-orange-600" />
+                            <Mail className="h-4 w-4 text-yellow-600" />
                           </Button>
-                          <Button variant="ghost" size="icon" title="Excluir" onClick={() => handleDelete(contrato._id || "")}>
+                          <Button variant="ghost" size="icon" title="Excluir Contrato" onClick={() => contrato._id && handleDelete(contrato._id)}>
                             <Trash2 className="h-4 w-4 text-red-600" />
                           </Button>
                         </div>

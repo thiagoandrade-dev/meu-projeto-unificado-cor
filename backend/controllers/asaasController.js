@@ -32,7 +32,7 @@ const criarCliente = async (req, res) => {
     // Vincula o ID do cliente Asaas ao Inquilino
     if (inquilinoId) {
       await Inquilino.findByIdAndUpdate(inquilinoId, {
-        asaasCustomerId: customer.id
+        asaasCustomerId: customer._id
       });
     }
 

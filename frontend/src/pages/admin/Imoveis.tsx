@@ -57,6 +57,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { api } from "@/services/apiService";
+import axios, { AxiosError } from "axios"; // Adicionado para correção
 
 // Definição do tipo de imóvel
 interface Imovel {
@@ -104,16 +105,25 @@ const Imoveis = () => {
   const carregarImoveis = async () => {
     try {
       setLoading(true);
-      const response = await apiClient.get('/imoveis');
+      const response = await api.get('/imoveis');
       setImoveis(response.data);
       setFilteredImoveis(response.data);
-    } catch (error: AxiosError) {
-      console.error("Erro ao carregar imóveis:", error);
-      toast({
-        title: "Erro ao carregar imóveis",
-        description: error.response?.data?.message || "Não foi possível carregar a lista de imóveis",
-        variant: "destructive",
-      });
+    } catch (error) { // Removido 'any'
+      if (axios.isAxiosError(error)) { // Correção da estrutura do catch
+        console.error("Erro ao carregar imóveis:", error);
+        toast({
+          title: "Erro ao carregar imóveis",
+          description: error.response?.data?.message || "Não foi possível carregar a lista de imóveis",
+          variant: "destructive",
+        });
+      } else { // Adicionado tratamento para erros não-Axios
+        console.error("Erro inesperado ao carregar imóveis:", error);
+        toast({
+          title: "Erro inesperado",
+          description: "Ocorreu um erro inesperado ao carregar os imóveis.",
+          variant: "destructive",
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -167,13 +177,22 @@ const Imoveis = () => {
         title: "Dados atualizados",
         description: "A lista de imóveis foi atualizada com sucesso",
       });
-    } catch (error: AxiosError) {
-      console.error("Erro ao atualizar dados:", error);
-      toast({
-        title: "Erro ao atualizar dados",
-        description: error.response?.data?.message || "Não foi possível atualizar a lista de imóveis",
-        variant: "destructive",
-      });
+    } catch (error) { // Removido 'any'
+      if (axios.isAxiosError(error)) { // Correção da estrutura do catch
+        console.error("Erro ao atualizar dados:", error);
+        toast({
+          title: "Erro ao atualizar dados",
+          description: error.response?.data?.message || "Não foi possível atualizar a lista de imóveis",
+          variant: "destructive",
+        });
+      } else { // Adicionado tratamento para erros não-Axios
+        console.error("Erro inesperado ao atualizar dados:", error);
+        toast({
+          title: "Erro inesperado",
+          description: "Ocorreu um erro inesperado ao atualizar os dados.",
+          variant: "destructive",
+        });
+      }
     } finally {
       setRefreshing(false);
     }
@@ -190,19 +209,28 @@ const Imoveis = () => {
     if (!imovelToDelete) return;
     
     try {
-      await apiClient.delete(`/imoveis/${imovelToDelete.id}`);
+      await api.delete(`/imoveis/${imovelToDelete.id}`);
       setImoveis(imoveis.filter(i => i.id !== imovelToDelete.id));
       toast({
         title: "Imóvel excluído",
         description: `O imóvel ${imovelToDelete.titulo} foi excluído com sucesso`,
       });
-    } catch (error: AxiosError) {
-      console.error("Erro ao excluir imóvel:", error);
-      toast({
-        title: "Erro ao excluir imóvel",
-        description: error.response?.data?.message || "Não foi possível excluir o imóvel",
-        variant: "destructive",
-      });
+    } catch (error) { // Removido 'any'
+      if (axios.isAxiosError(error)) { // Correção da estrutura do catch
+        console.error("Erro ao excluir imóvel:", error);
+        toast({
+          title: "Erro ao excluir imóvel",
+          description: error.response?.data?.message || "Não foi possível excluir o imóvel",
+          variant: "destructive",
+        });
+      } else { // Adicionado tratamento para erros não-Axios
+        console.error("Erro inesperado ao excluir imóvel:", error);
+        toast({
+          title: "Erro inesperado",
+          description: "Ocorreu um erro inesperado ao excluir o imóvel.",
+          variant: "destructive",
+        });
+      }
     } finally {
       setDeleteDialogOpen(false);
       setImovelToDelete(null);
@@ -786,4 +814,3 @@ const Imoveis = () => {
 };
 
 export default Imoveis;
-

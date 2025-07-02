@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 // ✅ CORREÇÃO: Importação corrigida para usar chaves e trazer todos os tipos necessários.
 import { juridicoService, DocumentoJuridico, ProcessoJuridico, NotificacaoJuridica } from "@/services/juridicoService";
+import axios, { AxiosError } from "axios"; // Adicionado para correção
 
 // Tipos explícitos para os valores dos selects, removendo o uso de 'any'
 type TipoDocumento = "Contrato" | "Adendo" | "Notificação" | "Procuração" | "Distrato" | "Vistoria" | "Outros";
@@ -67,12 +68,21 @@ const AdminJuridico = () => {
       // ✅ CORREÇÃO: Chamada correta para o sub-serviço.
       const data = await juridicoService.documentos.getAll();
       setDocumentos(data);
-    } catch (error: AxiosError) {
-      toast({
-        title: "Erro ao carregar documentos",
-        description: error.message || "Não foi possível carregar os documentos",
-        variant: "destructive",
-      });
+    } catch (error: unknown) { // Tipagem corrigida para unknown
+      if (axios.isAxiosError(error)) { 
+        toast({
+          title: "Erro ao carregar documentos",
+          description: error.message || "Não foi possível carregar os documentos",
+          variant: "destructive",
+        });
+      } else { 
+        console.error("Erro inesperado ao carregar documentos:", error);
+        toast({
+          title: "Erro inesperado",
+          description: "Ocorreu um erro inesperado ao carregar os documentos.",
+          variant: "destructive",
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -83,13 +93,22 @@ const AdminJuridico = () => {
       // ✅ CORREÇÃO: Chamada correta para o sub-serviço.
       const data = await juridicoService.processos.getAll();
       setProcessos(data);
-    } catch (error: AxiosError) {
-      console.error("Erro ao carregar processos:", error);
-      toast({
-        title: "Erro ao carregar processos",
-        description: error.message || "Não foi possível carregar os processos",
-        variant: "destructive",
-      });
+    } catch (error: unknown) { // Tipagem corrigida para unknown
+      if (axios.isAxiosError(error)) { 
+        console.error("Erro ao carregar processos:", error);
+        toast({
+          title: "Erro ao carregar processos",
+          description: error.message || "Não foi possível carregar os processos",
+          variant: "destructive",
+        });
+      } else { 
+        console.error("Erro inesperado ao carregar processos:", error);
+        toast({
+          title: "Erro inesperado",
+          description: "Ocorreu um erro inesperado ao carregar os processos.",
+          variant: "destructive",
+        });
+      }
     }
   }, [toast]);
 
@@ -154,12 +173,21 @@ const AdminJuridico = () => {
       setDialogOpen(false);
       resetDocForm();
       carregarDocumentos();
-    } catch (error: AxiosError) {
-      toast({
-        title: "Erro ao salvar documento",
-        description: error.message || "Não foi possível salvar o documento",
-        variant: "destructive",
-      });
+    } catch (error: unknown) { // Tipagem corrigida para unknown
+      if (axios.isAxiosError(error)) { 
+        toast({
+          title: "Erro ao salvar documento",
+          description: error.message || "Não foi possível salvar o documento",
+          variant: "destructive",
+        });
+      } else { 
+        console.error("Erro inesperado ao salvar documento:", error);
+        toast({
+          title: "Erro inesperado",
+          description: "Ocorreu um erro inesperado ao salvar o documento.",
+          variant: "destructive",
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -189,12 +217,21 @@ const AdminJuridico = () => {
       setProcessoDialogOpen(false);
       resetProcessoForm();
       carregarProcessos();
-    } catch (error: AxiosError) {
-      toast({
-        title: "Erro ao salvar processo",
-        description: error.message || "Não foi possível salvar o processo",
-        variant: "destructive",
-      });
+    } catch (error: unknown) { // Tipagem corrigida para unknown
+      if (axios.isAxiosError(error)) { 
+        toast({
+          title: "Erro ao salvar processo",
+          description: error.message || "Não foi possível salvar o processo",
+          variant: "destructive",
+        });
+      } else { 
+        console.error("Erro inesperado ao salvar processo:", error);
+        toast({
+          title: "Erro inesperado",
+          description: "Ocorreu um erro inesperado ao salvar o processo.",
+          variant: "destructive",
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -244,12 +281,21 @@ const AdminJuridico = () => {
           description: "Documento excluído com sucesso",
         });
         carregarDocumentos();
-      } catch (error: AxiosError) {
-        toast({
-          title: "Erro ao excluir documento",
-          description: error.message || "Não foi possível excluir o documento",
-          variant: "destructive",
-        });
+      } catch (error: unknown) { // Tipagem corrigida para unknown
+        if (axios.isAxiosError(error)) { 
+          toast({
+            title: "Erro ao excluir documento",
+            description: error.message || "Não foi possível excluir o documento",
+            variant: "destructive",
+          });
+        } else { 
+          console.error("Erro inesperado ao excluir documento:", error);
+          toast({
+            title: "Erro inesperado",
+            description: "Ocorreu um erro inesperado ao excluir o documento.",
+            variant: "destructive",
+          });
+        }
       }
     }
   };
@@ -264,12 +310,21 @@ const AdminJuridico = () => {
           description: "Processo excluído com sucesso",
         });
         carregarProcessos();
-      } catch (error: AxiosError) {
-        toast({
-          title: "Erro ao excluir processo",
-          description: error.message || "Não foi possível excluir o processo",
-          variant: "destructive",
-        });
+      } catch (error: unknown) { // Tipagem corrigida para unknown
+        if (axios.isAxiosError(error)) { 
+          toast({
+            title: "Erro ao excluir processo",
+            description: error.message || "Não foi possível excluir o processo",
+            variant: "destructive",
+          });
+        } else { 
+          console.error("Erro inesperado ao excluir processo:", error);
+          toast({
+            title: "Erro inesperado",
+            description: "Ocorreu um erro inesperado ao excluir o processo.",
+            variant: "destructive",
+          });
+        }
       }
     }
   };
@@ -312,12 +367,21 @@ const AdminJuridico = () => {
         title: "Notificação enviada",
         description: `Email enviado para ${email}`,
       });
-    } catch (error: AxiosError) {
-      toast({
-        title: "Erro ao enviar notificação",
-        description: error.message || "Não foi possível enviar a notificação",
-        variant: "destructive",
-      });
+    } catch (error: unknown) { // Tipagem corrigida para unknown
+      if (axios.isAxiosError(error)) { 
+        toast({
+          title: "Erro ao enviar notificação",
+          description: error.message || "Não foi possível enviar a notificação",
+          variant: "destructive",
+        });
+      } else { 
+        console.error("Erro inesperado ao enviar notificação:", error);
+        toast({
+          title: "Erro inesperado",
+          description: "Ocorreu um erro inesperado ao enviar a notificação.",
+          variant: "destructive",
+        });
+      }
     }
   };
 

@@ -1,5 +1,5 @@
 // frontend/src/pages/admin/Dashboard.tsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import AdminSidebar from "@/components/AdminSidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -32,8 +32,8 @@ const Dashboard = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [dashboardData, setDashboardData] = useState<DashboardCompleto | null>(null);
 
-  // Função para carregar os dados do dashboard
-  const carregarDadosDashboard = async () => {
+  // Função para carregar os dados do dashboard, com useCallback para evitar warning do ESLint
+  const carregarDadosDashboard = useCallback(async () => {
     try {
       setLoading(true);
       const data = await dashboardService.getDashboardCompleto();
@@ -48,12 +48,12 @@ const Dashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
-  // Carregar dados ao montar o componente
+  // Carregar dados ao montar o componente e quando carregarDadosDashboard mudar
   useEffect(() => {
     carregarDadosDashboard();
-  }, []);
+  }, [carregarDadosDashboard]);
 
   // Função para atualizar os dados do dashboard
   const atualizarDados = async () => {
@@ -308,7 +308,7 @@ const Dashboard = () => {
               </Card>
             </div>
           )}
-          
+
           {/* Gráficos principais */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
             {/* Gráfico de Receita vs Meta */}
@@ -607,4 +607,3 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
-

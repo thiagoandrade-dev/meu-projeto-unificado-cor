@@ -1,4 +1,5 @@
 // frontend/src/pages/admin/EditarImovel.tsx
+import axios, { AxiosError } from "axios"; // Adicionado para correção
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import AdminSidebar from "@/components/AdminSidebar";
@@ -93,7 +94,7 @@ const EditarImovel = () => {
     const carregarImovel = async () => {
       try {
         setLoadingImovel(true);
-        const response = await apiClient.get(`/imoveis/${id}`);
+        const response = await api.get(`/imoveis/${id}`);
         const imovel = response.data;
         
         // Preencher formulário com dados do imóvel
@@ -119,13 +120,22 @@ const EditarImovel = () => {
         
         setCaracteristicas(imovel.caracteristicas || []);
         setFotosExistentes(imovel.fotos || []);
-      } catch (error) {
-        console.error("Erro ao carregar imóvel:", error);
-        toast({
-          title: "Erro ao carregar imóvel",
-          description: "Não foi possível carregar os dados do imóvel",
-          variant: "destructive",
-        });
+      } catch (error) { // Removido 'any'
+        if (axios.isAxiosError(error)) { // Correção da estrutura do catch
+          console.error("Erro ao carregar imóvel:", error);
+          toast({
+            title: "Erro ao carregar imóvel",
+            description: "Não foi possível carregar os dados do imóvel",
+            variant: "destructive",
+          });
+        } else { // Adicionado tratamento para erros não-Axios
+          console.error("Erro inesperado ao carregar imóvel:", error);
+          toast({
+            title: "Erro inesperado",
+            description: "Ocorreu um erro inesperado ao carregar o imóvel.",
+            variant: "destructive",
+          });
+        }
         navigate('/admin/imoveis');
       } finally {
         setLoadingImovel(false);
@@ -306,7 +316,7 @@ const EditarImovel = () => {
       });
       
       // Enviar requisição
-      await apiClient.put(`/imoveis/${id}`, imovelData, {
+      await api.put(`/imoveis/${id}`, imovelData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
@@ -319,14 +329,33 @@ const EditarImovel = () => {
       
       // Redirecionar para a lista de imóveis
       navigate('/admin/imoveis');
-    } catch (error: AxiosError) {
-      console.error("Erro ao atualizar imóvel:", error);
-      
-      toast({
-        title: "Erro ao atualizar imóvel",
-        description: error.response?.data?.message || "Não foi possível atualizar o imóvel",
-        variant: "destructive",
-      });
+    } catch (error) { // Removido 'any'
+      if (axios.isAxiosError(error)) { // Correção da estrutura do catch
+        console.error("Erro ao atualizar imóvel:", error);
+        
+        // Verificar se há erros específicos retornados pela API
+        if (error.response?.data?.errors) {
+          const apiErrors: Record<string, string> = {};
+          (error.response.data.errors as Record<string, string>[]).forEach((err) => {
+            const field = Object.keys(err)[0];
+            apiErrors[field] = err[field];
+          });
+          setErrors(apiErrors);
+        } else {
+          toast({
+            title: "Erro ao atualizar imóvel",
+            description: error.response?.data?.message || "Não foi possível atualizar o imóvel",
+            variant: "destructive",
+          });
+        }
+      } else { // Adicionado tratamento para erros não-Axios
+        console.error("Erro inesperado ao atualizar imóvel:", error);
+        toast({
+          title: "Erro inesperado",
+          description: "Ocorreu um erro inesperado ao atualizar o imóvel.",
+          variant: "destructive",
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -725,7 +754,7 @@ const EditarImovel = () => {
                   />
                   {errors.descricao && (
                     <p className="text-sm text-danger">{errors.descricao}</p>
-                  )}
+                    )}
                 </div>
               </CardContent>
             </Card>
@@ -858,4 +887,3 @@ const EditarImovel = () => {
 };
 
 export default EditarImovel;
-

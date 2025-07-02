@@ -27,13 +27,39 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { api } from "@/services/apiService";
+import axios, { AxiosError } from "axios";
+
+// Definindo tipos literais para o formulário
+type ImovelType = "Apartamento" | "Casa" | "Comercial" | "Terreno";
+type OperacaoType = "Venda" | "Aluguel";
+type StatusImovelType = "Disponível" | "Ocupado" | "Reservado" | "Manutenção";
 
 const NovoImovel = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
+  
+  // Tipagem inicial do formData mais precisa
+  const [formData, setFormData] = useState<{
+    titulo: string;
+    tipo: ImovelType | '';
+    operacao: OperacaoType | '';
+    preco: string;
+    precoCondominio: string;
+    endereco: string;
+    bairro: string;
+    cidade: string;
+    estado: string;
+    areaUtil: string;
+    quartos: string;
+    suites: string;
+    banheiros: string;
+    vagas: string;
+    descricao: string;
+    destaque: boolean;
+    status: StatusImovelType;
+  }>({
     titulo: "",
     tipo: "",
     operacao: "",
@@ -50,7 +76,7 @@ const NovoImovel = () => {
     vagas: "",
     descricao: "",
     destaque: false,
-    status: "Disponível"
+    status: "Disponível" // Default já é um literal válido
   });
   const [caracteristicas, setCaracteristicas] = useState<string[]>([]);
   const [novaCaracteristica, setNovaCaracteristica] = useState("");
@@ -74,8 +100,18 @@ const NovoImovel = () => {
   };
 
   // Atualizar campo select do formulário
-  const handleSelectChange = (name: string, value: string) => {
-    setFormData(prev => ({ ...prev, [name]: value }));
+  const handleSelectChange = (name: keyof typeof formData, value: string) => {
+    setFormData(prev => {
+      // Usar casting condicional para tipos específicos ou manter como string se não for um tipo literal
+      if (name === 'tipo') {
+        return { ...prev, [name]: value as ImovelType | '' };
+      } else if (name === 'operacao') {
+        return { ...prev, [name]: value as OperacaoType | '' };
+      } else if (name === 'status') {
+        return { ...prev, [name]: value as StatusImovelType };
+      }
+      return { ...prev, [name]: value }; // Para outros campos que são apenas string
+    });
     
     // Limpar erro do campo quando o usuário seleciona
     if (errors[name]) {
@@ -146,6 +182,7 @@ const NovoImovel = () => {
     ];
     
     requiredFields.forEach(field => {
+      // Acessar o valor do formData usando o 'name' do campo
       if (!formData[field.name as keyof typeof formData]) {
         newErrors[field.name] = `${field.label} é obrigatório`;
       }
@@ -199,7 +236,8 @@ const NovoImovel = () => {
       
       // Adicionar campos de texto
       Object.entries(formData).forEach(([key, value]) => {
-        if (value !== "") {
+        // Garantir que os valores de tipo, operacao, status sejam strings válidas
+        if (value !== null && value !== undefined && value !== "") {
           imovelData.append(key, value.toString());
         }
       });
@@ -215,7 +253,7 @@ const NovoImovel = () => {
       });
       
       // Enviar requisição
-      await apiClient.post('/imoveis', imovelData, {
+      await api.post('/imoveis', imovelData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
@@ -228,14 +266,33 @@ const NovoImovel = () => {
       
       // Redirecionar para a lista de imóveis
       navigate('/admin/imoveis');
-    } catch (error: AxiosError) {
-      console.error("Erro ao criar imóvel:", error);
-      
-      toast({
-        title: "Erro ao criar imóvel",
-        description: error.response?.data?.message || "Não foi possível criar o imóvel",
-        variant: "destructive",
-      });
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) { 
+        console.error("Erro ao criar imóvel:", error);
+        
+        // Verificar se há erros específicos retornados pela API
+        if (error.response?.data?.errors) {
+          const apiErrors: Record<string, string> = {};
+          (error.response.data.errors as Record<string, string>[]).forEach((err: Record<string,string>) => {
+            const field = Object.keys(err)[0];
+            apiErrors[field] = err[field];
+          });
+          setErrors(apiErrors);
+        } else {
+          toast({
+            title: "Erro ao criar imóvel",
+            description: error.response?.data?.message || "Não foi possível criar o imóvel",
+            variant: "destructive",
+          });
+        }
+      } else { 
+        console.error("Erro inesperado ao criar imóvel:", error);
+        toast({
+          title: "Erro inesperado",
+          description: "Ocorreu um erro inesperado ao criar o imóvel.",
+          variant: "destructive",
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -634,29 +691,35 @@ const NovoImovel = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="flex items-center justify-center w-full">
-                    <label
-                      htmlFor="fotos"
-                      className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50"
-                    >
-                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                        <Upload size={24} className="mb-2 text-muted" />
-                        <p className="mb-2 text-sm text-muted">
-                          <span className="font-semibold">Clique para fazer upload</span> ou arraste e solte
-                        </p>
-                        <p className="text-xs text-muted">
-                          PNG, JPG ou JPEG (máx. 5MB por arquivo)
-                        </p>
-                      </div>
-                      <input
-                        id="fotos"
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        onChange={handleFotosChange}
-                        className="hidden"
-                      />
-                    </label>
+                  {/* Removido o bloco de fotos existentes e suas referências, pois este é um NOVO imóvel */}
+                  
+                  {/* Upload de novas fotos */}
+                  <div>
+                    <Label className="mb-2 block">Adicionar fotos <span className="text-danger">*</span></Label> {/* Adicionado asterisco de obrigatório */}
+                    <div className="flex items-center justify-center w-full">
+                      <label
+                        htmlFor="fotos"
+                        className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50"
+                      >
+                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                          <Upload size={24} className="mb-2 text-muted" />
+                          <p className="mb-2 text-sm text-muted">
+                            <span className="font-semibold">Clique para fazer upload</span> ou arraste e solte
+                          </p>
+                          <p className="text-xs text-muted">
+                            PNG, JPG ou JPEG (máx. 5MB por arquivo)
+                          </p>
+                        </div>
+                        <input
+                          id="fotos"
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          onChange={handleFotosChange}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
                   </div>
                   
                   {errors.fotos && (
@@ -669,7 +732,7 @@ const NovoImovel = () => {
                         <div key={index} className="relative group">
                           <img
                             src={url}
-                            alt={`Foto ${index + 1}`}
+                            alt={`Nova foto ${index + 1}`}
                             className="w-full h-32 object-cover rounded-md"
                           />
                           <button
@@ -722,4 +785,3 @@ const NovoImovel = () => {
 };
 
 export default NovoImovel;
-

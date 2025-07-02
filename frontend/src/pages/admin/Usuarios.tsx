@@ -1,5 +1,5 @@
 // frontend/src/pages/admin/Usuarios.tsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import AdminSidebar from "@/components/AdminSidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -53,6 +53,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { api } from "@/services/apiService";
+import axios, { AxiosError } from "axios";
 
 // Definição do tipo de usuário
 interface Usuario {
@@ -85,33 +86,42 @@ const Usuarios = () => {
     nome: "",
     email: "",
     telefone: "",
-    perfil: "",
-    status: ""
+    perfil: "" as Usuario['perfil'] | "", // Tipagem mais específica
+    status: "" as Usuario['status'] | "" // Tipagem mais específica
   });
 
-  // Carregar usuários
-  const carregarUsuarios = async () => {
+  // Carregar usuários (envolvido em useCallback)
+  const carregarUsuarios = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await apiClient.get('/usuarios');
+      const response = await api.get('/usuarios');
       setUsuarios(response.data);
       setFilteredUsuarios(response.data);
-    } catch (error: AxiosError) {
-      console.error("Erro ao carregar usuários:", error);
-      toast({
-        title: "Erro ao carregar usuários",
-        description: error.response?.data?.message || "Não foi possível carregar a lista de usuários",
-        variant: "destructive",
-      });
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        console.error("Erro ao carregar usuários:", error);
+        toast({
+          title: "Erro ao carregar usuários",
+          description: error.response?.data?.message || "Não foi possível carregar a lista de usuários",
+          variant: "destructive",
+        });
+      } else {
+        console.error("Erro inesperado ao carregar usuários:", error);
+        toast({
+          title: "Erro inesperado",
+          description: "Ocorreu um erro inesperado ao carregar os usuários.",
+          variant: "destructive",
+        });
+      }
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]); // Adicionado toast como dependência
 
   // Carregar usuários ao montar o componente
   useEffect(() => {
     carregarUsuarios();
-  }, []);
+  }, [carregarUsuarios]); // Adicionado carregarUsuarios como dependência
 
   // Filtrar usuários quando os filtros ou o termo de busca mudam
   useEffect(() => {
@@ -150,13 +160,22 @@ const Usuarios = () => {
         title: "Dados atualizados",
         description: "A lista de usuários foi atualizada com sucesso",
       });
-    } catch (error: AxiosError) {
-      console.error("Erro ao atualizar dados:", error);
-      toast({
-        title: "Erro ao atualizar dados",
-        description: error.response?.data?.message || "Não foi possível atualizar a lista de usuários",
-        variant: "destructive",
-      });
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        console.error("Erro ao atualizar dados:", error);
+        toast({
+          title: "Erro ao atualizar dados",
+          description: error.response?.data?.message || "Não foi possível atualizar a lista de usuários",
+          variant: "destructive",
+        });
+      } else {
+        console.error("Erro inesperado ao atualizar dados:", error);
+        toast({
+          title: "Erro inesperado",
+          description: "Ocorreu um erro inesperado ao atualizar os dados.",
+          variant: "destructive",
+        });
+      }
     } finally {
       setRefreshing(false);
     }
@@ -173,19 +192,28 @@ const Usuarios = () => {
     if (!usuarioToDelete) return;
     
     try {
-      await apiClient.delete(`/usuarios/${usuarioToDelete.id}`);
+      await api.delete(`/usuarios/${usuarioToDelete.id}`);
       setUsuarios(usuarios.filter(u => u.id !== usuarioToDelete.id));
       toast({
         title: "Usuário excluído",
         description: `O usuário ${usuarioToDelete.nome} foi excluído com sucesso`,
       });
-    } catch (error: AxiosError) {
-      console.error("Erro ao excluir usuário:", error);
-      toast({
-        title: "Erro ao excluir usuário",
-        description: error.response?.data?.message || "Não foi possível excluir o usuário",
-        variant: "destructive",
-      });
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        console.error("Erro ao excluir usuário:", error);
+        toast({
+          title: "Erro ao excluir usuário",
+          description: error.response?.data?.message || "Não foi possível excluir o usuário",
+          variant: "destructive",
+        });
+      } else {
+        console.error("Erro inesperado ao excluir usuário:", error);
+        toast({
+          title: "Erro inesperado",
+          description: "Ocorreu um erro inesperado ao excluir o usuário.",
+          variant: "destructive",
+        });
+      }
     } finally {
       setDeleteDialogOpen(false);
       setUsuarioToDelete(null);
@@ -208,12 +236,20 @@ const Usuarios = () => {
   // Atualizar campo do formulário
   const handleFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData(prev => ({ ...prev, [name]: value })); // Removido 'as any', pois nome, email, telefone são strings
   };
 
   // Atualizar campo select do formulário
   const handleSelectChange = (name: string, value: string) => {
-    setFormData(prev => ({ ...prev, [name]: value }));
+    if (name === "perfil") {
+        setFormData(prev => ({ ...prev, [name]: value as Usuario['perfil'] }));
+    } else if (name === "status") {
+        setFormData(prev => ({ ...prev, [name]: value as Usuario['status'] }));
+    } else {
+        // Isso não deve acontecer com os campos que estamos tratando.
+        // Se houver outros selects, eles precisariam de tratamento específico.
+        setFormData(prev => ({ ...prev, [name]: value }));
+    }
   };
 
   // Confirmar edição
@@ -222,12 +258,19 @@ const Usuarios = () => {
     if (!usuarioToEdit) return;
     
     try {
-      await apiClient.put(`/usuarios/${usuarioToEdit.id}`, formData);
+      await api.put(`/usuarios/${usuarioToEdit.id}`, formData);
       
-      // Atualizar a lista de usuários
+      // Atualizar a lista de usuários, garantindo a tipagem correta
       setUsuarios(usuarios.map(u => 
         u.id === usuarioToEdit.id 
-          ? { ...u, ...formData } 
+          ? { 
+              ...u, 
+              nome: formData.nome,
+              email: formData.email,
+              telefone: formData.telefone,
+              perfil: formData.perfil, 
+              status: formData.status 
+            } as Usuario // Casting final para garantir que o objeto resultante é um Usuario válido
           : u
       ));
       
@@ -238,13 +281,22 @@ const Usuarios = () => {
       
       setEditDialogOpen(false);
       setUsuarioToEdit(null);
-    } catch (error: AxiosError) {
-      console.error("Erro ao atualizar usuário:", error);
-      toast({
-        title: "Erro ao atualizar usuário",
-        description: error.response?.data?.message || "Não foi possível atualizar os dados do usuário",
-        variant: "destructive",
-      });
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        console.error("Erro ao atualizar usuário:", error);
+        toast({
+          title: "Erro ao atualizar usuário",
+          description: error.response?.data?.message || "Não foi possível atualizar os dados do usuário",
+          variant: "destructive",
+        });
+      } else {
+        console.error("Erro inesperado ao atualizar usuário:", error);
+        toast({
+          title: "Erro inesperado",
+          description: "Ocorreu um erro inesperado ao atualizar os dados.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -688,4 +740,3 @@ const Usuarios = () => {
 };
 
 export default Usuarios;
-
