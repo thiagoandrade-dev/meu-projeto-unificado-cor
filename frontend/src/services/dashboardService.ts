@@ -67,10 +67,29 @@ const dashboardService = {
    */
   async getDashboardCompleto(): Promise<DashboardCompleto> {
     try {
-      const response = await api.get<DashboardCompleto>('/dashboard');
-      return response.data;
+      const [estatisticas, receitaMensal, ocupacao, tipoImovel, categoria, alertas, vencimentos] = await Promise.all([
+        this.getEstatisticas(),
+        this.getReceitaMensal(),
+        this.getOcupacao(),
+        this.getReceitaPorTipoImovel(),
+        this.getReceitaPorCategoria(),
+        this.getAlertas(),
+        this.getProximosVencimentos()
+      ]);
+
+      return {
+        estatisticas,
+        graficos: {
+          receitaData: receitaMensal,
+          ocupacaoData: ocupacao,
+          tipoImovelData: tipoImovel,
+          receitaPorCategoria: categoria
+        },
+        alertas,
+        proximosVencimentos: vencimentos
+      };
     } catch (error) {
-      console.error('Erro ao obter dados do dashboard:', error);
+      console.error('Erro ao carregar dados completos do dashboard:', error);
       throw error;
     }
   },
@@ -80,7 +99,7 @@ const dashboardService = {
    */
   async getEstatisticas(): Promise<DashboardEstatisticas> {
     try {
-      const response = await apiClient.get<DashboardEstatisticas>('/dashboard/estatisticas');
+      const response = await api.get<DashboardEstatisticas>('/dashboard/estatisticas');
       return response.data;
     } catch (error) {
       console.error('Erro ao obter estatísticas do dashboard:', error);
@@ -93,7 +112,7 @@ const dashboardService = {
    */
   async getReceitaMensal(): Promise<ReceitaMensalItem[]> {
     try {
-      const response = await apiClient.get<ReceitaMensalItem[]>('/dashboard/receita-mensal');
+      const response = await api.get<ReceitaMensalItem[]>('/dashboard/receita-mensal');
       return response.data;
     } catch (error) {
       console.error('Erro ao obter dados de receita mensal:', error);
@@ -106,7 +125,7 @@ const dashboardService = {
    */
   async getOcupacao(): Promise<OcupacaoItem[]> {
     try {
-      const response = await apiClient.get<OcupacaoItem[]>('/dashboard/ocupacao');
+      const response = await api.get<OcupacaoItem[]>('/dashboard/ocupacao');
       return response.data;
     } catch (error) {
       console.error('Erro ao obter dados de ocupação:', error);
@@ -119,7 +138,7 @@ const dashboardService = {
    */
   async getReceitaPorTipoImovel(): Promise<TipoImovelItem[]> {
     try {
-      const response = await apiClient.get<TipoImovelItem[]>('/dashboard/receita-por-tipo');
+      const response = await api.get<TipoImovelItem[]>('/dashboard/receita-por-tipo');
       return response.data;
     } catch (error) {
       console.error('Erro ao obter dados de receita por tipo de imóvel:', error);
@@ -132,7 +151,7 @@ const dashboardService = {
    */
   async getReceitaPorCategoria(): Promise<ReceitaCategoriaItem[]> {
     try {
-      const response = await apiClient.get<ReceitaCategoriaItem[]>('/dashboard/receita-por-categoria');
+      const response = await api.get<ReceitaCategoriaItem[]>('/dashboard/receita-por-categoria');
       return response.data;
     } catch (error) {
       console.error('Erro ao obter dados de receita por categoria:', error);
@@ -145,7 +164,7 @@ const dashboardService = {
    */
   async getAlertas(): Promise<Alerta[]> {
     try {
-      const response = await apiClient.get<Alerta[]>('/dashboard/alertas');
+      const response = await api.get<Alerta[]>('/dashboard/alertas');
       return response.data;
     } catch (error) {
       console.error('Erro ao obter alertas:', error);
@@ -158,7 +177,7 @@ const dashboardService = {
    */
   async getProximosVencimentos(): Promise<ProximoVencimento[]> {
     try {
-      const response = await apiClient.get<ProximoVencimento[]>('/dashboard/proximos-vencimentos');
+      const response = await api.get<ProximoVencimento[]>('/dashboard/proximos-vencimentos');
       return response.data;
     } catch (error) {
       console.error('Erro ao obter próximos vencimentos:', error);

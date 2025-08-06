@@ -12,7 +12,17 @@ const listarUsuarios = async (req, res) => {
     }
 
     const usuarios = await Inquilino.find().select("-senha");
-    res.json(usuarios);
+    const usuariosFormatados = usuarios.map(usuario => ({
+      id: usuario._id,
+      nome: usuario.nome,
+      email: usuario.email,
+      telefone: usuario.telefone || "",
+      perfil: usuario.perfil,
+      status: usuario.status,
+      dataCadastro: usuario.dataCadastro || usuario.createdAt,
+      ultimoAcesso: usuario.ultimoAcesso
+    }));
+    res.json(usuariosFormatados);
   } catch (error) {
     console.error("Erro ao listar usuários:", error.message);
     res.status(500).json({ erro: `Erro interno no servidor: ${error.message}` });
@@ -32,7 +42,18 @@ const buscarUsuarioPorId = async (req, res) => {
       return res.status(404).json({ erro: "Usuário não encontrado." });
     }
 
-    res.json(usuario);
+    const usuarioFormatado = {
+      id: usuario._id,
+      nome: usuario.nome,
+      email: usuario.email,
+      telefone: usuario.telefone || "",
+      perfil: usuario.perfil,
+      status: usuario.status,
+      dataCadastro: usuario.dataCadastro || usuario.createdAt,
+      ultimoAcesso: usuario.ultimoAcesso
+    };
+
+    res.json(usuarioFormatado);
   } catch (error) {
     console.error("Erro ao buscar usuário:", error.message);
     res.status(500).json({ erro: `Erro interno no servidor: ${error.message}` });
@@ -52,7 +73,7 @@ const criarUsuario = async (req, res) => {
       return res.status(400).json({ erros: errors.array().map(err => ({ [err.path]: err.msg })) });
     }
 
-    const { nome, email, senha, perfil = "inquilino", status = "Ativo" } = req.body;
+    const { nome, email, senha, perfil = "inquilino", status = "ativo" } = req.body;
 
     if (await Inquilino.exists({ email })) {
       return res.status(400).json({ erro: "Email já cadastrado." });
@@ -122,9 +143,20 @@ const atualizarUsuario = async (req, res) => {
       return res.status(404).json({ erro: "Usuário não encontrado." });
     }
 
+    const usuarioFormatado = {
+      id: usuarioAtualizado._id,
+      nome: usuarioAtualizado.nome,
+      email: usuarioAtualizado.email,
+      telefone: usuarioAtualizado.telefone || "",
+      perfil: usuarioAtualizado.perfil,
+      status: usuarioAtualizado.status,
+      dataCadastro: usuarioAtualizado.dataCadastro || usuarioAtualizado.createdAt,
+      ultimoAcesso: usuarioAtualizado.ultimoAcesso
+    };
+
     res.json({
       mensagem: "Usuário atualizado com sucesso!",
-      usuario: usuarioAtualizado
+      usuario: usuarioFormatado
     });
   } catch (error) {
     console.error("Erro ao atualizar usuário:", error.message);
@@ -141,8 +173,8 @@ const atualizarStatusUsuario = async (req, res) => {
     }
 
     const { status } = req.body;
-    if (!status || !["Ativo", "Inativo"].includes(status)) {
-      return res.status(400).json({ erro: "Status inválido. Use 'Ativo' ou 'Inativo'." });
+    if (!status || !["ativo", "inativo", "pendente"].includes(status)) {
+      return res.status(400).json({ erro: "Status inválido. Use 'ativo', 'inativo' ou 'pendente'." });
     }
 
     const usuarioAtualizado = await Inquilino.findByIdAndUpdate(
@@ -155,9 +187,20 @@ const atualizarStatusUsuario = async (req, res) => {
       return res.status(404).json({ erro: "Usuário não encontrado." });
     }
 
+    const usuarioFormatado = {
+      id: usuarioAtualizado._id,
+      nome: usuarioAtualizado.nome,
+      email: usuarioAtualizado.email,
+      telefone: usuarioAtualizado.telefone || "",
+      perfil: usuarioAtualizado.perfil,
+      status: usuarioAtualizado.status,
+      dataCadastro: usuarioAtualizado.dataCadastro || usuarioAtualizado.createdAt,
+      ultimoAcesso: usuarioAtualizado.ultimoAcesso
+    };
+
     res.json({
       mensagem: "Status do usuário atualizado com sucesso!",
-      usuario: usuarioAtualizado
+      usuario: usuarioFormatado
     });
   } catch (erro) {
     console.error("Erro ao atualizar status do usuário:", erro);

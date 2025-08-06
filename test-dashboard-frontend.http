@@ -1,0 +1,33 @@
+### Teste de Login
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "thiago@email.com",
+  "senha": "admin123"
+}
+
+### Teste do Dashboard (usar o token do login acima)
+GET http://localhost:5000/api/dashboard
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+### Teste das Estatísticas
+GET http://localhost:5000/api/dashboard/estatisticas
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+### Teste da Receita Mensal
+GET http://localhost:5000/api/dashboard/receita-mensal
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+### Teste da Ocupação
+GET http://localhost:5000/api/dashboard/ocupacao
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+### Teste dos Alertas
+GET http://localhost:5000/api/dashboard/alertas
+Authorization: Bearer {{token}}
+Content-Type: application/json

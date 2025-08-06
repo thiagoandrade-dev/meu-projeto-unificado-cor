@@ -24,13 +24,13 @@ const InquilinoSchema = new mongoose.Schema({
   perfil: {
     type: String,
     required: [true, "O perfil do usuário é obrigatório."],
-    enum: ["admin", "inquilino"],
+    enum: ["admin", "inquilino", "proprietario", "corretor"],
     default: "inquilino"
   },
   status: {
     type: String,
-    enum: ["Ativo", "Inativo"],
-    default: "Ativo"
+    enum: ["ativo", "inativo", "pendente"],
+    default: "ativo"
   },
   telefone: {
     type: String,
@@ -47,6 +47,13 @@ const InquilinoSchema = new mongoose.Schema({
     type: String
   },
   resetPasswordExpires: {
+    type: Date
+  },
+  dataCadastro: {
+    type: Date,
+    default: Date.now
+  },
+  ultimoAcesso: {
     type: Date
   }
 }, {

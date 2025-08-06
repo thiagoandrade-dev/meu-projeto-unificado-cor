@@ -17,6 +17,7 @@ import Contato from "@/pages/Contato";
 import Imoveis from "@/pages/Imoveis";
 import ImovelDetalhe from "@/pages/ImovelDetalhe";
 import Login from "@/pages/Login";
+import TestLogin from "@/pages/TestLogin";
 import NotFound from "./pages/NotFound";
 
 // Páginas de Admin
@@ -28,6 +29,9 @@ import AdminContratos from "@/pages/admin/Contratos";
 import AdminUsuarios from "@/pages/admin/Usuarios";
 import AdminNovoUsuario from "@/pages/admin/NovoUsuario";
 import AdminJuridico from "@/pages/admin/Juridico";
+import AdminNotificacoes from "@/pages/admin/Notificacoes";
+import AdminRelatorios from "@/pages/admin/Relatorios";
+import AdminConfiguracoes from "@/pages/admin/Configuracoes";
 
 // Páginas do Locatário
 import AreaLocatario from "./pages/locatario/AreaLocatario";
@@ -40,7 +44,7 @@ const ProtectedRoute = ({ children, requiredRole }: { children: JSX.Element, req
         return <div className="flex h-screen items-center justify-center">Carregando...</div>;
     }
 
-    if (!user || user.tipo !== requiredRole) {
+    if (!user || user.perfil !== requiredRole) {
         return <Navigate to="/login" replace />;
     }
 
@@ -60,7 +64,7 @@ function App() {
             id: parsedUser.id || parsedUser._id,
             nome: parsedUser.nome,
             email: parsedUser.email,
-            tipo: parsedUser.perfil
+            perfil: parsedUser.perfil
         });
       } catch (error) {
         console.error("Erro ao ler dados do usuário do localStorage", error);
@@ -82,9 +86,10 @@ function App() {
               <Route path="/" element={<Index />} />
               <Route path="/sobre" element={<Sobre />} />
               <Route path="/imoveis" element={<Imoveis />} />
-              <Route path="/imovel/:id" element={<ImovelDetalhe />} />
+              <Route path="/imoveis/:id" element={<ImovelDetalhe />} />
               <Route path="/contato" element={<Contato />} />
               <Route path="/login" element={<Login />} />
+              <Route path="/test-login" element={<TestLogin />} />
 
               {/* Rotas Protegidas do Admin */}
               <Route path="/admin" element={<ProtectedRoute requiredRole="admin"><AdminDashboard /></ProtectedRoute>} />
@@ -95,6 +100,9 @@ function App() {
               <Route path="/admin/usuarios" element={<ProtectedRoute requiredRole="admin"><AdminUsuarios /></ProtectedRoute>} />
               <Route path="/admin/usuarios/novo" element={<ProtectedRoute requiredRole="admin"><AdminNovoUsuario /></ProtectedRoute>} />
               <Route path="/admin/juridico" element={<ProtectedRoute requiredRole="admin"><AdminJuridico /></ProtectedRoute>} />
+              <Route path="/admin/notificacoes" element={<ProtectedRoute requiredRole="admin"><AdminNotificacoes /></ProtectedRoute>} />
+              <Route path="/admin/relatorios" element={<ProtectedRoute requiredRole="admin"><AdminRelatorios /></ProtectedRoute>} />
+              <Route path="/admin/configuracoes" element={<ProtectedRoute requiredRole="admin"><AdminConfiguracoes /></ProtectedRoute>} />
 
               {/* Rota Protegida do Locatário/Inquilino */}
               <Route path="/locatario" element={<ProtectedRoute requiredRole="inquilino"><AreaLocatario /></ProtectedRoute>} />

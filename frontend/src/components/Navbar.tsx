@@ -1,15 +1,17 @@
 
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useContext, useState, useEffect } from "react";
 import { AuthContext } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Sun, Moon } from "lucide-react";
+import { Menu, X, Sun, Moon, LogOut } from "lucide-react";
 import Logo from "./Logo";
+import { userService } from "@/services/userService";
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const { user } = useContext(AuthContext);
+  const { user, setUser } = useContext(AuthContext);
+  const navigate = useNavigate();
   
   // Efeito para aplicar o tema escuro
   useEffect(() => {
@@ -28,6 +30,12 @@ const Navbar = () => {
 
   const toggleDarkMode = () => {
     setIsDarkMode(!isDarkMode);
+  };
+
+  const handleLogout = () => {
+    userService.logout();
+    setUser(null);
+    navigate("/");
   };
 
   return (
@@ -81,6 +89,14 @@ const Navbar = () => {
                     </Button>
                   </Link>
                 )}
+                <Button 
+                  variant="outline" 
+                  className="border-red-500 text-red-500 hover:bg-red-50 flex items-center gap-2"
+                  onClick={handleLogout}
+                >
+                  <LogOut size={16} />
+                  Sair
+                </Button>
               </>
             ) : (
               <>
@@ -166,6 +182,17 @@ const Navbar = () => {
                         </Button>
                       </Link>
                     )}
+                    <Button 
+                      variant="outline" 
+                      className="border-red-500 text-red-500 hover:bg-red-50 w-full flex items-center justify-center gap-2"
+                      onClick={() => {
+                        handleLogout();
+                        setIsMenuOpen(false);
+                      }}
+                    >
+                      <LogOut size={16} />
+                      Sair
+                    </Button>
                   </>
                 ) : (
                   <>

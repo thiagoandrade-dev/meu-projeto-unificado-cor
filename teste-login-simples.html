@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Login - Imobiliária Firenze</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 600px; margin: 0 auto; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; }
+        input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+        button { background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .result { margin-top: 20px; padding: 15px; border-radius: 4px; }
+        .success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .error { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+        .dashboard-data { background: #f8f9fa; padding: 15px; border-radius: 4px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Teste de Login - Imobiliária Firenze</h1>
+        
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="email">Email:</label>
+                <input type="email" id="email" value="admin@teste.com" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="senha">Senha:</label>
+                <input type="password" id="senha" value="123456" required>
+            </div>
+            
+            <button type="submit">Fazer Login</button>
+        </form>
+        
+        <div id="result"></div>
+        
+        <button id="testDashboard" style="display: none; margin-top: 10px;">Testar Dashboard</button>
+    </div>
+
+    <script>
+        let authToken = null;
+        
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const senha = document.getElementById('senha').value;
+            const resultDiv = document.getElementById('result');
+            
+            try {
+                console.log('Tentando fazer login...');
+                
+                const response = await fetch('http://localhost:5000/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email, senha })
+                });
+                
+                console.log('Resposta do servidor:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error(`Erro HTTP: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                console.log('Dados recebidos:', data);
+                
+                authToken = data.token;
+                
+                resultDiv.innerHTML = `
+                    <div class="result success">
+                        <h3>✅ Login realizado com sucesso!</h3>
+                        <p><strong>Usuário:</strong> ${data.usuario.nome}</p>
+                        <p><strong>Email:</strong> ${data.usuario.email}</p>
+                        <p><strong>Perfil:</strong> ${data.usuario.perfil}</p>
+                        <p><strong>Token:</strong> ${data.token.substring(0, 20)}...</p>
+                    </div>
+                `;
+                
+                document.getElementById('testDashboard').style.display = 'block';
+                
+            } catch (error) {
+                console.error('Erro no login:', error);
+                resultDiv.innerHTML = `
+                    <div class="result error">
+                        <h3>❌ Erro no login</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        });
+        
+        document.getElementById('testDashboard').addEventListener('click', async () => {
+            const resultDiv = document.getElementById('result');
+            
+            if (!authToken) {
+                alert('Faça login primeiro!');
+                return;
+            }
+            
+            try {
+                console.log('Testando dashboard...');
+                
+                const response = await fetch('http://localhost:5000/api/dashboard/estatisticas', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                console.log('Resposta do dashboard:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error(`Erro HTTP: ${response.status}`);
+                }
+                
+                const dashboardData = await response.json();
+                console.log('Dados do dashboard:', dashboardData);
+                
+                resultDiv.innerHTML += `
+                    <div class="dashboard-data">
+                        <h3>📊 Dados do Dashboard</h3>
+                        <p><strong>Total de Imóveis:</strong> ${dashboardData.totalImoveis}</p>
+                        <p><strong>Contratos Ativos:</strong> ${dashboardData.contratosAtivos}</p>
+                        <p><strong>Taxa de Ocupação:</strong> ${dashboardData.taxaOcupacao}%</p>
+                        <p><strong>Receita Mensal:</strong> R$ ${dashboardData.receitaMensal.toLocaleString()}</p>
+                        <p><strong>Taxa de Inadimplência:</strong> ${dashboardData.taxaInadimplencia}%</p>
+                    </div>
+                `;
+                
+            } catch (error) {
+                console.error('Erro no dashboard:', error);
+                resultDiv.innerHTML += `
+                    <div class="result error">
+                        <h3>❌ Erro ao acessar dashboard</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        });
+    </script>
+</body>
+</html>

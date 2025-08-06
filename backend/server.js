@@ -21,6 +21,8 @@ const notificacaoRoutes = require("./routes/notificacao");
 const asaasRoutes = require('./routes/asaasRoutes');
 const usuarioRoutes = require('./routes/usuario');
 const esqueceuSenhaRoutes = require('./routes/esqueceuSenha');
+const relatorioRoutes = require('./routes/relatorio');
+const configRoutes = require('./routes/configRoutes');
 const app = express();
 
 // =============================================
@@ -47,6 +49,8 @@ const whitelist = [
   "http://localhost:3000",
   "http://127.0.0.1:5500",
   "http://localhost:5000",
+  "http://localhost:8080",
+  "http://localhost:8081",
   "https://www.imobiliariafirenze.com.br",
   "https://imobiliariafirenze.com.br",
   "https://imobiliaria-firenze-backend.onrender.com"
@@ -54,16 +58,34 @@ const whitelist = [
 
 const corsOptions = {
   origin: function (origin, callback) {
-    if (!origin || whitelist.includes(origin)) {
+    // Permitir requisições sem origin (arquivos locais, Postman, etc.)
+    if (!origin) {
+      console.log("🌐 CORS permitido para requisição sem origin (arquivo local)");
       callback(null, true);
-    } else {
-      console.warn("🌐 CORS bloqueado para origem:", origin);
-      callback(new Error("Não permitido por CORS"));
+      return;
     }
+    
+    // Permitir origins da whitelist
+    if (whitelist.includes(origin)) {
+      console.log("🌐 CORS permitido para origem:", origin);
+      callback(null, true);
+      return;
+    }
+    
+    // Permitir file:// para desenvolvimento
+    if (origin.startsWith('file://')) {
+      console.log("🌐 CORS permitido para arquivo local:", origin);
+      callback(null, true);
+      return;
+    }
+    
+    console.warn("🌐 CORS bloqueado para origem:", origin);
+    callback(new Error("Não permitido por CORS"));
   },
   credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  allowedHeaders: ["Content-Type", "Authorization"]
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+  optionsSuccessStatus: 200 // Para suportar navegadores legados
 };
 
 app.use(cors(corsOptions));
@@ -105,6 +127,8 @@ app.use("/api/notifications", notificacaoRoutes);
 app.use('/api', asaasRoutes);
 app.use('/api/usuarios', usuarioRoutes);
 app.use('/api/senha', esqueceuSenhaRoutes);
+app.use('/api/relatorios', relatorioRoutes);
+app.use('/api/config', configRoutes);
 // Verificação de saúde do servidor
 app.get("/api/status", (req, res) => {
   res.json({

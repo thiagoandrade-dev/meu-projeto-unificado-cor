@@ -111,8 +111,8 @@ const validate = (req, res, next) => {
   return res.status(422).json({ erros: extractedErrors });
 };
 
-// Rota GET para listar imóveis
-router.get("/", verificarToken, async (req, res) => {
+// Rota GET para listar imóveis (acesso público para visitantes)
+router.get("/", async (req, res) => {
   try {
     const filtro = {}; // Adicione seus filtros aqui se necessário
     const imoveis = await Imovel.find(filtro);
@@ -140,82 +140,7 @@ router.post("/", uploadImovel.array("imagens", 10), imovelValidationRules(), val
   }
 });
 
-// Rota GET para buscar um imóvel por ID
-router.get("/:id",verificarToken, async (req, res) => {
-  try {
-    const imovel = await Imovel.findById(req.params.id);
-    if (!imovel) return res.status(404).json({ erro: "Imóvel não encontrado." });
-    res.json(imovel);
-  } catch (err) {
-    console.error("Erro ao buscar imóvel por ID:", err);
-    res.status(500).json({ erro: "Erro ao buscar imóvel por ID: " + err.message });
-  }
-});
-
-// Rota PUT para atualizar um imóvel por ID
-router.put("/:id", uploadImovel.array("imagens", 10), imovelValidationRules(), validate, async (req, res) => {
-  try {
-    const dadosAtualizacao = { ...req.body };
-    if (req.files && req.files.length > 0) {
-      // Aqui você pode decidir se quer adicionar às imagens existentes ou substituí-las.
-      // Este exemplo adiciona as novas e mantém as antigas se `req.body.imagens` já existir e for um array.
-      // Para substituir, você buscaria o imóvel, removeria as imagens antigas do sistema de arquivos e atualizaria o array.
-      const novasImagens = req.files.map(file => file.path.replace(/\\/g, "/"));
-      // Se quiser substituir completamente as imagens antigas:
-      // dadosAtualizacao.imagens = novasImagens;
-      // Se quiser adicionar às existentes (precisaria carregar o imóvel primeiro para pegar as imagens antigas ou esperar que o frontend envie as antigas que devem ser mantidas):
-      // Por simplicidade, vamos substituir por enquanto. O frontend precisaria reenviar as imagens que devem ser mantidas.
-      dadosAtualizacao.imagens = novasImagens;
-    } else if (dadosAtualizacao.imagens === undefined) {
-        // Se o campo imagens não for enviado, não alteramos as imagens existentes.
-        // Para remover todas as imagens, o frontend deve enviar um array vazio: "imagens": []
-        delete dadosAtualizacao.imagens; 
-    }
-
-
-    const imovelAtualizado = await Imovel.findByIdAndUpdate(
-      req.params.id,
-      dadosAtualizacao,
-      { new: true, runValidators: true }
-    );
-    if (!imovelAtualizado) return res.status(404).json({ erro: "Imóvel não encontrado para atualização." });
-    res.json(imovelAtualizado);
-  } catch (err) {
-    console.error("Erro ao atualizar imóvel:", err);
-    if (err.name === "ValidationError") return res.status(400).json({ erro: "Erro de validação: " + err.message, detalhes: err.errors });
-    res.status(500).json({ erro: "Erro interno ao atualizar imóvel: " + err.message });
-  }
-});
-
-// Rota DELETE para remover um imóvel por ID
-router.delete("/:id", async (req, res) => {
-  try {
-    const imovel = await Imovel.findById(req.params.id);
-    if (!imovel) return res.status(404).json({ erro: "Imóvel não encontrado para deletar." });
-
-    // Opcional: Deletar as imagens do sistema de arquivos
-    if (imovel.imagens && imovel.imagens.length > 0) {
-      imovel.imagens.forEach(imgPath => {
-        const fullPath = path.join(__dirname, "..", imgPath); // __dirname aponta para a pasta 'routes'
-        if (fs.existsSync(fullPath)) {
-          try {
-            fs.unlinkSync(fullPath);
-            console.log(`Imagem deletada: ${fullPath}`);
-          } catch (unlinkErr) {
-            console.error(`Erro ao deletar imagem ${fullPath}:`, unlinkErr);
-          }
-        }
-      });
-    }
-
-    await Imovel.findByIdAndDelete(req.params.id);
-    res.status(204).send();
-  } catch (err) {
-    console.error("Erro ao deletar imóvel:", err);
-    res.status(500).json({ erro: "Erro interno ao deletar imóvel: " + err.message });
-  }
-});
-// Rota para adicionar imóveis de teste
+// Rota para adicionar imóveis de teste (deve vir antes da rota /:id)
 router.get("/seed", verificarToken, async (req, res) => {
   try {
     const count = await Imovel.countDocuments();
@@ -333,6 +258,82 @@ router.get("/seed", verificarToken, async (req, res) => {
   } catch (err) {
     console.error("Erro ao criar imóveis de teste:", err);
     res.status(500).json({ erro: "Erro ao criar imóveis de teste: " + err.message });
+  }
+});
+
+// Rota GET para buscar um imóvel por ID (acesso público para visitantes)
+router.get("/:id", async (req, res) => {
+  try {
+    const imovel = await Imovel.findById(req.params.id);
+    if (!imovel) return res.status(404).json({ erro: "Imóvel não encontrado." });
+    res.json(imovel);
+  } catch (err) {
+    console.error("Erro ao buscar imóvel por ID:", err);
+    res.status(500).json({ erro: "Erro ao buscar imóvel por ID: " + err.message });
+  }
+});
+
+// Rota PUT para atualizar um imóvel por ID
+router.put("/:id", uploadImovel.array("imagens", 10), imovelValidationRules(), validate, async (req, res) => {
+  try {
+    const dadosAtualizacao = { ...req.body };
+    if (req.files && req.files.length > 0) {
+      // Aqui você pode decidir se quer adicionar às imagens existentes ou substituí-las.
+      // Este exemplo adiciona as novas e mantém as antigas se `req.body.imagens` já existir e for um array.
+      // Para substituir, você buscaria o imóvel, removeria as imagens antigas do sistema de arquivos e atualizaria o array.
+      const novasImagens = req.files.map(file => file.path.replace(/\\/g, "/"));
+      // Se quiser substituir completamente as imagens antigas:
+      // dadosAtualizacao.imagens = novasImagens;
+      // Se quiser adicionar às existentes (precisaria carregar o imóvel primeiro para pegar as imagens antigas ou esperar que o frontend envie as antigas que devem ser mantidas):
+      // Por simplicidade, vamos substituir por enquanto. O frontend precisaria reenviar as imagens que devem ser mantidas.
+      dadosAtualizacao.imagens = novasImagens;
+    } else if (dadosAtualizacao.imagens === undefined) {
+        // Se o campo imagens não for enviado, não alteramos as imagens existentes.
+        // Para remover todas as imagens, o frontend deve enviar um array vazio: "imagens": []
+        delete dadosAtualizacao.imagens; 
+    }
+
+
+    const imovelAtualizado = await Imovel.findByIdAndUpdate(
+      req.params.id,
+      dadosAtualizacao,
+      { new: true, runValidators: true }
+    );
+    if (!imovelAtualizado) return res.status(404).json({ erro: "Imóvel não encontrado para atualização." });
+    res.json(imovelAtualizado);
+  } catch (err) {
+    console.error("Erro ao atualizar imóvel:", err);
+    if (err.name === "ValidationError") return res.status(400).json({ erro: "Erro de validação: " + err.message, detalhes: err.errors });
+    res.status(500).json({ erro: "Erro interno ao atualizar imóvel: " + err.message });
+  }
+});
+
+// Rota DELETE para remover um imóvel por ID
+router.delete("/:id", async (req, res) => {
+  try {
+    const imovel = await Imovel.findById(req.params.id);
+    if (!imovel) return res.status(404).json({ erro: "Imóvel não encontrado para deletar." });
+
+    // Opcional: Deletar as imagens do sistema de arquivos
+    if (imovel.imagens && imovel.imagens.length > 0) {
+      imovel.imagens.forEach(imgPath => {
+        const fullPath = path.join(__dirname, "..", imgPath); // __dirname aponta para a pasta 'routes'
+        if (fs.existsSync(fullPath)) {
+          try {
+            fs.unlinkSync(fullPath);
+            console.log(`Imagem deletada: ${fullPath}`);
+          } catch (unlinkErr) {
+            console.error(`Erro ao deletar imagem ${fullPath}:`, unlinkErr);
+          }
+        }
+      });
+    }
+
+    await Imovel.findByIdAndDelete(req.params.id);
+    res.status(204).send();
+  } catch (err) {
+    console.error("Erro ao deletar imóvel:", err);
+    res.status(500).json({ erro: "Erro interno ao deletar imóvel: " + err.message });
   }
 });
 module.exports = router;

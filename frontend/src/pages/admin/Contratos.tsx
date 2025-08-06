@@ -10,7 +10,7 @@ import { Plus, Search, FileText, Eye, Download, Trash2, Calendar, DollarSign, Ma
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import contratoService, { Contrato } from "@/services/contratoService";
-import { imoveisService, Imovel, Usuario } from "@/services/apiService";
+import { imoveisService, Usuario, Imovel } from "@/services/apiService";
 
 // Tipo para o formulário, omitindo algumas propriedades, e ajustando imovel e inquilino para aceitar só os campos usados
 type FormDataType = Omit<
@@ -23,7 +23,7 @@ type FormDataType = Omit<
   valorIPTU: string | number;
   diaVencimento: string | number;
 
-  imovel: Pick<Imovel, "_id" | "endereco" | "cidade" | "titulo">;
+  imovel: Pick<Imovel, "_id" | "grupo" | "bloco" | "apartamento">;
   inquilino: Pick<Usuario, "_id" | "nome" | "email" | "telefone" | "cpf" | "rg" | "perfil" | "status">;
 };
 
@@ -41,9 +41,9 @@ const INITIAL_FORM_DATA: FormDataType = {
   },
   imovel: {
     _id: "",
-    endereco: "",
-    cidade: "",
-    titulo: ""
+    grupo: "",
+    bloco: "",
+    apartamento: ""
   },
   dataInicio: "",
   dataFim: "",
@@ -71,9 +71,10 @@ const AdminContratos = () => {
     setLoading(true);
     try {
       const data = await contratoService.getAll();
-      setContratos(data);
+      setContratos(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Erro ao carregar contratos:", error);
+      setContratos([]); // Garantir que seja sempre um array
       toast({
         title: "Erro ao carregar contratos",
         description: error instanceof Error ? error.message : "Não foi possível carregar a lista de contratos.",
@@ -98,11 +99,11 @@ const AdminContratos = () => {
     carregarImoveis();
   }, [carregarContratos, carregarImoveis]);
 
-  const contratosFiltrados = contratos.filter(
+  const contratosFiltrados = (Array.isArray(contratos) ? contratos : []).filter(
     (contrato) =>
       contrato.numero.toLowerCase().includes(search.toLowerCase()) ||
       contrato.inquilino.nome.toLowerCase().includes(search.toLowerCase()) ||
-      contrato.imovel.endereco.toLowerCase().includes(search.toLowerCase())
+      `${contrato.imovel.grupo} ${contrato.imovel.bloco} ${contrato.imovel.apartamento}`.toLowerCase().includes(search.toLowerCase())
   );
 
   // Atualiza campos aninhados (inquilino, imovel)
@@ -162,9 +163,9 @@ const AdminContratos = () => {
         diaVencimento: Number(formData.diaVencimento) || 5,
         imovel: {
           _id: formData.imovel._id || "",
-          endereco: formData.imovel.endereco,
-          cidade: formData.imovel.cidade,
-          titulo: formData.imovel.titulo
+          grupo: formData.imovel.grupo,
+          bloco: formData.imovel.bloco,
+          apartamento: formData.imovel.apartamento
         },
         inquilino: {
           _id: formData.inquilino._id || "",
@@ -394,9 +395,9 @@ const AdminContratos = () => {
                             ...formData, 
                             imovel: {
                               _id: imovelSelecionado._id || "",
-                              endereco: `Grupo ${imovelSelecionado.grupo} - Bloco ${imovelSelecionado.bloco}, Apto ${imovelSelecionado.apartamento}`,
-                              cidade: imovelSelecionado.cidade,
-                              titulo: imovelSelecionado.titulo || ""
+                              grupo: imovelSelecionado.grupo,
+                              bloco: imovelSelecionado.bloco,
+                              apartamento: imovelSelecionado.apartamento
                             }
                           });
                         }
@@ -414,7 +415,7 @@ const AdminContratos = () => {
                         ))}
                       </SelectContent>
                     </Select>
-                    {formData.imovel._id && <p className="text-xs text-gray-600 mt-1">{formData.imovel.endereco}</p>}
+                    {formData.imovel._id && <p className="text-xs text-gray-600 mt-1">Grupo {formData.imovel.grupo} - Bloco {formData.imovel.bloco} - Apto {formData.imovel.apartamento}</p>}
                   </div>
                 </fieldset>
 
@@ -554,7 +555,7 @@ const AdminContratos = () => {
                     <tr key={contrato._id} className="border-b hover:bg-gray-50">
                       <td className="p-3">{contrato.numero}</td>
                       <td className="p-3">{contrato.inquilino.nome}</td>
-                      <td className="p-3">{contrato.imovel.endereco}</td>
+                      <td className="p-3">G{contrato.imovel.grupo}-B{contrato.imovel.bloco}-Apto{contrato.imovel.apartamento}</td>
                       <td className="p-3">
                         {new Date(contrato.dataInicio).toLocaleDateString("pt-BR")} - {new Date(contrato.dataFim).toLocaleDateString("pt-BR")}
                       </td>

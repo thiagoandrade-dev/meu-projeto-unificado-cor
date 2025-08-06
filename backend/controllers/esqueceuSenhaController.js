@@ -2,16 +2,7 @@
 const Inquilino = require("../models/Inquilino");
 const crypto = require("crypto");
 const bcrypt = require("bcryptjs");
-const nodemailer = require("nodemailer");
-
-// Configuração do transporte de email
-const transporter = nodemailer.createTransport({
-  service: process.env.EMAIL_SERVICE || "gmail",
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD
-  }
-});
+const { sendEmail, emailTemplates } = require("../config/emailConfig");
 
 // Solicitar redefinição de senha
 const solicitarRedefinicao = async (req, res) => {
@@ -36,29 +27,15 @@ const solicitarRedefinicao = async (req, res) => {
     // URL de redefinição (frontend)
     const resetUrl = `${process.env.FRONTEND_URL || "http://localhost:3000"}/redefinir-senha/${token}`;
 
-    // Configurar email
-    const mailOptions = {
+    // Usar template de e-mail centralizado
+    const emailTemplate = emailTemplates.resetPassword(resetUrl, usuario.nome);
+    
+    // Enviar email usando a configuração centralizada
+    await sendEmail({
       to: usuario.email,
-      from: process.env.EMAIL_FROM || "noreply@imobiliariafirenze.com.br",
-      subject: "Redefinição de Senha - Imobiliária Firenze",
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #333;">Redefinição de Senha</h2>
-          <p>Olá ${usuario.nome},</p>
-          <p>Recebemos uma solicitação para redefinir sua senha. Clique no botão abaixo para criar uma nova senha:</p>
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="${resetUrl}" style="background-color: #4CAF50; color: white; padding: 12px 20px; text-decoration: none; border-radius: 4px; font-weight: bold;">Redefinir Senha</a>
-          </div>
-          <p>Se você não solicitou esta redefinição, por favor ignore este email ou entre em contato conosco.</p>
-          <p>Este link é válido por 1 hora.</p>
-          <hr style="border: 1px solid #eee; margin: 20px 0;">
-          <p style="color: #777; font-size: 12px;">Imobiliária Firenze - Todos os direitos reservados.</p>
-        </div>
-      `
-    };
-
-    // Enviar email
-    await transporter.sendMail(mailOptions);
+      subject: emailTemplate.subject,
+      html: emailTemplate.html
+    });
 
     res.json({ mensagem: "Email de redefinição enviado com sucesso!" });
   } catch (error) {

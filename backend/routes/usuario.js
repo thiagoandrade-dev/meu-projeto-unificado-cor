@@ -9,8 +9,8 @@ const usuarioValidationRules = () => [
   body("nome").trim().notEmpty().withMessage("O nome é obrigatório."),
   body("email").isEmail().withMessage("Email inválido.").normalizeEmail(),
   body("senha").optional().isLength({ min: 6 }).withMessage("A senha deve ter pelo menos 6 caracteres."),
-  body("perfil").optional().isIn(["admin", "inquilino"]).withMessage("Perfil inválido."),
-  body("status").optional().isIn(["Ativo", "Inativo"]).withMessage("Status inválido.")
+  body("perfil").optional().isIn(["admin", "inquilino", "proprietario", "corretor"]).withMessage("Perfil inválido."),
+  body("status").optional().isIn(["ativo", "inativo", "pendente"]).withMessage("Status inválido.")
 ];
 
 // Rotas protegidas por autenticação

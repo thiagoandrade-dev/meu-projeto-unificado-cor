@@ -6,129 +6,109 @@ import PropertySearch from "@/components/PropertySearch";
 import ImovelCard, { Imovel } from "@/components/ImovelCard";
 import { Button } from "@/components/ui/button";
 import { Filter, Grid3X3, LayoutList } from "lucide-react";
+import { imoveisService, Imovel as ApiImovel } from "@/services/apiService";
+
+// Função para converter dados da API para o formato do componente
+const convertApiToDisplay = (apiImovel: ApiImovel): Imovel => {
+  // Determinar o número de quartos baseado na configuração da planta
+  const getQuartosFromConfig = (config: string): number => {
+    if (config.includes('2 dorms')) return 2;
+    if (config.includes('3 dorms')) return 3;
+    return 2; // padrão
+  };
+
+  // Gerar características baseadas na configuração
+  const getCaracteristicas = (imovel: ApiImovel): string[] => {
+    const caracteristicas = [];
+    if (imovel.configuracaoPlanta.includes('Despensa')) caracteristicas.push('Despensa');
+    if (imovel.configuracaoPlanta.includes('Dependência')) caracteristicas.push('Dependência de Empregada');
+    if (imovel.tipoVagaGaragem === 'Coberta') caracteristicas.push('Garagem Coberta');
+    if (imovel.numVagasGaragem > 1) caracteristicas.push(`${imovel.numVagasGaragem} Vagas`);
+    caracteristicas.push('Sacada', 'Área de Serviço');
+    return caracteristicas;
+  };
+
+  return {
+    id: apiImovel._id,
+    titulo: `Apartamento ${apiImovel.configuracaoPlanta} - Grupo ${apiImovel.grupo}`,
+    tipo: "Apartamento",
+    operacao: apiImovel.statusAnuncio.includes('Venda') ? "Venda" : "Aluguel",
+    preco: apiImovel.preco,
+    precoCondominio: 350, // Valor padrão para condomínio
+    endereco: `Bloco ${apiImovel.bloco}, Andar ${apiImovel.andar}, Apt ${apiImovel.apartamento}`,
+    bairro: "Residencial Firenze",
+    cidade: "São Paulo",
+    estado: "SP",
+    areaUtil: apiImovel.areaUtil,
+    quartos: getQuartosFromConfig(apiImovel.configuracaoPlanta),
+    suites: apiImovel.configuracaoPlanta.includes('3 dorms') ? 1 : 0,
+    banheiros: apiImovel.configuracaoPlanta.includes('3 dorms') ? 2 : 1,
+    vagas: apiImovel.numVagasGaragem,
+    descricao: `${apiImovel.configuracaoPlanta} com ${apiImovel.areaUtil}m² de área útil. ${apiImovel.numVagasGaragem} vaga${apiImovel.numVagasGaragem > 1 ? 's' : ''} de garagem ${apiImovel.tipoVagaGaragem.toLowerCase()}.`,
+    caracteristicas: getCaracteristicas(apiImovel),
+    fotos: [
+      "/placeholder-imovel.svg",
+      "/placeholder-apartamento.svg"
+    ],
+    destaque: Math.random() > 0.7, // Alguns imóveis aleatórios como destaque
+    grupo: `Grupo ${apiImovel.grupo}`
+  };
+};
 
 const Imoveis = () => {
   const [visualizacao, setVisualizacao] = useState<"grid" | "lista">("grid");
   const [filtersVisible, setFiltersVisible] = useState(false);
-  
-  // Dados fictícios de imóveis
-  const [imoveis] = useState<Imovel[]>([
-    {
-      id: "1",
-      titulo: "Apartamento de luxo com vista para o mar",
-      tipo: "Apartamento",
-      operacao: "Venda",
-      preco: 1250000,
-      precoCondominio: 1200,
-      endereco: "Av. Atlântica, 2000",
-      bairro: "Copacabana",
-      cidade: "Rio de Janeiro",
-      estado: "RJ",
-      areaUtil: 120,
-      quartos: 3,
-      suites: 1,
-      banheiros: 2,
-      vagas: 2,
-      descricao: "Lindo apartamento de frente para o mar com vista panorâmica, 3 quartos sendo 1 suíte, totalmente reformado e mobiliado.",
-      caracteristicas: ["Mobiliado", "Armários embutidos", "Varanda gourmet", "Academia", "Piscina"],
-      fotos: ["https://images.unsplash.com/photo-1522708323590-d24dbb6b0267"],
-      destaque: true
-    },
-    {
-      id: "2",
-      titulo: "Casa com piscina em condomínio fechado",
-      tipo: "Casa",
-      operacao: "Aluguel",
-      preco: 5500,
-      endereco: "Rua das Flores, 150",
-      bairro: "Alphaville",
-      cidade: "Barueri",
-      estado: "SP",
-      areaUtil: 250,
-      quartos: 4,
-      suites: 2,
-      banheiros: 3,
-      vagas: 4,
-      descricao: "Casa ampla em condomínio fechado com segurança 24h, 4 quartos sendo 2 suítes, piscina privativa, churrasqueira e jardim.",
-      caracteristicas: ["Condomínio fechado", "Segurança 24h", "Piscina", "Churrasqueira", "Jardim"],
-      fotos: ["https://images.unsplash.com/photo-1580587771525-78b9dba3b914"],
-      destaque: true
-    },
-    {
-      id: "3",
-      titulo: "Sala comercial no centro empresarial",
-      tipo: "Comercial",
-      operacao: "Aluguel",
-      preco: 3800,
-      precoCondominio: 800,
-      endereco: "Av. Paulista, 1000",
-      bairro: "Bela Vista",
-      cidade: "São Paulo",
-      estado: "SP",
-      areaUtil: 60,
-      descricao: "Sala comercial no principal centro empresarial da cidade, pronta para uso com divisórias, ar-condicionado central e 1 vaga de garagem.",
-      caracteristicas: ["Pronta para uso", "Ar-condicionado", "1 vaga", "Recepção", "Segurança 24h"],
-      fotos: ["https://images.unsplash.com/photo-1497366754035-f200968a6e72"],
-      destaque: true
-    },
-    {
-      id: "4",
-      titulo: "Apartamento mobiliado no centro",
-      tipo: "Apartamento",
-      operacao: "Aluguel",
-      preco: 2800,
-      precoCondominio: 650,
-      endereco: "Rua Augusta, 500",
-      bairro: "Consolação",
-      cidade: "São Paulo",
-      estado: "SP",
-      areaUtil: 70,
-      quartos: 2,
-      banheiros: 1,
-      vagas: 1,
-      descricao: "Apartamento totalmente mobiliado no centro da cidade, próximo a restaurantes, comércios e transporte público.",
-      caracteristicas: ["Mobiliado", "Prédio com elevador", "Portaria 24h"],
-      fotos: ["https://images.unsplash.com/photo-1556912998-c57cc6b63cd7"],
-      destaque: false
-    },
-    {
-      id: "5",
-      titulo: "Terreno para construção de alto padrão",
-      tipo: "Terreno",
-      operacao: "Venda",
-      preco: 380000,
-      endereco: "Rua dos Coqueiros, s/n",
-      bairro: "Condomínio Green Valley",
-      cidade: "Campinas",
-      estado: "SP",
-      areaUtil: 450,
-      descricao: "Excelente terreno em condomínio fechado de alto padrão, pronto para construção, com infraestrutura completa.",
-      caracteristicas: ["Condomínio fechado", "Infraestrutura completa", "Lazer completo"],
-      fotos: ["https://images.unsplash.com/photo-1500382017468-9049fed747ef"],
-      destaque: false
-    },
-    {
-      id: "6",
-      titulo: "Cobertura duplex com terraço",
-      tipo: "Apartamento",
-      operacao: "Venda",
-      preco: 1800000,
-      precoCondominio: 1500,
-      endereco: "Av. Boa Viagem, 1500",
-      bairro: "Boa Viagem",
-      cidade: "Recife",
-      estado: "PE",
-      areaUtil: 180,
-      quartos: 3,
-      suites: 3,
-      banheiros: 4,
-      vagas: 3,
-      descricao: "Cobertura duplex de alto padrão com vista para o mar, terraço com piscina e churrasqueira, 3 suítes e 3 vagas de garagem.",
-      caracteristicas: ["Terraço", "Piscina privativa", "Churrasqueira", "Vista para o mar"],
-      fotos: ["https://images.unsplash.com/photo-1512917774080-9991f1c4c750"],
-      destaque: false
-    },
-  ]);
+  const [imoveis, setImoveis] = useState<Imovel[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Carregar imóveis da API
+  useEffect(() => {
+    const loadImoveis = async () => {
+      try {
+        setLoading(true);
+        const apiImoveis = await imoveisService.getAll();
+        const displayImoveis = apiImoveis.map(convertApiToDisplay);
+        setImoveis(displayImoveis);
+        setError(null);
+      } catch (err) {
+        console.error('Erro ao carregar imóveis:', err);
+        setError('Erro ao carregar imóveis. Usando dados de exemplo.');
+        // Fallback para dados de exemplo em caso de erro
+         setImoveis([
+           {
+             id: "exemplo-1",
+             titulo: "Apartamento Padrão (2 dorms) - Grupo 12",
+             tipo: "Apartamento",
+             operacao: "Venda",
+             preco: 320000,
+             precoCondominio: 350,
+             endereco: "Bloco A, Andar 10, Apt 101",
+             bairro: "Residencial Firenze",
+             cidade: "São Paulo",
+             estado: "SP",
+             areaUtil: 82,
+             quartos: 2,
+             suites: 0,
+             banheiros: 1,
+             vagas: 1,
+             descricao: "Apartamento padrão com 2 dormitórios e 82m² de área útil. 1 vaga de garagem coberta.",
+             caracteristicas: ["Garagem Coberta", "Sacada", "Área de Serviço"],
+             fotos: [
+               "/placeholder-imovel.svg",
+               "/placeholder-apartamento.svg"
+             ],
+             destaque: true,
+             grupo: "Grupo 12"
+           }
+         ]);
+       } finally {
+         setLoading(false);
+       }
+     };
+
+     loadImoveis();
+   }, []);
   
   return (
     <div className="min-h-screen flex flex-col">
@@ -196,18 +176,39 @@ const Imoveis = () => {
             </div>
           )}
           
-          {/* Resultados */}
-          {visualizacao === "grid" ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {imoveis.map((imovel) => (
-                <ImovelCard key={imovel.id} imovel={imovel} />
-              ))}
+          {/* Mensagem de erro */}
+          {error && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+              <p className="text-yellow-800">{error}</p>
+            </div>
+          )}
+
+          {/* Loading */}
+          {loading ? (
+            <div className="flex justify-center items-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-imobiliaria-azul"></div>
             </div>
           ) : (
-            <div className="space-y-6">
-              {imoveis.map((imovel) => (
-                <ImovelCard key={imovel.id} imovel={imovel} featured={true} />
-              ))}
+            /* Resultados */
+            visualizacao === "grid" ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {imoveis.map((imovel) => (
+                  <ImovelCard key={imovel.id} imovel={imovel} />
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {imoveis.map((imovel) => (
+                  <ImovelCard key={imovel.id} imovel={imovel} featured={true} />
+                ))}
+              </div>
+            )
+          )}
+
+          {/* Mensagem quando não há imóveis */}
+          {!loading && imoveis.length === 0 && (
+            <div className="text-center py-12">
+              <p className="text-gray-500 text-lg">Nenhum imóvel encontrado.</p>
             </div>
           )}
         </div>

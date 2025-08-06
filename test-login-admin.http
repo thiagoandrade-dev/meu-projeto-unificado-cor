@@ -1,0 +1,36 @@
+### Teste de Login com Admin
+
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@firenze.com",
+  "senha": "admin123"
+}
+
+### Teste de Login com Email Incorreto
+
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@imobiliariafirenze.com.br",
+  "senha": "admin123"
+}
+
+### Teste de Registro de Novo Usuário Admin
+
+POST http://localhost:5000/api/auth/register
+Content-Type: application/json
+
+{
+  "nome": "Novo Admin",
+  "email": "admin@imobiliariafirenze.com.br",
+  "senha": "admin123",
+  "perfil": "admin"
+}
+
+### Verificar Token
+
+GET http://localhost:5000/api/auth/verify-token
+Authorization: Bearer SEU_TOKEN_AQUI

@@ -1,0 +1,17 @@
+### Teste de Login Admin - admin@imobiliariafirenze.com.br
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@imobiliariafirenze.com.br",
+  "senha": "admin123"
+}
+
+### Teste de Login Admin - thiago@email.com
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "thiago@email.com",
+  "senha": "admin123"
+}

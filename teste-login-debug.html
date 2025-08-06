@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Login Debug</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 600px; margin: 0 auto; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; }
+        input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+        button { background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .log { background: #f8f9fa; border: 1px solid #dee2e6; padding: 10px; margin-top: 20px; border-radius: 4px; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Teste de Login - Debug</h1>
+        
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="email">Email:</label>
+                <input type="email" id="email" value="admin@imobiliariafirenze.com.br" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="senha">Senha:</label>
+                <input type="password" id="senha" value="admin123" required>
+            </div>
+            
+            <button type="submit">🚀 Testar Login</button>
+        </form>
+        
+        <div id="log" class="log">Aguardando teste...</div>
+    </div>
+
+    <script>
+        const log = document.getElementById('log');
+        
+        function addLog(message) {
+            log.textContent += new Date().toLocaleTimeString() + ' - ' + message + '\n';
+        }
+        
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const senha = document.getElementById('senha').value;
+            
+            log.textContent = '';
+            addLog('🔍 Iniciando teste de login...');
+            addLog('📧 Email: ' + email);
+            addLog('🔑 Senha: ***');
+            
+            try {
+                addLog('🌐 Fazendo requisição para: http://localhost:5000/api/auth/login');
+                
+                const response = await fetch('http://localhost:5000/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: email,
+                        senha: senha
+                    })
+                });
+                
+                addLog('📡 Status da resposta: ' + response.status);
+                addLog('📡 Status text: ' + response.statusText);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    addLog('❌ Erro HTTP: ' + errorText);
+                    return;
+                }
+                
+                const data = await response.json();
+                addLog('✅ Login bem-sucedido!');
+                addLog('🎫 Token recebido: ' + (data.token ? 'SIM' : 'NÃO'));
+                addLog('👤 Usuário: ' + JSON.stringify(data.usuario, null, 2));
+                
+            } catch (error) {
+                addLog('❌ Erro na requisição: ' + error.message);
+                addLog('❌ Erro completo: ' + JSON.stringify(error, null, 2));
+            }
+        });
+    </script>
+</body>
+</html>

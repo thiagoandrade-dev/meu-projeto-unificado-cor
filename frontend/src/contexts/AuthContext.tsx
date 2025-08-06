@@ -7,7 +7,7 @@ export interface User {
   id: string;
   nome: string;
   email: string;
-  tipo: "admin" | "inquilino";
+  perfil: "admin" | "inquilino";
 }
 
 // Tipagem para a estrutura do nosso contexto de autenticação

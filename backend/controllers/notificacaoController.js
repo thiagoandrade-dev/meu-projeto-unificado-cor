@@ -1,17 +1,6 @@
 // backend/controllers/notificacaoController.js
 const Notificacao = require("../models/Notificacao");
-const nodemailer = require("nodemailer");
-
-// Configuração do transporte de email
-const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST || "smtp.gmail.com",
-  port: process.env.EMAIL_PORT || 465,
-  secure: true,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD
-  }
-});
+const { sendEmail, emailTemplates } = require("../config/emailConfig");
 
 // Obter todas as notificações (com filtro opcional por usuário)
 const getAll = async (req, res) => {
@@ -91,7 +80,7 @@ const deleteNotification = async (req, res) => {
 };
 
 // Enviar email
-const sendEmail = async (req, res) => {
+const sendEmailNotification = async (req, res) => {
   try {
     const { tipo, destinatario, assunto, dados, remetente, template } = req.body;
     
@@ -103,12 +92,12 @@ const sendEmail = async (req, res) => {
     // Gerar conteúdo do email com base no template
     const conteudo = gerarConteudoEmail(tipo, dados);
     
-    // Enviar email
-    await transporter.sendMail({
-      from: `"${remetente || 'Imobiliária Firenze'}" <${process.env.EMAIL_USER}>`,
+    // Enviar email usando a configuração centralizada
+    await sendEmail({
       to: destinatario,
       subject: assunto,
-      html: conteudo
+      html: conteudo,
+      from: remetente ? `"${remetente}" <${process.env.EMAIL_USER}>` : undefined
     });
     
     // Registrar notificação no sistema
@@ -260,7 +249,7 @@ module.exports = {
   create,
   markAsRead,
   deleteNotification,
-  sendEmail,
+  sendEmail: sendEmailNotification,
   enviarCobrancasLote,
   criarLembretesVencimento,
   enviarNotificacaoJuridica

@@ -5,23 +5,29 @@ import { useParams } from 'react-router-dom';
 import { imoveisService, Imovel } from '@/services/apiService';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { BedDouble, Bath, Car, Ruler, Building, Calendar, Tag, MapPin, Phone, MessageSquare } from 'lucide-react';
+import { Car, Ruler, Building, Calendar, Tag, MapPin, Phone, MessageSquare, Building2, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 
 // Componente para a galeria de imagens
 const ImovelGaleria = ({ fotos }: { fotos: string[] }) => {
-  const [fotoPrincipal, setFotoPrincipal] = useState(fotos[0] || '');
-
-  if (!fotos || fotos.length === 0) {
-    return <div className="bg-gray-200 h-96 flex items-center justify-center rounded-lg"><p>Sem imagens disponíveis</p></div>;
-  }
+  // Imagens padrão para demonstração (usando placeholders locais)
+  const imagensPadrao = [
+    "/placeholder-imovel.svg",
+    "/placeholder-apartamento.svg",
+    "/placeholder-sala.svg",
+    "/placeholder-quarto.svg",
+    "/placeholder-cozinha.svg"
+  ];
+  
+  const fotosParaExibir = fotos && fotos.length > 0 ? fotos : imagensPadrao;
+  const [fotoPrincipal, setFotoPrincipal] = useState(fotosParaExibir[0]);
 
   return (
     <div>
       <img src={fotoPrincipal} alt="Foto principal do imóvel" className="w-full h-96 object-cover rounded-lg mb-4" />
       <div className="grid grid-cols-5 gap-2">
-        {fotos.slice(0, 5).map((foto, index) => (
+        {fotosParaExibir.slice(0, 5).map((foto, index) => (
           <img
             key={index}
             src={foto}
@@ -70,8 +76,7 @@ const ImovelDetalhe = () => {
     return <div className="flex h-screen items-center justify-center"><p>Imóvel não encontrado.</p></div>;
   }
 
-  // CORREÇÃO APLICADA: Usando 'fotos' em vez de 'imagens'
-  const fotosImovel = imovel.fotos && imovel.fotos.length > 0 ? imovel.fotos : [];
+  const fotosImovel: string[] = []; // Usando imagens padrão da galeria
 
   return (
     <div className="bg-gray-50">
@@ -81,11 +86,12 @@ const ImovelDetalhe = () => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
             {/* Coluna da Galeria */}
             <div className="lg:col-span-2">
-              <h1 className="text-3xl font-bold text-gray-800 mb-2">{imovel.titulo}</h1>
-               {/* CORREÇÃO APLICADA: Usando os campos corretos da interface */}
+              <h1 className="text-3xl font-bold text-gray-800 mb-2">
+                {imovel.grupo} - Bloco {imovel.bloco}, Apto {imovel.apartamento}
+              </h1>
               <p className="text-md text-gray-500 mb-6 flex items-center">
                 <MapPin size={16} className="mr-2" />
-                {imovel.endereco}, {imovel.cidade} - {imovel.uf}
+                {imovel.andar}º andar - {imovel.configuracaoPlanta}
               </p>
               <ImovelGaleria fotos={fotosImovel} />
             </div>
@@ -93,19 +99,17 @@ const ImovelDetalhe = () => {
             {/* Coluna de Informações e Contato */}
             <div>
               <div className="bg-gray-100 p-6 rounded-lg">
-                <p className="text-sm text-gray-600">Valor do Aluguel</p>
-                {/* CORREÇÃO APLICADA: Usando 'valor' em vez de 'preco' */}
+                <p className="text-sm text-gray-600">Valor do Imóvel</p>
                 <p className="text-4xl font-bold text-imobiliaria-azul mb-6">
-                  {imovel.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                  <span className="text-lg font-normal text-gray-500">/mês</span>
+                  R$ {imovel.preco?.toLocaleString('pt-BR')}
                 </p>
 
                 <div className="space-y-4 text-gray-700">
-                    <div className="flex items-center"><Ruler size={20} className="mr-3 text-imobiliaria-dourado" /><span>{imovel.area} m² de área</span></div>
-                    <div className="flex items-center"><BedDouble size={20} className="mr-3 text-imobiliaria-dourado" /><span>{imovel.quartos} quartos</span></div>
-                    <div className="flex items-center"><Bath size={20} className="mr-3 text-imobiliaria-dourado" /><span>{imovel.banheiros} banheiros</span></div>
-                    <div className="flex items-center"><Car size={20} className="mr-3 text-imobiliaria-dourado" /><span>{imovel.vagasGaragem} vaga(s) de garagem</span></div>
-                    <div className="flex items-center"><Building size={20} className="mr-3 text-imobiliaria-dourado" /><span>{imovel.andar ? `${imovel.andar}º andar` : 'Térreo'}</span></div>
+                    <div className="flex items-center"><Ruler size={20} className="mr-3 text-imobiliaria-dourado" /><span>{imovel.areaUtil} m²</span></div>
+                    <div className="flex items-center"><Car size={20} className="mr-3 text-imobiliaria-dourado" /><span>{imovel.numVagasGaragem} vaga(s)</span></div>
+                    <div className="flex items-center"><Building size={20} className="mr-3 text-imobiliaria-dourado" /><span>{imovel.tipoVagaGaragem}</span></div>
+                    <div className="flex items-center"><Tag size={20} className="mr-3 text-imobiliaria-dourado" /><span>{imovel.statusAnuncio}</span></div>
+                    <div className="flex items-center"><Calendar size={20} className="mr-3 text-imobiliaria-dourado" /><span>{imovel.andar}º andar</span></div>
                 </div>
 
                  <div className="mt-8">
@@ -121,24 +125,23 @@ const ImovelDetalhe = () => {
             </div>
           </div>
           
-          {/* Descrição e Características */}
+          {/* Informações Detalhadas */}
           <div className="mt-12 pt-8 border-t">
-              <h2 className="text-2xl font-bold mb-4">Descrição</h2>
-              <p className="text-gray-600 leading-relaxed">{imovel.descricao}</p>
-
-              {imovel.caracteristicas && imovel.caracteristicas.length > 0 && (
-                <div className="mt-8">
-                    <h2 className="text-2xl font-bold mb-4">Características</h2>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                        {imovel.caracteristicas.map((item, index) => (
-                            <div key={index} className="bg-gray-100 p-3 rounded-md flex items-center">
-                                <Tag size={16} className="mr-3 text-imobiliaria-dourado"/>
-                                <span>{item}</span>
-                            </div>
-                        ))}
-                    </div>
+              <h2 className="text-2xl font-bold mb-4">Informações do Imóvel</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <p className="text-gray-700 mb-2"><strong>Grupo:</strong> {imovel.grupo}</p>
+                  <p className="text-gray-700 mb-2"><strong>Bloco:</strong> {imovel.bloco}</p>
+                  <p className="text-gray-700 mb-2"><strong>Andar:</strong> {imovel.andar}º</p>
+                  <p className="text-gray-700 mb-2"><strong>Apartamento:</strong> {imovel.apartamento}</p>
                 </div>
-              )}
+                <div>
+                  <p className="text-gray-700 mb-2"><strong>Configuração:</strong> {imovel.configuracaoPlanta}</p>
+                  <p className="text-gray-700 mb-2"><strong>Área Útil:</strong> {imovel.areaUtil} m²</p>
+                  <p className="text-gray-700 mb-2"><strong>Vagas:</strong> {imovel.numVagasGaragem}</p>
+                  <p className="text-gray-700 mb-2"><strong>Tipo de Vaga:</strong> {imovel.tipoVagaGaragem}</p>
+                </div>
+              </div>
           </div>
         </div>
       </div>

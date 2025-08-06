@@ -3,6 +3,12 @@ const Inquilino = require("../models/Inquilino");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const { body, validationResult } = require("express-validator");
+if (!process.env.JWT_SECRET) {
+    console.error("ERRO: Variável de ambiente JWT_SECRET não definida. O servidor não pode operar sem ela.");
+    // Em um ambiente de produção, você pode querer encerrar o processo aqui.
+    // process.exit(1); // Descomente esta linha se quiser que o servidor pare de iniciar sem a variável
+}
+
 
 // Validações
 const registerValidationRules = () => [
@@ -83,7 +89,7 @@ router.post("/login", [
         id: usuario._id,
         perfil: usuario.perfil 
       },
-      process.env.JWT_SECRET || "default_secret_use_env_var_in_prod", // AVISO importante
+      process.env.JWT_SECRET, // AVISO importante
       { expiresIn: "8h" } // Tempo maior de expiração
     );
 

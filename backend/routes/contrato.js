@@ -1,6 +1,7 @@
 const verificarToken = require("../middlewares/verificarToken");
 const router = require("express").Router();
 const Contrato = require("../models/Contrato");
+const mongoose = require("mongoose");
 const { body, validationResult } = require("express-validator");
 
 // Rota GET para listar contratos com paginação e filtros

@@ -1,4 +1,3 @@
-const verificarToken = require("../middlewares/verificarToken");
 const mongoose = require('mongoose');
 
 const ImovelSchema = new mongoose.Schema({

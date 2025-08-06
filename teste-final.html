@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Login Final</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 600px; margin: 0 auto; }
+        button { padding: 10px 20px; margin: 10px 0; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .log { background: #f8f9fa; padding: 10px; margin: 10px 0; border-left: 4px solid #007bff; }
+        .error { border-left-color: #dc3545; background: #f8d7da; }
+        .success { border-left-color: #28a745; background: #d4edda; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Teste Login Final</h1>
+        <p><strong>Testando apenas:</strong> http://localhost:5000/api/auth/login</p>
+        
+        <button onclick="testarLogin()">Testar Login</button>
+        <button onclick="limparLogs()">Limpar</button>
+        
+        <div id="logs"></div>
+    </div>
+
+    <script>
+        function log(message, type = 'info') {
+            const logsDiv = document.getElementById('logs');
+            const logDiv = document.createElement('div');
+            logDiv.className = `log ${type}`;
+            logDiv.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong>: ${message}`;
+            logsDiv.appendChild(logDiv);
+            console.log(message);
+        }
+
+        function limparLogs() {
+            document.getElementById('logs').innerHTML = '';
+        }
+
+        async function testarLogin() {
+            log('🔄 Testando login original...');
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email: 'admin@imobiliariafirenze.com.br',
+                        senha: 'admin123'
+                    })
+                });
+                
+                log(`Status: ${response.status}`);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    log('✅ LOGIN FUNCIONOU!', 'success');
+                    log(`Token: ${data.token ? 'Recebido' : 'Não recebido'}`, 'success');
+                } else {
+                    const errorText = await response.text();
+                    log(`❌ Erro: ${errorText}`, 'error');
+                }
+                
+            } catch (error) {
+                log(`❌ ERRO: ${error.message}`, 'error');
+                
+                if (error.message.includes('ERR_ABORTED')) {
+                    log('🚨 ERR_ABORTED - Possíveis causas:', 'error');
+                    log('- Antivírus/Firewall bloqueando', 'error');
+                    log('- Extensões do navegador', 'error');
+                    log('- Tente em modo incógnito', 'error');
+                }
+            }
+        }
+
+        window.onload = function() {
+            log('🚀 Pronto para testar');
+        };
+    </script>
+</body>
+</html>

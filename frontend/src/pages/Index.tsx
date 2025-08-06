@@ -1,12 +1,112 @@
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { ArrowRight, Home as HomeIcon, FileText, Gavel } from "lucide-react";
+import ImovelCard, { Imovel } from "@/components/ImovelCard";
+import { ArrowRight, Home as HomeIcon, FileText, Gavel, Building2 } from "lucide-react";
+import { imoveisService, Imovel as ApiImovel } from "@/services/apiService";
 
 const Index = () => {
+  const [imoveisDestaque, setImoveisDestaque] = useState<Imovel[]>([]);
+  const [loadingImoveis, setLoadingImoveis] = useState(true);
+
+  // Função para converter dados da API para o formato do componente
+  const convertApiToDisplay = (apiImovel: ApiImovel): Imovel => {
+    const getQuartosFromConfig = (config: string): number => {
+      if (config.includes('3 dorms')) return 3;
+      if (config.includes('2 dorms')) return 2;
+      return 2; // padrão
+    };
+
+    const getCaracteristicas = (imovel: ApiImovel): string[] => {
+      const caracteristicas = [];
+      if (imovel.configuracaoPlanta.includes('Despensa')) caracteristicas.push('Despensa');
+      if (imovel.configuracaoPlanta.includes('Dependência')) caracteristicas.push('Dependência de Empregada');
+      if (imovel.tipoVagaGaragem === 'Coberta') caracteristicas.push('Garagem Coberta');
+      if (imovel.numVagasGaragem > 1) caracteristicas.push(`${imovel.numVagasGaragem} Vagas`);
+      caracteristicas.push('Sacada', 'Área de Serviço', 'Portaria 24h');
+      return caracteristicas;
+    };
+
+    return {
+      id: apiImovel._id,
+      titulo: `Apartamento ${apiImovel.configuracaoPlanta} - Grupo ${apiImovel.grupo}`,
+      tipo: "Apartamento",
+      operacao: apiImovel.statusAnuncio.includes('Venda') ? "Venda" : "Aluguel",
+      preco: apiImovel.preco,
+      precoCondominio: 350,
+      endereco: `Bloco ${apiImovel.bloco}, Andar ${apiImovel.andar}, Apt ${apiImovel.apartamento}`,
+      bairro: "Residencial Firenze",
+      cidade: "São Paulo",
+      estado: "SP",
+      areaUtil: apiImovel.areaUtil,
+      quartos: getQuartosFromConfig(apiImovel.configuracaoPlanta),
+      suites: apiImovel.configuracaoPlanta.includes('3 dorms') ? 1 : 0,
+      banheiros: apiImovel.configuracaoPlanta.includes('3 dorms') ? 2 : 1,
+      vagas: apiImovel.numVagasGaragem,
+      descricao: `${apiImovel.configuracaoPlanta} com ${apiImovel.areaUtil}m² de área útil no Grupo ${apiImovel.grupo}. ${apiImovel.numVagasGaragem} vaga${apiImovel.numVagasGaragem > 1 ? 's' : ''} de garagem ${apiImovel.tipoVagaGaragem.toLowerCase()}.`,
+      caracteristicas: getCaracteristicas(apiImovel),
+      fotos: [
+        "/placeholder-imovel.svg",
+        "/placeholder-apartamento.svg",
+        "/placeholder-sala.svg"
+      ],
+      destaque: true,
+      grupo: `Grupo ${apiImovel.grupo}`
+    };
+  };
+
+  // Carregar imóveis em destaque
+  useEffect(() => {
+    const loadImoveisDestaque = async () => {
+      try {
+        setLoadingImoveis(true);
+        const apiImoveis = await imoveisService.getAll();
+        // Pegar apenas os primeiros 3 imóveis para destaque
+        const displayImoveis = apiImoveis
+          .slice(0, 3)
+          .map(convertApiToDisplay);
+        setImoveisDestaque(displayImoveis);
+      } catch (err) {
+        console.error('Erro ao carregar imóveis em destaque:', err);
+        // Fallback para dados de exemplo
+        setImoveisDestaque([
+          {
+            id: "destaque-1",
+            titulo: "Apartamento Padrão (2 dorms) - Grupo 12",
+            tipo: "Apartamento",
+            operacao: "Venda",
+            preco: 320000,
+            precoCondominio: 350,
+            endereco: "Bloco A, Andar 10, Apt 101",
+            bairro: "Residencial Firenze",
+            cidade: "São Paulo",
+            estado: "SP",
+            areaUtil: 82,
+            quartos: 2,
+            suites: 0,
+            banheiros: 1,
+            vagas: 1,
+            descricao: "Apartamento padrão com 2 dormitórios e 82m² de área útil no Grupo 12. 1 vaga de garagem coberta.",
+            caracteristicas: ["Garagem Coberta", "Sacada", "Área de Serviço", "Portaria 24h"],
+            fotos: [
+              "/placeholder-imovel.svg",
+              "/placeholder-apartamento.svg"
+            ],
+            destaque: true,
+            grupo: "Grupo 12"
+          }
+        ]);
+      } finally {
+        setLoadingImoveis(false);
+      }
+    };
+
+    loadImoveisDestaque();
+  }, []);
+
   // Depoimentos de clientes
   const depoimentos = [
     {
@@ -44,12 +144,12 @@ const Index = () => {
                 </p>
                 <div className="flex flex-wrap gap-4">
                   <Link to="/imoveis">
-                    <Button className="bg-white text-imobiliaria-azul hover:bg-white/90">
+                    <Button className="bg-white text-imobiliaria-azul hover:bg-white/90 font-semibold">
                       Ver Imóveis
                     </Button>
                   </Link>
                   <Link to="/contato">
-                    <Button variant="outline" className="border-white text-white hover:bg-white/10">
+                    <Button className="bg-transparent border-2 border-white text-white hover:bg-white hover:text-imobiliaria-azul font-semibold transition-all duration-300">
                       Fale Conosco
                     </Button>
                   </Link>
@@ -58,8 +158,8 @@ const Index = () => {
               <div className="hidden md:block">
                 <div className="bg-white/10 p-2 rounded-lg shadow-xl">
                   <img 
-                    src="/placeholder.svg" 
-                    alt="Imóvel em destaque" 
+                    src="/placeholder-imovel.svg" 
+                    alt="Apartamento moderno - Residencial Firenze" 
                     className="w-full h-64 object-cover rounded"
                   />
                 </div>
@@ -120,6 +220,45 @@ const Index = () => {
                   Consultar <ArrowRight size={16} className="ml-1" />
                 </Link>
               </div>
+            </div>
+          </div>
+        </section>
+        
+        {/* Imóveis em Destaque */}
+        <section className="py-16 bg-white">
+          <div className="container-page">
+            <div className="text-center mb-12">
+              <div className="flex items-center justify-center mb-4">
+                <Building2 size={32} className="text-imobiliaria-azul mr-3" />
+                <h2 className="text-3xl font-bold text-imobiliaria-azul">
+                  Imóveis em Destaque
+                </h2>
+              </div>
+              <p className="text-gray-600 max-w-2xl mx-auto">
+                Conheça nossos apartamentos no Residencial Firenze, organizados por grupos, blocos e torres. 
+                Todos com estrutura completa e localização privilegiada.
+              </p>
+            </div>
+            
+            {loadingImoveis ? (
+              <div className="flex justify-center items-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-imobiliaria-azul"></div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
+                {imoveisDestaque.map((imovel) => (
+                  <ImovelCard key={imovel.id} imovel={imovel} />
+                ))}
+              </div>
+            )}
+            
+            <div className="text-center">
+              <Link to="/imoveis">
+                <Button className="bg-imobiliaria-azul hover:bg-imobiliaria-azul/90">
+                  Ver Todos os Imóveis
+                  <ArrowRight size={16} className="ml-2" />
+                </Button>
+              </Link>
             </div>
           </div>
         </section>
@@ -185,8 +324,8 @@ const Index = () => {
               </div>
               <div className="text-center md:text-right">
                 <img 
-                  src="/placeholder.svg" 
-                  alt="Área do Cliente" 
+                  src="/placeholder-apartamento.svg" 
+                  alt="Área do Cliente - Acesso digital" 
                   className="inline-block w-64 h-64 object-cover rounded-lg shadow-lg"
                 />
               </div>

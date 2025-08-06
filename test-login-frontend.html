@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Login Frontend</title>
+</head>
+<body>
+    <h1>Teste de Login Frontend</h1>
+    <button onclick="fazerLogin()">Fazer Login</button>
+    <button onclick="verificarToken()">Verificar Token</button>
+    <button onclick="testarImoveis()">Testar Imóveis</button>
+    <button onclick="limparStorage()">Limpar Storage</button>
+    
+    <div id="resultado"></div>
+
+    <script>
+        async function fazerLogin() {
+            try {
+                const response = await fetch('http://localhost:5000/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email: 'thiago@email.com',
+                        senha: 'admin123'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.token) {
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('user', JSON.stringify(data.usuario));
+                    document.getElementById('resultado').innerHTML = `
+                        <h3>Login realizado com sucesso!</h3>
+                        <p>Token: ${data.token.substring(0, 50)}...</p>
+                        <p>Usuário: ${data.usuario.nome} (${data.usuario.email})</p>
+                    `;
+                } else {
+                    document.getElementById('resultado').innerHTML = `<p>Erro no login: ${JSON.stringify(data)}</p>`;
+                }
+            } catch (error) {
+                document.getElementById('resultado').innerHTML = `<p>Erro: ${error.message}</p>`;
+            }
+        }
+        
+        function verificarToken() {
+            const token = localStorage.getItem('token');
+            const user = localStorage.getItem('user');
+            
+            document.getElementById('resultado').innerHTML = `
+                <h3>Dados no localStorage:</h3>
+                <p>Token: ${token ? token.substring(0, 50) + '...' : 'Não encontrado'}</p>
+                <p>User: ${user || 'Não encontrado'}</p>
+            `;
+        }
+        
+        async function testarImoveis() {
+            const token = localStorage.getItem('token');
+            
+            if (!token) {
+                document.getElementById('resultado').innerHTML = '<p>Faça login primeiro!</p>';
+                return;
+            }
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/imoveis', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                document.getElementById('resultado').innerHTML = `
+                    <h3>Dados de Imóveis:</h3>
+                    <p>Total de imóveis: ${data.length}</p>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+            } catch (error) {
+                document.getElementById('resultado').innerHTML = `<p>Erro ao buscar imóveis: ${error.message}</p>`;
+            }
+        }
+        
+        function limparStorage() {
+            localStorage.clear();
+            document.getElementById('resultado').innerHTML = '<p>localStorage limpo!</p>';
+        }
+    </script>
+</body>
+</html>

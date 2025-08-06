@@ -54,6 +54,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { api } from "@/services/apiService";
 import axios, { AxiosError } from "axios";
+import { exportToCsv } from "@/utils/csvUtils";
 
 // Definição do tipo de usuário
 interface Usuario {
@@ -302,36 +303,19 @@ const Usuarios = () => {
 
   // Exportar para CSV
   const exportarCSV = () => {
-    // Cabeçalhos do CSV
     const headers = ["Nome", "Email", "Telefone", "Perfil", "Status", "Data de Cadastro", "Último Acesso"];
     
-    // Converter dados para formato CSV
     const csvData = filteredUsuarios.map(usuario => [
       usuario.nome,
       usuario.email,
-      usuario.telefone,
+      usuario.telefone || '',
       usuario.perfil,
       usuario.status,
       new Date(usuario.dataCadastro).toLocaleDateString('pt-BR'),
       usuario.ultimoAcesso ? new Date(usuario.ultimoAcesso).toLocaleDateString('pt-BR') : 'N/A'
     ]);
     
-    // Juntar cabeçalhos e dados
-    const csvContent = [
-      headers.join(','),
-      ...csvData.map(row => row.join(','))
-    ].join('\n');
-    
-    // Criar blob e link para download
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', `usuarios_${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    exportToCsv(headers, csvData, `usuarios_${new Date().toISOString().split('T')[0]}.csv`);
   };
 
   // Renderizar o componente de carregamento
@@ -513,8 +497,8 @@ const Usuarios = () => {
                         </TableCell>
                       </TableRow>
                     ) : (
-                      filteredUsuarios.map((usuario) => (
-                        <TableRow key={usuario.id}>
+                      filteredUsuarios.map((usuario, index) => (
+                        <TableRow key={usuario.id || `usuario-${index}`}>
                           <TableCell className="font-medium">{usuario.nome}</TableCell>
                           <TableCell>{usuario.email}</TableCell>
                           <TableCell>{usuario.telefone}</TableCell>

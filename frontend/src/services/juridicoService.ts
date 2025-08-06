@@ -58,59 +58,194 @@ export interface NotificacaoJuridica {
 // --- SERVIÇO JURÍDICO PADRONIZADO ---
 export const juridicoService = {
   documentos: {
-    // PADRONIZADO de 'listar' para 'getAll'
+    // PADRONIZADO de 'listar' para 'getAll' - agora busca casos jurídicos
     getAll: async (): Promise<DocumentoJuridico[]> => {
       try {
-        const { data } = await api.get<DocumentoJuridico[]>('/juridico/documentos');
-        return data;
-      } catch (error) { throw handleApiError(error, 'listar documentos'); }
+        const { data } = await api.get('/juridico');
+        // O backend retorna casos jurídicos, vamos adaptar para a interface esperada
+        if (data.success && data.data) {
+          return data.data.map((caso: any) => ({
+            _id: caso._id,
+            titulo: caso.titulo || 'Caso Jurídico',
+            tipo: caso.tipoAcao || 'Outros',
+            descricao: caso.descricao || '',
+            autor: caso.advogadoResponsavel || 'Sistema',
+            contratoRelacionado: caso.contratoId,
+            imovelRelacionado: caso.imovelId,
+            status: caso.status || 'Ativo',
+            tags: caso.tags || [],
+            observacoes: caso.observacoes || '',
+            dataCriacao: caso.createdAt || new Date().toISOString(),
+            createdAt: caso.createdAt,
+            updatedAt: caso.updatedAt
+          }));
+        }
+        return [];
+      } catch (error) { throw handleApiError(error, 'listar casos jurídicos'); }
     },
-    // PADRONIZADO de 'criar' para 'create'
-    create: async (formData: FormData): Promise<DocumentoJuridico> => {
+    // PADRONIZADO de 'criar' para 'create' - agora cria caso jurídico
+    create: async (casoData: any): Promise<DocumentoJuridico> => {
       try {
-        const { data } = await api.post<DocumentoJuridico>('/juridico/documentos', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        });
-        return data;
-      } catch (error) { throw handleApiError(error, 'criar documento'); }
+        const { data } = await api.post('/juridico', casoData);
+        if (data.success && data.data) {
+          return {
+            _id: data.data._id,
+            titulo: data.data.titulo || 'Caso Jurídico',
+            tipo: data.data.tipoAcao || 'Outros',
+            descricao: data.data.descricao || '',
+            autor: data.data.advogadoResponsavel || 'Sistema',
+            contratoRelacionado: data.data.contratoId,
+            imovelRelacionado: data.data.imovelId,
+            status: data.data.status || 'Ativo',
+            tags: data.data.tags || [],
+            observacoes: data.data.observacoes || '',
+            dataCriacao: data.data.createdAt || new Date().toISOString(),
+            createdAt: data.data.createdAt,
+            updatedAt: data.data.updatedAt
+          };
+        }
+        throw new Error('Resposta inválida do servidor');
+      } catch (error) { throw handleApiError(error, 'criar caso jurídico'); }
     },
     // PADRONIZADO de 'atualizar' para 'update'
-    update: async (id: string, documento: Partial<DocumentoJuridico>): Promise<DocumentoJuridico> => {
+    update: async (id: string, casoData: any): Promise<DocumentoJuridico> => {
       try {
-        const { data } = await api.put<DocumentoJuridico>(`/juridico/documentos/${id}`, documento);
-        return data;
-      } catch (error) { throw handleApiError(error, 'atualizar documento'); }
+        const { data } = await api.put(`/juridico/${id}`, casoData);
+        if (data.success && data.data) {
+          return {
+            _id: data.data._id,
+            titulo: data.data.titulo || 'Caso Jurídico',
+            tipo: data.data.tipoAcao || 'Outros',
+            descricao: data.data.descricao || '',
+            autor: data.data.advogadoResponsavel || 'Sistema',
+            contratoRelacionado: data.data.contratoId,
+            imovelRelacionado: data.data.imovelId,
+            status: data.data.status || 'Ativo',
+            tags: data.data.tags || [],
+            observacoes: data.data.observacoes || '',
+            dataCriacao: data.data.createdAt || new Date().toISOString(),
+            createdAt: data.data.createdAt,
+            updatedAt: data.data.updatedAt
+          };
+        }
+        throw new Error('Resposta inválida do servidor');
+      } catch (error) { throw handleApiError(error, 'atualizar caso jurídico'); }
     },
     // PADRONIZADO de 'remover' para 'delete'
     delete: async (id: string): Promise<void> => {
       try {
-        await api.delete(`/juridico/documentos/${id}`);
-      } catch (error) { throw handleApiError(error, 'remover documento'); }
+        await api.delete(`/juridico/${id}`);
+      } catch (error) { throw handleApiError(error, 'remover caso jurídico'); }
     }
   },
   processos: {
     getAll: async (): Promise<ProcessoJuridico[]> => {
       try {
-        const { data } = await api.get<ProcessoJuridico[]>('/juridico/processos');
-        return data;
-      } catch (error) { throw handleApiError(error, 'listar processos'); }
+        const { data } = await api.get('/juridico');
+        // O backend retorna casos jurídicos, vamos adaptar para a interface de processos
+        if (data.success && data.data) {
+          return data.data.map((caso: any) => ({
+            _id: caso._id,
+            numero: caso.numeroProcesso || `PROC-${caso._id?.slice(-6)}`,
+            tipo: caso.tipoAcao || 'Outros',
+            contratoId: caso.contratoId || '',
+            status: caso.status || 'Aberto',
+            prioridade: caso.prioridade || 'Média',
+            descricao: caso.descricao || '',
+            advogadoResponsavel: caso.advogadoResponsavel || 'Sistema',
+            dataAbertura: caso.createdAt || new Date().toISOString(),
+            dataPrazo: caso.dataPrazo,
+            documentos: caso.documentos || [],
+            observacoes: caso.observacoes || '',
+            valor: caso.valor || 0,
+            partesEnvolvidas: caso.partesEnvolvidas || 'Não informado'
+          }));
+        }
+        return [];
+      } catch (error) { throw handleApiError(error, 'listar processos jurídicos'); }
     },
     create: async (processo: Omit<ProcessoJuridico, '_id' | 'dataAbertura'>): Promise<ProcessoJuridico> => {
       try {
-        const { data } = await api.post<ProcessoJuridico>('/juridico/processos', processo);
-        return data;
-      } catch (error) { throw handleApiError(error, 'criar processo'); }
+        const casoData = {
+          titulo: `Processo ${processo.numero}`,
+          descricao: processo.descricao,
+          tipoAcao: processo.tipo,
+          status: processo.status,
+          prioridade: processo.prioridade,
+          advogadoResponsavel: processo.advogadoResponsavel,
+          contratoId: processo.contratoId,
+          numeroProcesso: processo.numero,
+          dataPrazo: processo.dataPrazo,
+          observacoes: processo.observacoes,
+          valor: processo.valor,
+          partesEnvolvidas: processo.partesEnvolvidas
+        };
+        
+        const { data } = await api.post('/juridico', casoData);
+        if (data.success && data.data) {
+          return {
+            _id: data.data._id,
+            numero: data.data.numeroProcesso || processo.numero,
+            tipo: data.data.tipoAcao || processo.tipo,
+            contratoId: data.data.contratoId || processo.contratoId,
+            status: data.data.status || processo.status,
+            prioridade: data.data.prioridade || processo.prioridade,
+            descricao: data.data.descricao || processo.descricao,
+            advogadoResponsavel: data.data.advogadoResponsavel || processo.advogadoResponsavel,
+            dataAbertura: data.data.createdAt || new Date().toISOString(),
+            dataPrazo: data.data.dataPrazo,
+            documentos: data.data.documentos || [],
+            observacoes: data.data.observacoes,
+            valor: data.data.valor,
+            partesEnvolvidas: data.data.partesEnvolvidas || processo.partesEnvolvidas
+          };
+        }
+        throw new Error('Resposta inválida do servidor');
+      } catch (error) { throw handleApiError(error, 'criar processo jurídico'); }
     },
     update: async (id: string, processo: Partial<ProcessoJuridico>): Promise<ProcessoJuridico> => {
       try {
-        const { data } = await api.put<ProcessoJuridico>(`/juridico/processos/${id}`, processo);
-        return data;
-      } catch (error) { throw handleApiError(error, 'atualizar processo'); }
+        const casoData = {
+          titulo: processo.numero ? `Processo ${processo.numero}` : undefined,
+          descricao: processo.descricao,
+          tipoAcao: processo.tipo,
+          status: processo.status,
+          prioridade: processo.prioridade,
+          advogadoResponsavel: processo.advogadoResponsavel,
+          contratoId: processo.contratoId,
+          numeroProcesso: processo.numero,
+          dataPrazo: processo.dataPrazo,
+          observacoes: processo.observacoes,
+          valor: processo.valor,
+          partesEnvolvidas: processo.partesEnvolvidas
+        };
+        
+        const { data } = await api.put(`/juridico/${id}`, casoData);
+        if (data.success && data.data) {
+          return {
+            _id: data.data._id,
+            numero: data.data.numeroProcesso || processo.numero || '',
+            tipo: data.data.tipoAcao || processo.tipo || 'Outros',
+            contratoId: data.data.contratoId || processo.contratoId || '',
+            status: data.data.status || processo.status || 'Aberto',
+            prioridade: data.data.prioridade || processo.prioridade || 'Média',
+            descricao: data.data.descricao || processo.descricao || '',
+            advogadoResponsavel: data.data.advogadoResponsavel || processo.advogadoResponsavel || '',
+            dataAbertura: data.data.createdAt || new Date().toISOString(),
+            dataPrazo: data.data.dataPrazo,
+            documentos: data.data.documentos || [],
+            observacoes: data.data.observacoes,
+            valor: data.data.valor,
+            partesEnvolvidas: data.data.partesEnvolvidas || processo.partesEnvolvidas || ''
+          };
+        }
+        throw new Error('Resposta inválida do servidor');
+      } catch (error) { throw handleApiError(error, 'atualizar processo jurídico'); }
     },
     delete: async (id: string): Promise<void> => {
       try {
-        await api.delete(`/juridico/processos/${id}`);
-      } catch (error) { throw handleApiError(error, 'remover processo'); }
+        await api.delete(`/juridico/${id}`);
+      } catch (error) { throw handleApiError(error, 'remover processo jurídico'); }
     }
   },
   notificacoes: {

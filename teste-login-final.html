@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Teste Login Final</title>
+</head>
+<body>
+    <h1>Teste Login Final</h1>
+    <button onclick="testarLogin()">Testar Login</button>
+    <div id="resultado"></div>
+
+    <script>
+        async function testarLogin() {
+            const resultado = document.getElementById('resultado');
+            
+            try {
+                console.log('Testando URL: http://localhost:5000/api/auth/login');
+                
+                const response = await fetch('http://localhost:5000/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email: 'admin@imobiliariafirenze.com.br',
+                        senha: 'admin123'
+                    })
+                });
+                
+                console.log('Status:', response.status);
+                const data = await response.json();
+                console.log('Resposta:', data);
+                
+                if (response.ok) {
+                    resultado.innerHTML = `<p style="color: green;">✅ SUCESSO! Token: ${data.token.substring(0, 50)}...</p>`;
+                } else {
+                    resultado.innerHTML = `<p style="color: red;">❌ ERRO: ${data.erro || 'Erro desconhecido'}</p>`;
+                }
+                
+            } catch (error) {
+                console.error('Erro:', error);
+                resultado.innerHTML = `<p style="color: red;">❌ ERRO: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

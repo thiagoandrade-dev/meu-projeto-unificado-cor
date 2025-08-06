@@ -20,7 +20,7 @@ interface ApiErrorResponse {
 }
 
 const Login = () => {
-  const [isLogin, setIsLogin] = useState(true);
+  const [activeTab, setActiveTab] = useState("login"); // Alterado de isLogin para activeTab
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const { setUser } = useContext(AuthContext);
@@ -38,15 +38,16 @@ const Login = () => {
     password: "", 
     confirmPassword: "",
   });
+
+  // NOVO ESTADO AQUI
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState("");
   
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     
     try {
-      // Correção: Acessar token e usuario diretamente da resposta
       const response: AuthResponse = await userService.login(loginCredentials.email, loginCredentials.password);
-      // Verificar se a resposta contém os dados esperados (ajuste conforme a estrutura real de AuthResponse)
       if (!response || !response.token || !response.usuario) {
           throw new Error("Resposta inválida da API de login.");
       }
@@ -59,27 +60,26 @@ const Login = () => {
         id: String(usuario.id || usuario._id), 
         nome: usuario.nome,
         email: usuario.email,
-        tipo: usuario.perfil // <-- MUDANÇA PRINCIPAL AQUI
-});
+        perfil: usuario.perfil 
+      });
       
       toast({
         title: "Login bem-sucedido!",
-        description: `Bem-vindo, ${usuario.nome}!`,
+        description: `Bem-vindo, ${usuario.nome}!`, 
         duration: 3000,
       });
       
       if (usuario.perfil === "admin") {
-  navigate("/admin");
-} else {
-  navigate("/locatario");
-}
+        navigate("/admin");
+      } else {
+        navigate("/locatario");
+      }
       
-    } catch (error) { // Correção: Usar \'unknown\' ou tipo específico como AxiosError
+    } catch (error) {
       console.error("Erro no login:", error);
-      let errorMessage = "Email ou senha incorretos."; // Mensagem padrão
+      let errorMessage = "Email ou senha incorretos."; 
       
-      // Tentar extrair mensagem de erro específica da API (exemplo com AxiosError)
-      const axiosError = error as AxiosError<ApiErrorResponse>; // Type assertion
+      const axiosError = error as AxiosError<ApiErrorResponse>; 
       if (axiosError.response?.data) {
           const data = axiosError.response.data;
           errorMessage = data.erro || (data.erros && data.erros[0] ? Object.values(data.erros[0])[0] : errorMessage);
@@ -112,7 +112,6 @@ const Login = () => {
     }
     
     try {
-      // Correção: Enviar \'perfil\' - o erro TS2353 será resolvido ajustando o tipo em userService.ts
       await userService.register({
         nome: registerCredentials.nome,
         email: registerCredentials.email,
@@ -126,7 +125,7 @@ const Login = () => {
         duration: 3000,
       });
       
-      setIsLogin(true); 
+      setActiveTab("login"); // Volta para a aba de login
       setRegisterCredentials({ 
         nome: "",
         email: "",
@@ -135,12 +134,11 @@ const Login = () => {
       });
       setLoginCredentials(prev => ({ ...prev, email: registerCredentials.email, password: "" }));
       
-    } catch (error) { // Correção: Usar \'unknown\' ou tipo específico como AxiosError
+    } catch (error) {
       console.error("Erro no registro:", error);
-      let errorMessage = "Erro ao criar conta. Tente novamente."; // Mensagem padrão
+      let errorMessage = "Erro ao criar conta. Tente novamente."; 
 
-      // Tentar extrair mensagem de erro específica da API (exemplo com AxiosError)
-      const axiosError = error as AxiosError<ApiErrorResponse>; // Type assertion
+      const axiosError = error as AxiosError<ApiErrorResponse>; 
       if (axiosError.response?.data) {
           const data = axiosError.response.data;
           errorMessage = data.erro || (data.erros && data.erros[0] ? Object.values(data.erros[0])[0] : errorMessage);
@@ -157,13 +155,39 @@ const Login = () => {
     }
   };
   
-  const handleForgotPassword = () => {
-    toast({
-        title: "Funcionalidade Indisponível",
-        description: "A recuperação de senha ainda não foi implementada.",
-        variant: "default", 
-        duration: 4000,
+  // NOVA FUNÇÃO PARA ESQUECEU SENHA
+  const handleForgotPasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      await userService.requestPasswordReset(forgotPasswordEmail);
+      toast({
+        title: "E-mail enviado!",
+        description: "Se o e-mail estiver cadastrado, você receberá um link para redefinir sua senha.",
+        duration: 5000,
       });
+      setForgotPasswordEmail(""); // Limpa o campo após o envio
+      setActiveTab("login"); // Volta para a aba de login após o envio
+    } catch (error) {
+      console.error("Erro ao solicitar redefinição de senha:", error);
+      let errorMessage = "Erro ao solicitar redefinição de senha. Tente novamente.";
+
+      const axiosError = error as AxiosError<ApiErrorResponse>;
+      if (axiosError.response?.data) {
+        const data = axiosError.response.data;
+        errorMessage = data.erro || (data.erros && data.erros[0] ? Object.values(data.erros[0])[0] : errorMessage);
+      }
+
+      toast({
+        title: "Erro",
+        description: errorMessage,
+        variant: "destructive",
+        duration: 5000,
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -173,10 +197,11 @@ const Login = () => {
       <div className="flex-grow flex items-center justify-center bg-gray-50 py-12 px-4">
         <div className="w-full max-w-md">
           <div className="bg-white p-8 rounded-lg shadow-md">
-            <Tabs defaultValue="login" value={isLogin ? "login" : "register"} onValueChange={(value) => setIsLogin(value === "login")}>
-              <TabsList className="grid grid-cols-2 w-full mb-6">
+            <Tabs defaultValue="login" value={activeTab} onValueChange={(value) => setActiveTab(value)}>
+              <TabsList className="grid grid-cols-3 w-full mb-6"> {/* ALTERADO grid-cols-2 para grid-cols-3 */}
                 <TabsTrigger value="login" className="text-base">Entrar</TabsTrigger>
                 <TabsTrigger value="register" className="text-base">Registrar</TabsTrigger>
+                <TabsTrigger value="forgot-password" className="text-base">Esqueceu a Senha?</TabsTrigger> {/* NOVO */}
               </TabsList>
               
               <TabsContent value="login">
@@ -198,7 +223,7 @@ const Login = () => {
                       <Label htmlFor="password">Senha</Label>
                       <button 
                         type="button" 
-                        onClick={handleForgotPassword} 
+                        onClick={() => setActiveTab("forgot-password")} // Alterado para mudar para a aba de esqueceu senha
                         className="text-sm text-imobiliaria-azul hover:underline focus:outline-none"
                       >
                         Esqueceu a senha?
@@ -317,6 +342,38 @@ const Login = () => {
                   </Button>
                 </form>
               </TabsContent>
+
+              {/* NOVO TabsContent para Esqueceu a Senha */}
+              <TabsContent value="forgot-password">
+                <h2 className="text-2xl font-bold text-center mb-6">Redefinir Senha</h2>
+                <p className="text-center text-gray-600 mb-6">Informe seu e-mail para receber um link de redefinição de senha.</p>
+                <form onSubmit={handleForgotPasswordSubmit} className="space-y-4"> 
+                  <div className="space-y-2">
+                    <Label htmlFor="forgot-email">Email</Label>
+                    <Input
+                      id="forgot-email"
+                      type="email"
+                      placeholder="seu@email.com"
+                      value={forgotPasswordEmail}
+                      onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <Button
+                    type="submit"
+                    className="w-full bg-imobiliaria-azul hover:bg-imobiliaria-azul/90"
+                    disabled={loading}
+                  >
+                    {loading ? "Enviando..." : "Enviar Link de Redefinição"}
+                  </Button>
+                </form>
+                <div className="mt-6 text-center">
+                  <Link to="/login" className="text-sm text-imobiliaria-azul hover:underline">
+                    Voltar para o Login
+                  </Link>
+                </div>
+              </TabsContent>
             </Tabs>
           </div>
         </div>
@@ -328,5 +385,3 @@ const Login = () => {
 };
 
 export default Login;
-
-

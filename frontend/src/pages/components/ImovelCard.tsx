@@ -51,7 +51,7 @@ const ImovelCard = ({ imovel, featured = false }: ImovelCardProps) => {
         {/* Imagem */}
         <div className={`relative ${featured ? 'lg:w-2/5' : 'h-48'} overflow-hidden`}>
           <img
-            src={imovel.fotos[0] || "https://images.unsplash.com/photo-1582562124811-c09040d0a901"}
+            src={imovel.fotos[0] || "/placeholder-imovel.svg"}
             alt={imovel.titulo}
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           />

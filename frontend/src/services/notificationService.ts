@@ -60,7 +60,7 @@ export const notificationService = {
   // Notificações no sistema
   getAll: async (userId?: string): Promise<Notificacao[]> => {
     try {
-      const url = userId ? `/api/notifications?userId=${userId}` : '/api/notifications';
+      const url = userId ? `/notifications?userId=${userId}` : '/notifications';
       const response = await api.get<Notificacao[]>(url);
       return response.data;
     } catch (error) {
@@ -71,7 +71,7 @@ export const notificationService = {
 
   create: async (notificacao: Omit<Notificacao, '_id' | 'dataEnvio'>): Promise<Notificacao> => {
     try {
-      const response = await api.post<Notificacao>('/api/notifications', notificacao);
+      const response = await api.post<Notificacao>('/notifications', notificacao);
       return response.data;
     } catch (error) {
       console.error('Erro ao criar notificação:', error);
@@ -81,7 +81,7 @@ export const notificationService = {
 
   markAsRead: async (id: string): Promise<void> => {
     try {
-      await api.patch(`/api/notifications/${id}/read`);
+      await api.patch(`/notifications/${id}/read`);
     } catch (error) {
       console.error('Erro ao marcar notificação como lida:', error);
       throw error;
@@ -90,7 +90,7 @@ export const notificationService = {
 
   delete: async (id: string): Promise<void> => {
     try {
-      await api.delete(`/api/notifications/${id}`);
+      await api.delete(`/notifications/${id}`);
     } catch (error) {
       console.error('Erro ao deletar notificação:', error);
       throw error;
@@ -106,7 +106,7 @@ export const notificationService = {
         template: getEmailTemplate(config.tipo),
         timestamp: new Date().toISOString()
       };
-      await api.post('/api/notifications/email', emailData);
+      await api.post('/notifications/email', emailData);
     } catch (error) {
       console.error('Erro ao enviar email:', error);
       throw error;
@@ -116,7 +116,7 @@ export const notificationService = {
   // Envio de cobranças em lote
   enviarCobrancasLote: async (contratos: string[]): Promise<void> => {
     try {
-      await api.post('/api/notifications/cobrancas-lote', {
+      await api.post('/notifications/cobrancas-lote', {
         contratos,
         remetente: 'financeiro@imobiliariafirenze.com.br',
         timestamp: new Date().toISOString()
@@ -130,7 +130,7 @@ export const notificationService = {
   // Lembretes automáticos
   criarLembretesVencimento: async (diasAntecedencia: number = 7): Promise<void> => {
     try {
-      await api.post('/api/notifications/lembretes-vencimento', {
+      await api.post('/notifications/lembretes-vencimento', {
         diasAntecedencia,
         remetente: 'cadastro@imobiliariafirenze.com.br'
       });
@@ -143,7 +143,7 @@ export const notificationService = {
   // Notificações jurídicas
   enviarNotificacaoJuridica: async (tipo: string, destinatario: string, dados: Record<string, unknown>): Promise<void> => {
     try {
-      await api.post('/api/notifications/juridico', {
+      await api.post('/notifications/juridico', {
         tipo,
         destinatario,
         dados,

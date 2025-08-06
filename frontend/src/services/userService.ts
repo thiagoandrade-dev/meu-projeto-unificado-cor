@@ -1,23 +1,9 @@
 import axios, { AxiosInstance, AxiosResponse, AxiosError, AxiosHeaders } from "axios";
 
 // Configuração robusta da URL base
-const getApiBaseUrl = (): string => {
-  // 1. Prioridade para variável de ambiente
-  if (import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL;
-  }
-  
-  // 2. Fallback para produção (Verifique se esta URL está correta!)
-  if (import.meta.env.PROD) {
-    // Use a URL real do seu backend no Render
-    return 'https://imobiliaria-firenze-backend.onrender.com'; // <-- CONFIRME ESTA URL
-  }
-  
-  // 3. Default para desenvolvimento
-  return 'http://localhost:5000';
-};
-
-const API_URL = getApiBaseUrl( );
+// Configuração simplificada da URL base
+const API_URL = 'http://localhost:5000/api';
+console.log('🚀 URL final da API:', API_URL);
 
 // Definição do tipo de usuário (Sincronizado com backend)
 export interface User {
@@ -84,9 +70,12 @@ apiClient.interceptors.response.use(
 function handleApiError(error: unknown, context: string): Error {
   console.error(`Erro em ${context}:`, error);
   if (axios.isAxiosError(error)) {
-    // Tenta extrair uma mensagem de erro mais útil do backend
-    const apiErrorMessage = error.response?.data?.erro || (error.response?.data?.erros && error.response?.data?.erros[0] ? Object.values(error.response?.data?.erros[0])[0] : null);
-    return new Error(apiErrorMessage || `Erro na comunicação com a API (${context}). Status: ${error.response?.status || 'N/A'}`);
+    // Extração simples da mensagem de erro
+    const errorMessage = error.response?.data?.message || 
+                        error.response?.data?.erro || 
+                        error.message || 
+                        `Erro na comunicação com a API (${context}). Status: ${error.response?.status || 'N/A'}`;
+    return new Error(errorMessage);
   }
   return new Error(`Erro inesperado em ${context}.`);
 }
@@ -96,13 +85,25 @@ export const userService = {
   // Autenticação
   login: async (email: string, senha: string): Promise<AuthResponse> => {
     try {
+      console.log('🔍 Tentando login com URL:', `${API_URL}/auth/login`);
+      console.log('🔍 Dados enviados:', { email, senha: '***' });
+      
       // Usar apiClient que já tem baseURL configurada
-      const response = await apiClient.post<AuthResponse>("/api/auth/login", { 
+      const response = await apiClient.post<AuthResponse>("/auth/login", { 
         email,
         senha // Backend espera 'senha'
       });
+      
+      console.log('✅ Login bem-sucedido!', response.status);
       return response.data; // Axios já encapsula em 'data'
     } catch (error) {
+      console.error('❌ Erro no login:', error);
+      if (axios.isAxiosError(error)) {
+        console.error('❌ Status:', error.response?.status);
+        console.error('❌ URL tentada:', error.config?.url);
+        console.error('❌ Base URL:', error.config?.baseURL);
+        console.error('❌ Resposta:', error.response?.data);
+      }
       throw handleApiError(error, 'login');
     }
   },
@@ -112,17 +113,25 @@ export const userService = {
   register: async (userData: RegisterUserData): Promise<User> => {
     try {
       // Usar apiClient
-      const response = await apiClient.post<User>("/api/auth/register", userData);
+      const response = await apiClient.post<User>("/auth/register", userData);
       return response.data;
     } catch (error) {
       throw handleApiError(error, 'register');
+    }
+  },
+  // Solicitar redefinição de senha
+  requestPasswordReset: async (email: string): Promise<void> => {
+    try {
+      await apiClient.post("/senha/solicitar", { email });
+    } catch (error) {
+      throw handleApiError(error, 'solicitar redefinição de senha');
     }
   },
 
   // Operações CRUD (Exemplo - ajuste os endpoints se necessário)
   getAll: async (): Promise<User[]> => {
     try {
-      const response = await apiClient.get<User[]>('/api/usuarios'); // Endpoint de exemplo
+      const response = await apiClient.get<User[]>('/usuarios'); // Endpoint de exemplo
       return response.data;
     } catch (error) {
       throw handleApiError(error, 'buscar usuários');
@@ -131,7 +140,7 @@ export const userService = {
 
   getById: async (id: string): Promise<User> => {
     try {
-      const response = await apiClient.get<User>(`/api/usuarios/${id}`); // Endpoint de exemplo
+      const response = await apiClient.get<User>(`/usuarios/${id}`); // Endpoint de exemplo
       return response.data;
     } catch (error) {
       throw handleApiError(error, 'buscar usuário');

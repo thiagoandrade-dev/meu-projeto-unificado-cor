@@ -1,0 +1,21 @@
+### Teste de Registro de Novo Usuário Inquilino
+
+POST http://localhost:5000/api/auth/register
+Content-Type: application/json
+
+{
+  "nome": "Inquilino Teste",
+  "email": "inquilino@teste.com",
+  "senha": "senha123",
+  "perfil": "inquilino"
+}
+
+### Teste de Login com Inquilino
+
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "inquilino@teste.com",
+  "senha": "senha123"
+}

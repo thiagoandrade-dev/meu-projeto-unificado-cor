@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Login Frontend</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 600px; margin: 0 auto; }
+        .section { margin: 20px 0; padding: 20px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        button { padding: 10px 20px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 4px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Teste de Login Frontend</h1>
+        
+        <div class="section">
+            <h2>Teste de Conectividade</h2>
+            <button onclick="testConnection()">Testar Conexão Backend</button>
+            <div id="connectionResult"></div>
+        </div>
+
+        <div class="section">
+            <h2>Teste de Login</h2>
+            <button onclick="testLogin()">Fazer Login (admin@teste.com)</button>
+            <div id="loginResult"></div>
+        </div>
+
+        <div class="section">
+            <h2>Teste de Dashboard</h2>
+            <button onclick="testDashboard()">Testar Dashboard</button>
+            <div id="dashboardResult"></div>
+        </div>
+    </div>
+
+    <script>
+        let authToken = null;
+        const API_BASE = 'http://localhost:5000/api';
+
+        function showResult(elementId, content, type = 'success') {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="${type}"><pre>${content}</pre></div>`;
+        }
+
+        function showLoading(elementId) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = '<div>⏳ Carregando...</div>';
+        }
+
+        async function testConnection() {
+            showLoading('connectionResult');
+            try {
+                const response = await fetch(`${API_BASE}/status`);
+                const data = await response.json();
+                
+                showResult('connectionResult', `✅ Conexão OK!
+Status: ${response.status}
+Servidor: ${data.status}
+Database: ${data.database}
+Timestamp: ${data.timestamp}`);
+                
+            } catch (error) {
+                showResult('connectionResult', `❌ Erro de conexão: ${error.message}`, 'error');
+            }
+        }
+
+        async function testLogin() {
+            showLoading('loginResult');
+            try {
+                const response = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email: 'admin@teste.com',
+                        senha: '123456'
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                authToken = data.token;
+                
+                showResult('loginResult', `✅ Login bem-sucedido!
+Status: ${response.status}
+Token: ${data.token.substring(0, 50)}...
+Usuário: ${data.usuario.nome}
+Email: ${data.usuario.email}
+Perfil: ${data.usuario.perfil}`);
+                
+            } catch (error) {
+                showResult('loginResult', `❌ Erro no login: ${error.message}`, 'error');
+            }
+        }
+
+        async function testDashboard() {
+            if (!authToken) {
+                showResult('dashboardResult', '❌ Faça login primeiro!', 'error');
+                return;
+            }
+
+            showLoading('dashboardResult');
+            try {
+                const response = await fetch(`${API_BASE}/dashboard/estatisticas`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                
+                showResult('dashboardResult', `✅ Dashboard funcionando!
+Status: ${response.status}
+Total Imóveis: ${data.totalImoveis}
+Contratos Ativos: ${data.contratosAtivos}
+Taxa Ocupação: ${data.taxaOcupacao}%
+Receita Mensal: R$ ${data.receitaMensal}
+Taxa Inadimplência: ${data.taxaInadimplencia}%`);
+                
+            } catch (error) {
+                showResult('dashboardResult', `❌ Erro no dashboard: ${error.message}`, 'error');
+            }
+        }
+
+        // Teste automático ao carregar a página
+        window.onload = function() {
+            testConnection();
+        };
+    </script>
+</body>
+</html>

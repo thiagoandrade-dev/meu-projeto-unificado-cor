@@ -1,5 +1,5 @@
 // frontend/src/pages/admin/Imoveis.tsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import AdminSidebar from "@/components/AdminSidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -56,32 +56,44 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { api } from "@/services/apiService";
+import { imoveisService } from "@/services/apiService";
 import axios, { AxiosError } from "axios"; // Adicionado para correção
+import { exportToCsv } from "@/utils/csvUtils";
 
-// Definição do tipo de imóvel
+// Definição do tipo de imóvel (compatível com backend)
 interface Imovel {
-  id: string;
-  titulo: string;
-  tipo: "Apartamento" | "Casa" | "Comercial" | "Terreno";
-  operacao: "Venda" | "Aluguel";
-  preco: number;
-  precoCondominio?: number;
-  endereco: string;
-  bairro: string;
-  cidade: string;
-  estado: string;
+  _id: string;
+  id?: string;
+  grupo: string; // Alterado para string para compatibilidade com backend
+  bloco: string;
+  andar: string; // Alterado para string para compatibilidade com backend
+  apartamento: string; // Alterado para string para compatibilidade com backend
+  configuracaoPlanta: string;
   areaUtil: number;
+  numVagasGaragem: number;
+  tipoVagaGaragem: string;
+  preco: number;
+  statusAnuncio: string;
+  titulo?: string;
+  endereco?: string;
+  bairro?: string;
+  cidade?: string;
+  estado?: string;
+  tipo?: string;
+  operacao?: string;
+  status?: string;
   quartos?: number;
   suites?: number;
   banheiros?: number;
   vagas?: number;
-  descricao: string;
-  caracteristicas: string[];
-  fotos: string[];
-  destaque: boolean;
-  status: "Disponível" | "Ocupado" | "Reservado" | "Manutenção";
-  dataCadastro: string;
+  descricao?: string;
+  caracteristicas?: string[];
+  fotos?: string[];
+  destaque?: boolean;
+  precoCondominio?: number;
+  dataCadastro?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 // Componente principal
@@ -93,8 +105,8 @@ const Imoveis = () => {
   const [imoveis, setImoveis] = useState<Imovel[]>([]);
   const [filteredImoveis, setFilteredImoveis] = useState<Imovel[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [tipoFilter, setTipoFilter] = useState<string>("todos");
-  const [operacaoFilter, setOperacaoFilter] = useState<string>("todos");
+  const [grupoFilter, setGrupoFilter] = useState<string>("todos");
+  const [blocoFilter, setBlocoFilter] = useState<string>("todos");
   const [statusFilter, setStatusFilter] = useState<string>("todos");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [imovelToDelete, setImovelToDelete] = useState<Imovel | null>(null);
@@ -102,12 +114,12 @@ const Imoveis = () => {
   const [imovelToView, setImovelToView] = useState<Imovel | null>(null);
 
   // Carregar imóveis
-  const carregarImoveis = async () => {
+  const carregarImoveis = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await api.get('/imoveis');
-      setImoveis(response.data);
-      setFilteredImoveis(response.data);
+      const data = await imoveisService.getAll();
+      setImoveis(data);
+      setFilteredImoveis(data);
     } catch (error) { // Removido 'any'
       if (axios.isAxiosError(error)) { // Correção da estrutura do catch
         console.error("Erro ao carregar imóveis:", error);
@@ -127,46 +139,50 @@ const Imoveis = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
   // Carregar imóveis ao montar o componente
   useEffect(() => {
     carregarImoveis();
-  }, []);
+  }, [carregarImoveis]);
 
   // Filtrar imóveis quando os filtros ou o termo de busca mudam
   useEffect(() => {
     let result = [...imoveis];
     
-    // Aplicar filtro de tipo
-    if (tipoFilter !== "todos") {
-      result = result.filter(imovel => imovel.tipo === tipoFilter);
+    // Aplicar filtro de grupo
+    if (grupoFilter !== "todos") {
+      result = result.filter(imovel => imovel.grupo?.toString() === grupoFilter);
     }
     
-    // Aplicar filtro de operação
-    if (operacaoFilter !== "todos") {
-      result = result.filter(imovel => imovel.operacao === operacaoFilter);
+    // Aplicar filtro de bloco
+    if (blocoFilter !== "todos") {
+      result = result.filter(imovel => imovel.bloco === blocoFilter);
     }
     
     // Aplicar filtro de status
     if (statusFilter !== "todos") {
-      result = result.filter(imovel => imovel.status === statusFilter);
+      result = result.filter(imovel => imovel.statusAnuncio === statusFilter);
     }
     
     // Aplicar termo de busca
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       result = result.filter(
-        imovel =>
-          imovel.titulo.toLowerCase().includes(term) ||
-          imovel.endereco.toLowerCase().includes(term) ||
-          imovel.bairro.toLowerCase().includes(term) ||
-          imovel.cidade.toLowerCase().includes(term)
-      );
+          imovel => {
+            return (
+              imovel.titulo?.toLowerCase().includes(term) ||
+              imovel.endereco?.toLowerCase().includes(term) ||
+              imovel.bairro?.toLowerCase().includes(term) ||
+              imovel.cidade?.toLowerCase().includes(term) ||
+              imovel.grupo?.toLowerCase().includes(term)
+            );
+          }
+        );
     }
     
     setFilteredImoveis(result);
-  }, [imoveis, tipoFilter, operacaoFilter, statusFilter, searchTerm]);
+  }, [imoveis, grupoFilter, blocoFilter, statusFilter, searchTerm]);
 
   // Atualizar dados
   const atualizarDados = async () => {
@@ -209,11 +225,11 @@ const Imoveis = () => {
     if (!imovelToDelete) return;
     
     try {
-      await api.delete(`/imoveis/${imovelToDelete.id}`);
-      setImoveis(imoveis.filter(i => i.id !== imovelToDelete.id));
+      await imoveisService.delete(imovelToDelete._id);
+      setImoveis(imoveis.filter(i => i._id !== imovelToDelete._id));
       toast({
         title: "Imóvel excluído",
-        description: `O imóvel ${imovelToDelete.titulo} foi excluído com sucesso`,
+        description: `O imóvel ${imovelToDelete.titulo || `Grupo ${imovelToDelete.grupo} - Bloco ${imovelToDelete.bloco}`} foi excluído com sucesso`,
       });
     } catch (error) { // Removido 'any'
       if (axios.isAxiosError(error)) { // Correção da estrutura do catch
@@ -250,41 +266,21 @@ const Imoveis = () => {
 
   // Exportar para CSV
   const exportarCSV = () => {
-    // Cabeçalhos do CSV
-    const headers = ["Título", "Tipo", "Operação", "Preço", "Endereço", "Bairro", "Cidade", "Estado", "Área", "Quartos", "Banheiros", "Status"];
+    const headers = ["Grupo", "Bloco", "Andar", "Apartamento", "Configuração", "Área", "Vagas", "Tipo Vaga", "Status"];
     
-    // Converter dados para formato CSV
     const csvData = filteredImoveis.map(imovel => [
-      imovel.titulo,
-      imovel.tipo,
-      imovel.operacao,
-      imovel.preco.toString(),
-      imovel.endereco,
-      imovel.bairro,
-      imovel.cidade,
-      imovel.estado,
-      imovel.areaUtil.toString(),
-      imovel.quartos?.toString() || "N/A",
-      imovel.banheiros?.toString() || "N/A",
-      imovel.status
+      imovel.grupo || "N/A",
+      imovel.bloco || "N/A",
+      imovel.andar?.toString() || "N/A",
+      imovel.apartamento || "N/A",
+      imovel.configuracaoPlanta || "N/A",
+      imovel.areaUtil?.toString() || "N/A",
+      imovel.numVagasGaragem?.toString() || "N/A",
+      imovel.tipoVagaGaragem || "N/A",
+      imovel.statusAnuncio || "N/A"
     ]);
     
-    // Juntar cabeçalhos e dados
-    const csvContent = [
-      headers.join(','),
-      ...csvData.map(row => row.join(','))
-    ].join('\n');
-    
-    // Criar blob e link para download
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', `imoveis_${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    exportToCsv(headers, csvData, `imoveis_${new Date().toISOString().split('T')[0]}.csv`);
   };
 
   // Renderizar o componente de carregamento
@@ -373,7 +369,7 @@ const Imoveis = () => {
                   <div className="relative">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted" />
                     <Input
-                      placeholder="Buscar por título, endereço, bairro ou cidade..."
+                      placeholder="Buscar por grupo, bloco, andar, apartamento ou configuração..."
                       className="pl-8"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
@@ -384,34 +380,42 @@ const Imoveis = () => {
                 <div className="flex flex-col sm:flex-row gap-4">
                   <div className="w-full sm:w-40">
                     <Select
-                      value={tipoFilter}
-                      onValueChange={(value) => setTipoFilter(value)}
+                      value={grupoFilter}
+                      onValueChange={(value) => setGrupoFilter(value)}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Tipo" />
+                        <SelectValue placeholder="Grupo" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="todos">Todos os tipos</SelectItem>
-                        <SelectItem value="Apartamento">Apartamento</SelectItem>
-                        <SelectItem value="Casa">Casa</SelectItem>
-                        <SelectItem value="Comercial">Comercial</SelectItem>
-                        <SelectItem value="Terreno">Terreno</SelectItem>
+                        <SelectItem value="todos">Todos os grupos</SelectItem>
+                        <SelectItem value="12">Grupo 12</SelectItem>
+                        <SelectItem value="13">Grupo 13</SelectItem>
+                        <SelectItem value="14">Grupo 14</SelectItem>
+                        <SelectItem value="15">Grupo 15</SelectItem>
+                        <SelectItem value="16">Grupo 16</SelectItem>
+                        <SelectItem value="17">Grupo 17</SelectItem>
+                        <SelectItem value="18">Grupo 18</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   
                   <div className="w-full sm:w-40">
                     <Select
-                      value={operacaoFilter}
-                      onValueChange={(value) => setOperacaoFilter(value)}
+                      value={blocoFilter}
+                      onValueChange={(value) => setBlocoFilter(value)}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Operação" />
+                        <SelectValue placeholder="Bloco" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="todos">Todas as operações</SelectItem>
-                        <SelectItem value="Venda">Venda</SelectItem>
-                        <SelectItem value="Aluguel">Aluguel</SelectItem>
+                        <SelectItem value="todos">Todos os blocos</SelectItem>
+                        <SelectItem value="A">Bloco A</SelectItem>
+                        <SelectItem value="B">Bloco B</SelectItem>
+                        <SelectItem value="C">Bloco C</SelectItem>
+                        <SelectItem value="D">Bloco D</SelectItem>
+                        <SelectItem value="E">Bloco E</SelectItem>
+                        <SelectItem value="F">Bloco F</SelectItem>
+                        <SelectItem value="G">Bloco G</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -426,7 +430,8 @@ const Imoveis = () => {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="todos">Todos os status</SelectItem>
-                        <SelectItem value="Disponível">Disponível</SelectItem>
+                        <SelectItem value="Disponível para Venda">Disponível para Venda</SelectItem>
+                        <SelectItem value="Disponível para Locação">Disponível para Locação</SelectItem>
                         <SelectItem value="Ocupado">Ocupado</SelectItem>
                         <SelectItem value="Reservado">Reservado</SelectItem>
                         <SelectItem value="Manutenção">Manutenção</SelectItem>
@@ -465,12 +470,12 @@ const Imoveis = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Título</TableHead>
-                      <TableHead>Tipo</TableHead>
-                      <TableHead>Operação</TableHead>
+                      <TableHead>Grupo/Bloco</TableHead>
+                      <TableHead>Andar/Apto</TableHead>
+                      <TableHead>Configuração</TableHead>
                       <TableHead>Preço</TableHead>
-                      <TableHead>Localização</TableHead>
-                      <TableHead>Detalhes</TableHead>
+                      <TableHead>Área</TableHead>
+                      <TableHead>Vagas</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
@@ -484,74 +489,45 @@ const Imoveis = () => {
                       </TableRow>
                     ) : (
                       filteredImoveis.map((imovel) => (
-                        <TableRow key={imovel.id}>
+                        <TableRow key={imovel._id}>
                           <TableCell className="font-medium">
-                            <div className="flex items-center">
-                              {imovel.destaque && (
-                                <Badge className="mr-2 bg-warning text-warning-foreground">
-                                  Destaque
-                                </Badge>
-                              )}
-                              {imovel.titulo}
+                            <div className="flex flex-col">
+                              <span className="font-semibold text-gray-900">Grupo {imovel.grupo}</span>
+                              <span className="text-sm font-medium text-blue-600">Torre {imovel.bloco}</span>
                             </div>
-                          </TableCell>
-                          <TableCell>{imovel.tipo}</TableCell>
-                          <TableCell>
-                            <Badge
-                              variant="outline"
-                              className={
-                                imovel.operacao === 'Venda' ? 'bg-primary/10 text-primary' : 'bg-secondary/10 text-secondary'
-                              }
-                            >
-                              {imovel.operacao}
-                            </Badge>
                           </TableCell>
                           <TableCell>
                             <div>
-                              <div className="font-medium">{formatCurrency(imovel.preco)}</div>
-                              {imovel.precoCondominio && (
-                                <div className="text-xs text-muted">
-                                  + {formatCurrency(imovel.precoCondominio)} (cond.)
-                                </div>
-                              )}
+                              <div className="font-medium">Andar {imovel.andar}</div>
+                              <div className="text-xs text-muted">Apto {imovel.apartamento}</div>
                             </div>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-sm">{imovel.configuracaoPlanta}</span>
+                          </TableCell>
+                          <TableCell>
+                            <div className="font-medium">{formatCurrency(imovel.preco)}</div>
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center">
-                              <MapPin size={14} className="mr-1 text-muted" />
-                              <span className="text-sm">{imovel.bairro}, {imovel.cidade}</span>
+                              <Ruler size={12} className="mr-1" />
+                              <span>{imovel.areaUtil}m²</span>
                             </div>
                           </TableCell>
                           <TableCell>
-                            <div className="flex items-center gap-3 text-xs text-muted">
-                              <div className="flex items-center">
-                                <Ruler size={12} className="mr-1" />
-                                {imovel.areaUtil}m²
-                              </div>
-                              {imovel.quartos !== undefined && (
-                                <div className="flex items-center">
-                                  <Bed size={12} className="mr-1" />
-                                  {imovel.quartos}
-                                </div>
-                              )}
-                              {imovel.banheiros !== undefined && (
-                                <div className="flex items-center">
-                                  <Bath size={12} className="mr-1" />
-                                  {imovel.banheiros}
-                                </div>
-                              )}
+                            <div className="text-sm">
+                              <div>{imovel.numVagasGaragem} vaga{imovel.numVagasGaragem > 1 ? 's' : ''}</div>
+                              <div className="text-xs text-muted">{imovel.tipoVagaGaragem}</div>
                             </div>
                           </TableCell>
                           <TableCell>
                             <Badge
                               className={
-                                imovel.status === 'Disponível' ? 'bg-success/10 text-success' :
-                                imovel.status === 'Ocupado' ? 'bg-primary/10 text-primary' :
-                                imovel.status === 'Reservado' ? 'bg-warning/10 text-warning' :
-                                'bg-danger/10 text-danger'
+                                imovel.statusAnuncio?.includes('Disponível') ? 'bg-success/10 text-success' :
+                                'bg-primary/10 text-primary'
                               }
                             >
-                              {imovel.status}
+                              {imovel.statusAnuncio}
                             </Badge>
                           </TableCell>
                           <TableCell className="text-right">
@@ -569,7 +545,7 @@ const Imoveis = () => {
                                   Visualizar
                                 </DropdownMenuItem>
                                 <DropdownMenuItem>
-                                  <Link to={`/admin/imoveis/editar/${imovel.id}`} className="flex items-center">
+                                  <Link to={`/admin/imoveis/editar/${imovel._id}`} className="flex items-center">
                                     <Edit size={16} className="mr-2" />
                                     Editar
                                   </Link>
@@ -635,7 +611,7 @@ const Imoveis = () => {
           {imovelToView && (
             <div className="space-y-6">
               {/* Imagem principal */}
-              {imovelToView.fotos.length > 0 && (
+              {imovelToView.fotos && imovelToView.fotos.length > 0 && (
                 <div className="relative h-64 overflow-hidden rounded-md">
                   <img
                     src={imovelToView.fotos[0]}
@@ -697,7 +673,7 @@ const Imoveis = () => {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted">Data de cadastro:</span>
-                      <span>{new Date(imovelToView.dataCadastro).toLocaleDateString('pt-BR')}</span>
+                      <span>{imovelToView.dataCadastro ? new Date(imovelToView.dataCadastro).toLocaleDateString('pt-BR') : 'Data não informada'}</span>
                     </div>
                   </div>
                 </div>
@@ -776,11 +752,11 @@ const Imoveis = () => {
               </div>
               
               {/* Características adicionais */}
-              {imovelToView.caracteristicas.length > 0 && (
+              {imovelToView.caracteristicas && imovelToView.caracteristicas.length > 0 && (
                 <div>
                   <h3 className="text-lg font-semibold mb-2">Características adicionais</h3>
                   <div className="flex flex-wrap gap-2">
-                    {imovelToView.caracteristicas.map((caracteristica, index) => (
+                    {imovelToView.caracteristicas.map((caracteristica: string, index: number) => (
                       <Badge key={index} variant="outline" className="bg-primary/10">
                         <Tag size={12} className="mr-1 text-primary" />
                         {caracteristica}
@@ -798,7 +774,7 @@ const Imoveis = () => {
                 >
                   Fechar
                 </Button>
-                <Link to={`/admin/imoveis/editar/${imovelToView.id}`}>
+                <Link to={`/admin/imoveis/editar/${imovelToView._id}`}>
                   <Button className="flex items-center gap-2">
                     <Edit size={16} />
                     Editar

@@ -2,10 +2,7 @@
 
 import axios, { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL;
-if (!API_URL) {
-  throw new Error("API URL não definida (VITE_API_URL)");
-}
+const API_URL = "http://localhost:5000/api";
 
 export const api = axios.create({
   baseURL: API_URL,
@@ -44,27 +41,16 @@ api.interceptors.response.use(
 
 export interface Imovel {
   _id: string;
-  titulo: string;
-  descricao: string;
-  endereco: string;
-  cidade: string;
-  uf: string;
-  cep: string;
-  valor: number;
-  tipo: 'Apartamento' | 'Casa' | 'Comercial' | 'Sobrado';
+  grupo: string;
+  bloco: string;
+  andar: string;
+  apartamento: string;
+  configuracaoPlanta: string;
+  areaUtil: number;
+  numVagasGaragem: number;
+  tipoVagaGaragem: string;
+  preco: number;
   statusAnuncio: 'Disponível' | 'Alugado' | 'Vendido' | 'Manutenção';
-  quartos: number;
-  banheiros: number;
-  vagasGaragem: number;
-  area: number;
-  fotos: string[];
-  apartamento?: number;
-  andar?: number;
-  bloco?: string;
-  grupo?: string;
-  configuracaoPlanta?: string;
-  tipoVagaGaragem?: string;
-  caracteristicas?: string[];
   createdAt?: string;
   updatedAt?: string;
 }
@@ -138,7 +124,7 @@ export const imoveisService = {
 export const authService = {
   login: async (email: string, senha: string): Promise<AuthResponse> => {
     try {
-      const response = await api.post<AuthResponse>('/usuarios/login', { email, senha });
+      const response = await api.post<AuthResponse>('/auth/login', { email, senha });
       const { token, usuario } = response.data;
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(usuario));
@@ -147,7 +133,7 @@ export const authService = {
   },
   register: async (userData: Omit<Usuario, '_id' | 'dataRegistro' | 'status'> & { senha?: string }): Promise<Usuario> => {
     try {
-      const response = await api.post<Usuario>('/usuarios/registrar', userData);
+      const response = await api.post<Usuario>('/auth/register', userData);
       return response.data;
     } catch (error) { throw handleApiError(error, 'registrar novo usuário'); }
   },
@@ -245,7 +231,7 @@ export interface BoletoAsaas {
 export const asaasService = {
   criarCliente: async (payload: ClienteAsaasPayload): Promise<ClienteAsaasResponse> => {
     try {
-      const response = await api.post<ClienteAsaasResponse>('/api/asaas/cliente', payload);
+      const response = await api.post<ClienteAsaasResponse>('/asaas/cliente', payload);
       return response.data;
     } catch (error) {
       throw handleApiError(error, 'criar cliente Asaas');
@@ -254,7 +240,7 @@ export const asaasService = {
 
   criarCobranca: async (payload: CobrancaAsaasPayload): Promise<CobrancaAsaasResponse> => {
     try {
-      const response = await api.post<CobrancaAsaasResponse>('/api/asaas/cobranca', payload);
+      const response = await api.post<CobrancaAsaasResponse>('/asaas/cobranca', payload);
       return response.data;
     } catch (error) {
       throw handleApiError(error, 'criar cobrança Asaas');
