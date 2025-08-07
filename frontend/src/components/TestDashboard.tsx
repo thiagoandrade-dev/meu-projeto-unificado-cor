@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
 const TestDashboard = () => {
   const [logs, setLogs] = useState<Array<{message: string, type: string, time: string}>>([]);
 
@@ -25,7 +27,7 @@ const TestDashboard = () => {
       // Teste básico de conectividade
       addLog('1️⃣ Testando conectividade com backend...', 'info');
       
-      const response = await fetch('http://localhost:5000/api/dashboard', {
+      const response = await fetch(`${API_URL}/dashboard`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

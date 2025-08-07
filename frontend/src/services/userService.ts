@@ -2,7 +2,7 @@ import axios, { AxiosInstance, AxiosResponse, AxiosError, AxiosHeaders } from "a
 
 // Configuração robusta da URL base
 // Configuração simplificada da URL base
-const API_URL = 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 console.log('🚀 URL final da API:', API_URL);
 
 // Definição do tipo de usuário (Sincronizado com backend)

@@ -1,1 +1,6 @@
 .vercel
+
+# Pasta de backup - não deve ser versionada nem analisada
+backup_estado_atual_*
+backup_*
+*.backup

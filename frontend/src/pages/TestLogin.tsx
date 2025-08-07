@@ -1,5 +1,13 @@
 import React, { useState } from 'react';
 
+interface LogEntry {
+  message: string;
+  type: 'info' | 'success' | 'error';
+  timestamp: string;
+}
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
 const TestLogin: React.FC = () => {
   const [logs, setLogs] = useState<Array<{message: string, type: string, time: string}>>([]);
   const [email, setEmail] = useState('admin@imobiliariafirenze.com.br');
@@ -28,7 +36,7 @@ const TestLogin: React.FC = () => {
     // Teste 1: Verificar se o backend está respondendo
     addLog('1️⃣ Testando conectividade com o backend...', 'info');
     try {
-      const healthCheck = await fetch('http://localhost:5000/api/status', {
+      const healthCheck = await fetch(`${API_URL}/status`, {
         method: 'GET',
         mode: 'cors'
       });
@@ -43,7 +51,7 @@ const TestLogin: React.FC = () => {
     // Teste 2: Verificar OPTIONS (preflight)
     addLog('2️⃣ Testando preflight OPTIONS...', 'info');
     try {
-      const optionsResponse = await fetch('http://localhost:5000/api/auth/login', {
+      const optionsResponse = await fetch(`${API_URL}/auth/login`, {
         method: 'OPTIONS',
         mode: 'cors',
         headers: {
@@ -63,7 +71,7 @@ const TestLogin: React.FC = () => {
     try {
       await new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
-        xhr.open('POST', 'http://localhost:5000/api/auth/login', true);
+        xhr.open('POST', `${API_URL}/auth/login`, true);
         xhr.setRequestHeader('Content-Type', 'application/json');
         
         xhr.onreadystatechange = function() {
@@ -113,7 +121,7 @@ const TestLogin: React.FC = () => {
         addLog('⏰ Fetch abortado por timeout (10s)', 'error');
       }, 10000);
 
-      const fetchResponse = await fetch('http://localhost:5000/api/auth/login', {
+      const fetchResponse = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
         mode: 'cors',
         signal: controller.signal,
@@ -179,9 +187,9 @@ const TestLogin: React.FC = () => {
       
       <div className="bg-blue-50 p-4 rounded-lg mb-6">
         <h3 className="font-semibold mb-2">Configuração Atual:</h3>
-        <p>Backend: http://localhost:5000</p>
+        <p>Backend: {API_URL.replace('/api', '')}</p>
         <p>Frontend: http://localhost:8081</p>
-        <p>API Base: http://localhost:5000/api</p>
+        <p>API Base: {API_URL}</p>
       </div>
 
       <div className="mb-6">
