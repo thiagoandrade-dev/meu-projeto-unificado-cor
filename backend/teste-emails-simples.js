@@ -98,9 +98,9 @@ const emailTemplates = {
             </div>
           </div>
           <div style="text-align: center; margin: 25px 0;">
-            <a href="https://www.imobiliariafirenze.com.br/boletos" 
+            <a href="https://www.imobiliariafirenze.com.br" 
                style="background: #4CAF50; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">
-              💳 Ver Boleto
+              💳 Acessar Sistema
             </a>
           </div>
           <div style="background: #e3f2fd; padding: 15px; border-radius: 5px; margin: 20px 0;">

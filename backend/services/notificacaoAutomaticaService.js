@@ -100,9 +100,9 @@ const emailTemplates = {
             </div>
           </div>
           <div style="text-align: center; margin: 25px 0;">
-            <a href="${process.env.FRONTEND_URL || 'https://www.imobiliariafirenze.com.br'}/boletos" 
+            <a href="${process.env.FRONTEND_URL || 'https://www.imobiliariafirenze.com.br'}" 
                style="background: #4CAF50; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">
-              💳 Ver Boleto
+              💳 Acessar Sistema
             </a>
           </div>
           <div style="background: #e3f2fd; padding: 15px; border-radius: 5px; margin: 20px 0;">
@@ -157,9 +157,9 @@ const emailTemplates = {
             </p>
           </div>
           <div style="text-align: center; margin: 25px 0;">
-            <a href="${process.env.FRONTEND_URL || 'https://www.imobiliariafirenze.com.br'}/contratos" 
+            <a href="${process.env.FRONTEND_URL || 'https://www.imobiliariafirenze.com.br'}" 
                style="background: #673ab7; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">
-              📄 Ver Contrato
+              📄 Acessar Sistema
             </a>
           </div>
           <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
@@ -206,9 +206,9 @@ const emailTemplates = {
                style="background: #4CAF50; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block; margin: 5px;">
               📞 Ligar Agora
             </a>
-            <a href="${process.env.FRONTEND_URL || 'https://www.imobiliariafirenze.com.br'}/contatos" 
+            <a href="${process.env.FRONTEND_URL || 'https://www.imobiliariafirenze.com.br'}" 
                style="background: #2196F3; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block; margin: 5px;">
-              💬 Falar Conosco
+              💬 Acessar Sistema
             </a>
           </div>
           <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
