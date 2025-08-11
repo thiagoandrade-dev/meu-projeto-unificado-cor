@@ -23,6 +23,7 @@ const usuarioRoutes = require('./routes/usuario');
 const esqueceuSenhaRoutes = require('./routes/esqueceuSenha');
 const relatorioRoutes = require('./routes/relatorio');
 const configRoutes = require('./routes/configRoutes');
+const notificacaoAutomaticaRoutes = require('./routes/notificacaoAutomaticaRoutes');
 const app = express();
 
 // =============================================
@@ -141,6 +142,7 @@ app.use('/api/usuarios', usuarioRoutes);
 app.use('/api/senha', esqueceuSenhaRoutes);
 app.use('/api/relatorios', relatorioRoutes);
 app.use('/api/config', configRoutes);
+app.use('/api/notificacoes-automaticas', notificacaoAutomaticaRoutes);
 // Rota raiz para verificar se o servidor está funcionando
 app.get("/", (req, res) => {
   res.json({

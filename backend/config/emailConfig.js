@@ -4,6 +4,7 @@ const nodemailer = require('nodemailer');
 // Configuração centralizada do transporter de e-mail
 const createEmailTransporter = () => {
   const config = {
+    service: 'gmail', // Usar serviço Gmail diretamente
     host: process.env.EMAIL_HOST || 'smtp.gmail.com',
     port: parseInt(process.env.EMAIL_PORT) || 587,
     secure: process.env.EMAIL_SECURE === 'true', // true para 465, false para outras portas
@@ -24,7 +25,7 @@ const createEmailTransporter = () => {
     user: config.auth.user ? config.auth.user.substring(0, 3) + '***' : 'não configurado'
   });
 
-  return nodemailer.createTransporter(config);
+  return nodemailer.createTransport(config);
 };
 
 // Função para verificar se a configuração de e-mail está válida
