@@ -11,6 +11,11 @@ export interface Contrato {
   valorCondominio?: number;
   valorIPTU?: number;
   diaVencimento: number;
+  proximoVencimento?: string;
+  dataUltimoReajuste?: string;
+  percentualReajusteAnual?: number;
+  indiceReajuste?: string;
+  arquivoContrato?: string;
   status: "Ativo" | "Finalizado" | "Cancelado" | "Pendente";
   observacoes?: string;
   documentos?: string[];

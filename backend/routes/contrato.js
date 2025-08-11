@@ -1,47 +1,43 @@
 const verificarToken = require("../middlewares/verificarToken");
 const router = require("express").Router();
+const contratoController = require("../controllers/contratoController");
 const Contrato = require("../models/Contrato");
 const mongoose = require("mongoose");
 const { body, validationResult } = require("express-validator");
 
-// Rota GET para listar contratos com paginação e filtros
-router.get("/", verificarToken, async (req, res) => {
-  try {
-    const filtros = {};
-    const limit = parseInt(req.query.limit) || 10;
-    const skip = parseInt(req.query.skip) || 0;
-    
-    // Aplicar filtros se fornecidos
-    if (req.query.status) filtros.status = req.query.status;
-    if (req.query.tipo) filtros.tipo = req.query.tipo;
-    if (req.query.inquilinoId) filtros.inquilinoId = req.query.inquilinoId;
-    if (req.query.imovelId) filtros.imovelId = req.query.imovelId;
-    
-    // Buscar contratos com populate para trazer dados relacionados
-    const contratos = await Contrato.find(filtros)
-      .populate('inquilinoId', 'nome email telefone')
-      .populate('imovelId', 'grupo bloco andar apartamento configuracaoPlanta')
-      .sort({ createdAt: -1 }) // Mais recentes primeiro
-      .limit(limit)
-      .skip(skip);
-      
-    // Contar o total para paginação  
-    const total = await Contrato.countDocuments(filtros);
-    
-    res.json({
-      data: contratos,
-      pagination: {
-        total,
-        limit,
-        skip,
-        pages: Math.ceil(total / limit)
-      }
-    });
-  } catch (err) {
-    console.error("Erro ao buscar contratos:", err);
-    res.status(500).json({ erro: "Erro ao buscar contratos: " + err.message });
-  }
-});
+// Validações
+const contratoValidationRules = () => [
+  body("numero").trim().notEmpty().withMessage("O número do contrato é obrigatório."),
+  body("inquilinoId").isMongoId().withMessage("ID do inquilino inválido."),
+  body("imovelId").isMongoId().withMessage("ID do imóvel inválido."),
+  body("dataInicio").isISO8601().withMessage("Data de início inválida."),
+  body("dataFim").isISO8601().withMessage("Data de fim inválida."),
+  body("valorAluguel").isNumeric().withMessage("Valor do aluguel deve ser numérico."),
+  body("diaVencimento").optional().isInt({ min: 1, max: 31 }).withMessage("Dia de vencimento deve ser entre 1 e 31."),
+  body("percentualReajusteAnual").optional().isNumeric().withMessage("Percentual de reajuste deve ser numérico."),
+  body("indiceReajuste").optional().isIn(["IGPM", "IPCA", "INCC", "Outro"]).withMessage("Índice de reajuste inválido.")
+];
+
+// Rotas protegidas por autenticação
+router.use(verificarToken);
+
+// Listar todos os contratos
+router.get("/", contratoController.listarContratos);
+
+// Buscar contrato por ID
+router.get("/:id", contratoController.buscarContratoPorId);
+
+// Criar novo contrato
+router.post("/", contratoValidationRules(), contratoController.criarContrato);
+
+// Atualizar contrato
+router.put("/:id", contratoValidationRules(), contratoController.atualizarContrato);
+
+// Atualizar status do contrato
+router.patch("/:id/status", contratoController.atualizarStatusContrato);
+
+// Excluir contrato
+router.delete("/:id", contratoController.excluirContrato);
 
 // Se não houver contratos no banco de dados, vamos adicionar alguns para teste
 router.get("/seed", verificarToken, async (req, res) => {

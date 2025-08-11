@@ -22,7 +22,19 @@ const listarUsuarios = async (req, res) => {
       perfil: usuario.perfil,
       status: usuario.status,
       dataCadastro: usuario.dataCadastro || usuario.createdAt,
-      ultimoAcesso: usuario.ultimoAcesso
+      ultimoAcesso: usuario.ultimoAcesso,
+      cpf: usuario.cpf || "",
+      rg: usuario.rg || "",
+      dataNascimento: usuario.dataNascimento || "",
+      endereco: usuario.endereco || {
+        rua: "",
+        numero: "",
+        complemento: "",
+        bairro: "",
+        cidade: "",
+        estado: "",
+        cep: ""
+      }
     }));
     res.json(usuariosFormatados);
   } catch (error) {
@@ -52,7 +64,19 @@ const buscarUsuarioPorId = async (req, res) => {
       perfil: usuario.perfil,
       status: usuario.status,
       dataCadastro: usuario.dataCadastro || usuario.createdAt,
-      ultimoAcesso: usuario.ultimoAcesso
+      ultimoAcesso: usuario.ultimoAcesso,
+      cpf: usuario.cpf || "",
+      rg: usuario.rg || "",
+      dataNascimento: usuario.dataNascimento || "",
+      endereco: usuario.endereco || {
+        rua: "",
+        numero: "",
+        complemento: "",
+        bairro: "",
+        cidade: "",
+        estado: "",
+        cep: ""
+      }
     };
 
     res.json(usuarioFormatado);
@@ -118,7 +142,7 @@ const atualizarUsuario = async (req, res) => {
       return res.status(400).json({ erros: errors.array().map(err => ({ [err.path]: err.msg })) });
     }
 
-    const { nome, email, senha, perfil, status } = req.body;
+    const { nome, email, senha, perfil, status, telefone, cpf, rg, dataNascimento, endereco } = req.body;
     const dadosAtualizacao = {};
 
     // Apenas admin pode alterar perfil e status
@@ -130,6 +154,11 @@ const atualizarUsuario = async (req, res) => {
     // Campos que qualquer usuário pode atualizar
     if (nome) dadosAtualizacao.nome = nome;
     if (email) dadosAtualizacao.email = email;
+    if (telefone) dadosAtualizacao.telefone = telefone;
+    if (cpf) dadosAtualizacao.cpf = cpf;
+    if (rg) dadosAtualizacao.rg = rg;
+    if (dataNascimento) dadosAtualizacao.dataNascimento = dataNascimento;
+    if (endereco) dadosAtualizacao.endereco = endereco;
     if (senha) {
       const salt = await bcrypt.genSalt(10);
       dadosAtualizacao.senha = await bcrypt.hash(senha, salt);
@@ -153,7 +182,19 @@ const atualizarUsuario = async (req, res) => {
       perfil: usuarioAtualizado.perfil,
       status: usuarioAtualizado.status,
       dataCadastro: usuarioAtualizado.dataCadastro || usuarioAtualizado.createdAt,
-      ultimoAcesso: usuarioAtualizado.ultimoAcesso
+      ultimoAcesso: usuarioAtualizado.ultimoAcesso,
+      cpf: usuarioAtualizado.cpf || "",
+      rg: usuarioAtualizado.rg || "",
+      dataNascimento: usuarioAtualizado.dataNascimento || "",
+      endereco: usuarioAtualizado.endereco || {
+        rua: "",
+        numero: "",
+        complemento: "",
+        bairro: "",
+        cidade: "",
+        estado: "",
+        cep: ""
+      }
     };
 
     res.json({
@@ -197,7 +238,19 @@ const atualizarStatusUsuario = async (req, res) => {
       perfil: usuarioAtualizado.perfil,
       status: usuarioAtualizado.status,
       dataCadastro: usuarioAtualizado.dataCadastro || usuarioAtualizado.createdAt,
-      ultimoAcesso: usuarioAtualizado.ultimoAcesso
+      ultimoAcesso: usuarioAtualizado.ultimoAcesso,
+      cpf: usuarioAtualizado.cpf || "",
+      rg: usuarioAtualizado.rg || "",
+      dataNascimento: usuarioAtualizado.dataNascimento || "",
+      endereco: usuarioAtualizado.endereco || {
+        rua: "",
+        numero: "",
+        complemento: "",
+        bairro: "",
+        cidade: "",
+        estado: "",
+        cep: ""
+      }
     };
 
     res.json({

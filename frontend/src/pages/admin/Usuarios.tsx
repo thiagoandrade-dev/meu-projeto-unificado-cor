@@ -68,6 +68,19 @@ interface Usuario {
   status: 'ativo' | 'inativo' | 'pendente';
   dataCadastro: string;
   ultimoAcesso?: string;
+  // Campos específicos para inquilinos
+  cpf?: string;
+  rg?: string;
+  dataNascimento?: string;
+  endereco?: {
+    rua: string;
+    numero: string;
+    complemento?: string;
+    bairro: string;
+    cidade: string;
+    estado: string;
+    cep: string;
+  };
 }
 
 // Componente principal
@@ -90,7 +103,19 @@ const Usuarios = () => {
     email: "",
     telefone: "",
     perfil: "" as Usuario['perfil'] | "", // Tipagem mais específica
-    status: "" as Usuario['status'] | "" // Tipagem mais específica
+    status: "" as Usuario['status'] | "", // Tipagem mais específica
+    cpf: "",
+    rg: "",
+    dataNascimento: "",
+    endereco: {
+      rua: "",
+      numero: "",
+      complemento: "",
+      bairro: "",
+      cidade: "",
+      estado: "",
+      cep: ""
+    }
   });
 
   // Carregar usuários (envolvido em useCallback)
@@ -231,7 +256,19 @@ const Usuarios = () => {
       email: usuario.email,
       telefone: usuario.telefone,
       perfil: usuario.perfil,
-      status: usuario.status
+      status: usuario.status,
+      cpf: usuario.cpf || "",
+      rg: usuario.rg || "",
+      dataNascimento: usuario.dataNascimento || "",
+      endereco: {
+        rua: usuario.endereco?.rua || "",
+        numero: usuario.endereco?.numero || "",
+        complemento: usuario.endereco?.complemento || "",
+        bairro: usuario.endereco?.bairro || "",
+        cidade: usuario.endereco?.cidade || "",
+        estado: usuario.endereco?.estado || "",
+        cep: usuario.endereco?.cep || ""
+      }
     });
     setEditDialogOpen(true);
   };
@@ -239,7 +276,20 @@ const Usuarios = () => {
   // Atualizar campo do formulário
   const handleFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value })); // Removido 'as any', pois nome, email, telefone são strings
+    
+    // Verificar se é um campo de endereço
+    if (name.startsWith('endereco.')) {
+      const enderecoField = name.split('.')[1];
+      setFormData(prev => ({
+        ...prev,
+        endereco: {
+          ...prev.endereco,
+          [enderecoField]: value
+        }
+      }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
   };
 
   // Atualizar campo select do formulário
@@ -734,6 +784,154 @@ const Usuarios = () => {
                     </SelectContent>
                   </Select>
                 </div>
+                
+                {/* Campos específicos para inquilinos */}
+                {formData.perfil === 'inquilino' && (
+                  <>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label htmlFor="cpf" className="text-sm font-medium">
+                          CPF
+                        </label>
+                        <Input
+                          id="cpf"
+                          name="cpf"
+                          value={formData.cpf}
+                          onChange={handleFormChange}
+                          placeholder="000.000.000-00"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label htmlFor="rg" className="text-sm font-medium">
+                          RG
+                        </label>
+                        <Input
+                          id="rg"
+                          name="rg"
+                          value={formData.rg}
+                          onChange={handleFormChange}
+                          placeholder="00.000.000-0"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label htmlFor="dataNascimento" className="text-sm font-medium">
+                        Data de Nascimento
+                      </label>
+                      <Input
+                        id="dataNascimento"
+                        name="dataNascimento"
+                        type="date"
+                        value={formData.dataNascimento}
+                        onChange={handleFormChange}
+                      />
+                    </div>
+                    
+                    <div className="space-y-3">
+                      <h4 className="text-sm font-medium">Endereço</h4>
+                      
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="col-span-2">
+                          <label htmlFor="endereco.rua" className="text-sm font-medium">
+                            Rua
+                          </label>
+                          <Input
+                            id="endereco.rua"
+                            name="endereco.rua"
+                            value={formData.endereco.rua}
+                            onChange={handleFormChange}
+                            placeholder="Nome da rua"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label htmlFor="endereco.numero" className="text-sm font-medium">
+                            Número
+                          </label>
+                          <Input
+                            id="endereco.numero"
+                            name="endereco.numero"
+                            value={formData.endereco.numero}
+                            onChange={handleFormChange}
+                            placeholder="123"
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label htmlFor="endereco.complemento" className="text-sm font-medium">
+                            Complemento
+                          </label>
+                          <Input
+                            id="endereco.complemento"
+                            name="endereco.complemento"
+                            value={formData.endereco.complemento}
+                            onChange={handleFormChange}
+                            placeholder="Apto, casa, etc."
+                          />
+                        </div>
+                        
+                        <div>
+                          <label htmlFor="endereco.bairro" className="text-sm font-medium">
+                            Bairro
+                          </label>
+                          <Input
+                            id="endereco.bairro"
+                            name="endereco.bairro"
+                            value={formData.endereco.bairro}
+                            onChange={handleFormChange}
+                            placeholder="Nome do bairro"
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-3 gap-4">
+                        <div>
+                          <label htmlFor="endereco.cidade" className="text-sm font-medium">
+                            Cidade
+                          </label>
+                          <Input
+                            id="endereco.cidade"
+                            name="endereco.cidade"
+                            value={formData.endereco.cidade}
+                            onChange={handleFormChange}
+                            placeholder="Nome da cidade"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label htmlFor="endereco.estado" className="text-sm font-medium">
+                            Estado
+                          </label>
+                          <Input
+                            id="endereco.estado"
+                            name="endereco.estado"
+                            value={formData.endereco.estado}
+                            onChange={handleFormChange}
+                            placeholder="SP"
+                            maxLength={2}
+                          />
+                        </div>
+                        
+                        <div>
+                          <label htmlFor="endereco.cep" className="text-sm font-medium">
+                            CEP
+                          </label>
+                          <Input
+                            id="endereco.cep"
+                            name="endereco.cep"
+                            value={formData.endereco.cep}
+                            onChange={handleFormChange}
+                            placeholder="00000-000"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
             

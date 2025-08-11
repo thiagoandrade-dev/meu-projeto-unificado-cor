@@ -283,20 +283,20 @@ class NotificacaoAutomaticaService {
   // 💰 Enviar lembrete de vencimento de aluguel
   async enviarLembreteVencimentoAluguel(contrato, diasAntecedencia = 7) {
     try {
-      const dataVencimento = new Date(contrato.dataVencimento);
+      const dataVencimento = new Date(contrato.proximoVencimento);
       const hoje = new Date();
       const diasRestantes = Math.ceil((dataVencimento - hoje) / (1000 * 60 * 60 * 24));
 
       if (diasRestantes <= diasAntecedencia && diasRestantes >= 0) {
         const template = emailTemplates.vencimentoAluguel(
-          contrato.inquilino.nome,
+          contrato.inquilinoId.nome,
           contrato.valorAluguel,
           dataVencimento.toLocaleDateString('pt-BR'),
           diasRestantes
         );
         
         await sendEmail({
-          to: contrato.inquilino.email,
+          to: contrato.inquilinoId.email,
           subject: template.subject,
           html: template.html
         });
@@ -304,15 +304,15 @@ class NotificacaoAutomaticaService {
         // Registrar notificação
         await Notificacao.create({
           titulo: `Lembrete de vencimento enviado`,
-          mensagem: `Lembrete de aluguel enviado para ${contrato.inquilino.nome}`,
+          mensagem: `Lembrete de aluguel enviado para ${contrato.inquilinoId.nome}`,
           tipo: "warning",
-          destinatario: contrato.inquilino.email,
+          destinatario: contrato.inquilinoId.email,
           remetente: "sistema",
           urgente: diasRestantes <= 1,
           metadata: { tipo: "vencimento-aluguel", contratoId: contrato._id, diasRestantes }
         });
 
-        console.log(`✅ Lembrete de vencimento enviado para ${contrato.inquilino.nome}`);
+        console.log(`✅ Lembrete de vencimento enviado para ${contrato.inquilinoId.nome}`);
       }
     } catch (error) {
       console.error(`❌ Erro ao enviar lembrete de vencimento:`, error);
@@ -326,7 +326,7 @@ class NotificacaoAutomaticaService {
       const valorNovo = contrato.valorAluguel * (1 + percentualReajuste / 100);
       
       const template = emailTemplates.reajusteAnual(
-        contrato.inquilino.nome,
+        contrato.inquilinoId.nome,
         contrato.valorAluguel.toFixed(2),
         valorNovo.toFixed(2),
         percentualReajuste,
@@ -334,7 +334,7 @@ class NotificacaoAutomaticaService {
       );
       
       await sendEmail({
-        to: contrato.inquilino.email,
+        to: contrato.inquilinoId.email,
         subject: template.subject,
         html: template.html
       });
@@ -342,9 +342,9 @@ class NotificacaoAutomaticaService {
       // Registrar notificação
       await Notificacao.create({
         titulo: `Reajuste anual notificado`,
-        mensagem: `Notificação de reajuste enviada para ${contrato.inquilino.nome}`,
+        mensagem: `Notificação de reajuste enviada para ${contrato.inquilinoId.nome}`,
         tipo: "info",
-        destinatario: contrato.inquilino.email,
+        destinatario: contrato.inquilinoId.email,
         remetente: "sistema",
         metadata: { 
           tipo: "reajuste-anual", 
@@ -355,7 +355,7 @@ class NotificacaoAutomaticaService {
         }
       });
 
-      console.log(`✅ Notificação de reajuste enviada para ${contrato.inquilino.nome}`);
+      console.log(`✅ Notificação de reajuste enviada para ${contrato.inquilinoId.nome}`);
     } catch (error) {
       console.error(`❌ Erro ao enviar notificação de reajuste:`, error);
       throw error;
@@ -371,14 +371,14 @@ class NotificacaoAutomaticaService {
 
       if (diasRestantes <= diasAntecedencia && diasRestantes >= 0) {
         const template = emailTemplates.vencimentoContrato(
-          contrato.inquilino.nome,
-          contrato.imovel.endereco,
+          contrato.inquilinoId.nome,
+          contrato.imovelId.endereco || 'Endereço não informado',
           dataVencimento.toLocaleDateString('pt-BR'),
           diasRestantes
         );
         
         await sendEmail({
-          to: contrato.inquilino.email,
+          to: contrato.inquilinoId.email,
           subject: template.subject,
           html: template.html
         });
@@ -386,15 +386,15 @@ class NotificacaoAutomaticaService {
         // Registrar notificação
         await Notificacao.create({
           titulo: `Lembrete de vencimento de contrato`,
-          mensagem: `Lembrete de vencimento de contrato enviado para ${contrato.inquilino.nome}`,
+          mensagem: `Lembrete de vencimento de contrato enviado para ${contrato.inquilinoId.nome}`,
           tipo: "warning",
-          destinatario: contrato.inquilino.email,
+          destinatario: contrato.inquilinoId.email,
           remetente: "sistema",
           urgente: diasRestantes <= 30,
           metadata: { tipo: "vencimento-contrato", contratoId: contrato._id, diasRestantes }
         });
 
-        console.log(`✅ Lembrete de vencimento de contrato enviado para ${contrato.inquilino.nome}`);
+        console.log(`✅ Lembrete de vencimento de contrato enviado para ${contrato.inquilinoId.nome}`);
       }
     } catch (error) {
       console.error(`❌ Erro ao enviar lembrete de vencimento de contrato:`, error);
@@ -407,21 +407,125 @@ class NotificacaoAutomaticaService {
     try {
       console.log('🔄 Iniciando processamento de notificações automáticas...');
       
-      // Buscar contratos ativos (simulação - adapte conforme seu modelo)
-      // const contratosAtivos = await Contrato.find({ status: 'ativo' })
-      //   .populate('inquilino')
-      //   .populate('imovel');
-
-      // Por enquanto, vamos simular
-      console.log('📋 Verificando vencimentos de aluguel...');
-      console.log('📋 Verificando vencimentos de contrato...');
-      console.log('🎂 Verificando aniversários...');
+      // Verificar aniversários
+      await this.verificarAniversarios();
+      
+      // Verificar vencimentos de aluguel
+      await this.verificarVencimentosAluguel();
+      
+      // Verificar vencimentos de contrato
+      await this.verificarVencimentosContrato();
       
       console.log('✅ Processamento de notificações concluído!');
     } catch (error) {
       console.error('❌ Erro no processamento de notificações automáticas:', error);
       throw error;
     }
+  }
+
+  // 🎂 Verificar aniversários do dia
+  async verificarAniversarios() {
+    try {
+      console.log('🎂 Verificando aniversários do dia...');
+      
+      // Buscar inquilinos que fazem aniversário hoje
+      const hoje = new Date();
+      const diaHoje = hoje.getDate();
+      const mesHoje = hoje.getMonth() + 1; // getMonth() retorna 0-11
+      
+      const aniversariantes = await Inquilino.find({
+        dataNascimento: {
+          $exists: true,
+          $ne: null
+        },
+        status: 'ativo'
+      });
+      
+      // Filtrar apenas os que fazem aniversário hoje
+      const aniversariantesHoje = aniversariantes.filter(inquilino => {
+        if (!inquilino.dataNascimento) return false;
+        
+        const nascimento = new Date(inquilino.dataNascimento);
+        return nascimento.getDate() === diaHoje && 
+               (nascimento.getMonth() + 1) === mesHoje;
+      });
+
+      for (const pessoa of aniversariantesHoje) {
+        const idade = this.calcularIdade(pessoa.dataNascimento);
+        await this.enviarParabensAniversario({
+          ...pessoa.toObject(),
+          idade
+        });
+      }
+
+      console.log(`✅ Verificação de aniversários concluída. ${aniversariantesHoje.length} e-mails enviados.`);
+    } catch (error) {
+      console.error('❌ Erro ao verificar aniversários:', error);
+    }
+  }
+
+  // 💰 Verificar vencimentos de aluguel
+  async verificarVencimentosAluguel() {
+    try {
+      console.log('💰 Verificando vencimentos de aluguel...');
+      
+      const contratosAtivos = await Contrato.find({ 
+        status: 'ativo',
+        proximoVencimento: { $exists: true }
+      })
+      .populate('inquilinoId')
+      .populate('imovelId');
+
+      for (const contrato of contratosAtivos) {
+        // Verificar com 7, 3 e 1 dia de antecedência
+        await this.enviarLembreteVencimentoAluguel(contrato, 7);
+        await this.enviarLembreteVencimentoAluguel(contrato, 3);
+        await this.enviarLembreteVencimentoAluguel(contrato, 1);
+      }
+
+      console.log(`✅ Verificação de vencimentos de aluguel concluída. ${contratosAtivos.length} contratos verificados.`);
+    } catch (error) {
+      console.error('❌ Erro ao verificar vencimentos de aluguel:', error);
+    }
+  }
+
+  // 🏠 Verificar vencimentos de contrato
+  async verificarVencimentosContrato() {
+    try {
+      console.log('🏠 Verificando vencimentos de contrato...');
+      
+      const contratosAtivos = await Contrato.find({ 
+        status: 'ativo',
+        dataFim: { $exists: true }
+      })
+      .populate('inquilinoId')
+      .populate('imovelId');
+
+      for (const contrato of contratosAtivos) {
+        // Verificar com 60 e 30 dias de antecedência
+        await this.enviarLembreteVencimentoContrato(contrato, 60);
+        await this.enviarLembreteVencimentoContrato(contrato, 30);
+      }
+
+      console.log(`✅ Verificação de vencimentos de contrato concluída. ${contratosAtivos.length} contratos verificados.`);
+    } catch (error) {
+      console.error('❌ Erro ao verificar vencimentos de contrato:', error);
+    }
+  }
+
+  // 🧮 Calcular idade
+  calcularIdade(dataNascimento) {
+    const hoje = new Date();
+    const nascimento = new Date(dataNascimento);
+    let idade = hoje.getFullYear() - nascimento.getFullYear();
+    const mesAtual = hoje.getMonth();
+    const mesNascimento = nascimento.getMonth();
+    
+    if (mesAtual < mesNascimento || (mesAtual === mesNascimento && hoje.getDate() < nascimento.getDate())) {
+      idade--;
+    }
+    
+    return idade;
   }
 }
 

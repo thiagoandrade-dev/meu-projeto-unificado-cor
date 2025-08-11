@@ -16,12 +16,18 @@ import { imoveisService, Usuario, Imovel } from "@/services/apiService";
 type FormDataType = Omit<
   Contrato, 
   "_id" | "createdAt" | "updatedAt" | "pagamentos" | 
-  "valorAluguel" | "valorCondominio" | "valorIPTU" | "diaVencimento"
+  "valorAluguel" | "valorCondominio" | "valorIPTU" | "diaVencimento" |
+  "proximoVencimento" | "dataUltimoReajuste" | "percentualReajusteAnual" | "indiceReajuste"
 > & {
   valorAluguel: string | number;
   valorCondominio: string | number;
   valorIPTU: string | number;
   diaVencimento: string | number;
+  proximoVencimento?: string;
+  dataUltimoReajuste?: string;
+  percentualReajusteAnual?: string | number;
+  indiceReajuste?: string;
+  arquivoContrato?: string;
 
   imovel: Pick<Imovel, "_id" | "grupo" | "bloco" | "apartamento">;
   inquilino: Pick<Usuario, "_id" | "nome" | "email" | "telefone" | "cpf" | "rg" | "perfil" | "status">;
@@ -51,6 +57,11 @@ const INITIAL_FORM_DATA: FormDataType = {
   valorCondominio: "",
   valorIPTU: "",
   diaVencimento: "",
+  proximoVencimento: "",
+  dataUltimoReajuste: "",
+  percentualReajusteAnual: "",
+  indiceReajuste: "",
+  arquivoContrato: "",
   status: "Ativo",
   observacoes: ""
 };
@@ -161,6 +172,11 @@ const AdminContratos = () => {
         valorCondominio: Number(formData.valorCondominio) || 0,
         valorIPTU: Number(formData.valorIPTU) || 0,
         diaVencimento: Number(formData.diaVencimento) || 5,
+        proximoVencimento: formData.proximoVencimento || undefined,
+        dataUltimoReajuste: formData.dataUltimoReajuste || undefined,
+        percentualReajusteAnual: Number(formData.percentualReajusteAnual) || undefined,
+        indiceReajuste: formData.indiceReajuste || undefined,
+        arquivoContrato: formData.arquivoContrato || undefined,
         imovel: {
           _id: formData.imovel._id || "",
           grupo: Number(formData.imovel.grupo) || 0,
@@ -225,6 +241,11 @@ const AdminContratos = () => {
       valorCondominio: contrato.valorCondominio || "",
       valorIPTU: contrato.valorIPTU || "",
       diaVencimento: contrato.diaVencimento,
+      proximoVencimento: contrato.proximoVencimento ? contrato.proximoVencimento.split("T")[0] : "",
+      dataUltimoReajuste: contrato.dataUltimoReajuste ? contrato.dataUltimoReajuste.split("T")[0] : "",
+      percentualReajusteAnual: contrato.percentualReajusteAnual || "",
+      indiceReajuste: contrato.indiceReajuste || "",
+      arquivoContrato: contrato.arquivoContrato || "",
       status: contrato.status,
       observacoes: contrato.observacoes || ""
     });
@@ -486,6 +507,70 @@ const AdminContratos = () => {
                         required
                       />
                     </div>
+                  </div>
+                </fieldset>
+
+                <fieldset className="border p-4 rounded-md">
+                  <legend className="text-sm font-medium px-1">Reajustes e Documentos</legend>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div className="space-y-1">
+                      <Label htmlFor="proximoVencimento">Próximo Vencimento</Label>
+                      <Input
+                        id="proximoVencimento"
+                        type="date"
+                        value={formData.proximoVencimento}
+                        onChange={(e) => handleChange(e, "proximoVencimento")}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="dataUltimoReajuste">Data do Último Reajuste</Label>
+                      <Input
+                        id="dataUltimoReajuste"
+                        type="date"
+                        value={formData.dataUltimoReajuste}
+                        onChange={(e) => handleChange(e, "dataUltimoReajuste")}
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div className="space-y-1">
+                      <Label htmlFor="percentualReajusteAnual">Percentual de Reajuste Anual (%)</Label>
+                      <Input
+                        id="percentualReajusteAnual"
+                        type="number"
+                        step="0.01"
+                        value={formData.percentualReajusteAnual}
+                        onChange={(e) => handleChange(e, "percentualReajusteAnual")}
+                        placeholder="Ex: 5.5"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="indiceReajuste">Índice de Reajuste</Label>
+                      <Select 
+                        value={formData.indiceReajuste} 
+                        onValueChange={(value: string) => handleChange(value, "indiceReajuste")}
+                      >
+                        <SelectTrigger id="indiceReajuste">
+                          <SelectValue placeholder="Selecione o índice" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="IGPM">IGP-M</SelectItem>
+                          <SelectItem value="IPCA">IPCA</SelectItem>
+                          <SelectItem value="INCC">INCC</SelectItem>
+                          <SelectItem value="FIXO">Percentual Fixo</SelectItem>
+                          <SelectItem value="OUTRO">Outro</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="arquivoContrato">Arquivo do Contrato (URL)</Label>
+                    <Input
+                      id="arquivoContrato"
+                      value={formData.arquivoContrato}
+                      onChange={(e) => handleChange(e, "arquivoContrato")}
+                      placeholder="URL do arquivo do contrato assinado"
+                    />
                   </div>
                 </fieldset>
 
