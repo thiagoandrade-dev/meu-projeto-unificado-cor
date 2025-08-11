@@ -25,7 +25,7 @@ const solicitarRedefinicao = async (req, res) => {
     await usuario.save();
 
     // URL de redefinição (frontend)
-    const resetUrl = `${process.env.FRONTEND_URL || "http://localhost:3000"}/redefinir-senha/${token}`;
+    const resetUrl = `${process.env.FRONTEND_URL || "https://www.imobiliariafirenze.com.br"}/redefinir-senha/${token}`;
 
     // Usar template de e-mail centralizado
     const emailTemplate = emailTemplates.resetPassword(resetUrl, usuario.nome);

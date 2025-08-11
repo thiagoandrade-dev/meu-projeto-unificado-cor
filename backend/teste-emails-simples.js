@@ -56,7 +56,7 @@ const emailTemplates = {
             </ul>
           </div>
           <div style="text-align: center; margin: 30px 0;">
-            <a href="http://localhost:3000" 
+            <a href="https://www.imobiliariafirenze.com.br" 
                style="background: #4CAF50; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">
               🚀 Acessar Sistema
             </a>
@@ -98,7 +98,7 @@ const emailTemplates = {
             </div>
           </div>
           <div style="text-align: center; margin: 25px 0;">
-            <a href="http://localhost:3000/boletos" 
+            <a href="https://www.imobiliariafirenze.com.br/boletos" 
                style="background: #4CAF50; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">
               💳 Ver Boleto
             </a>

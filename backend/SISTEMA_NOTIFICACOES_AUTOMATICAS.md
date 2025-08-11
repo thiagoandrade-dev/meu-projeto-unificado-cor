@@ -110,7 +110,7 @@ EMAIL_FROM_NAME=Imobiliária Firenze
 EMAIL_FROM_EMAIL=imobfirenze@gmail.com
 
 # Frontend (opcional)
-FRONTEND_URL=http://localhost:3000
+FRONTEND_URL=https://www.imobiliariafirenze.com.br
 ```
 
 ### Dependências

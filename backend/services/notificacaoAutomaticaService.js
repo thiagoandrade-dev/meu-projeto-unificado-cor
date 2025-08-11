@@ -58,7 +58,7 @@ const emailTemplates = {
             </ul>
           </div>
           <div style="text-align: center; margin: 30px 0;">
-            <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}" 
+            <a href="${process.env.FRONTEND_URL || 'https://www.imobiliariafirenze.com.br'}" 
                style="background: #4CAF50; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">
               🚀 Acessar Sistema
             </a>
@@ -100,7 +100,7 @@ const emailTemplates = {
             </div>
           </div>
           <div style="text-align: center; margin: 25px 0;">
-            <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/boletos" 
+            <a href="${process.env.FRONTEND_URL || 'https://www.imobiliariafirenze.com.br'}/boletos" 
                style="background: #4CAF50; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">
               💳 Ver Boleto
             </a>
@@ -157,7 +157,7 @@ const emailTemplates = {
             </p>
           </div>
           <div style="text-align: center; margin: 25px 0;">
-            <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/contratos" 
+            <a href="${process.env.FRONTEND_URL || 'https://www.imobiliariafirenze.com.br'}/contratos" 
                style="background: #673ab7; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">
               📄 Ver Contrato
             </a>
@@ -206,7 +206,7 @@ const emailTemplates = {
                style="background: #4CAF50; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block; margin: 5px;">
               📞 Ligar Agora
             </a>
-            <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/contatos" 
+            <a href="${process.env.FRONTEND_URL || 'https://www.imobiliariafirenze.com.br'}/contatos" 
                style="background: #2196F3; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block; margin: 5px;">
               💬 Falar Conosco
             </a>
