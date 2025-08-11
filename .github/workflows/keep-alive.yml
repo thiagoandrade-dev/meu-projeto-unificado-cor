@@ -1,0 +1,34 @@
+name: Keep Render Backend Alive
+
+# Executa a cada 14 minutos para evitar cold start
+on:
+  schedule:
+    - cron: '*/14 * * * *'
+  # Permite execução manual
+  workflow_dispatch:
+
+jobs:
+  ping-backend:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Ping Backend Status
+        run: |
+          echo "🚀 Fazendo ping no backend..."
+          response=$(curl -s -o /dev/null -w "%{http_code}" https://imobiliaria-firenze-backend.onrender.com/api/status)
+          echo "📡 Status Code: $response"
+          
+          if [ $response -eq 200 ]; then
+            echo "✅ Backend está ativo!"
+          else
+            echo "⚠️ Backend retornou status: $response"
+          fi
+          
+      - name: Ping Health Check
+        run: |
+          echo "🔍 Verificando saúde do sistema..."
+          curl -f https://imobiliaria-firenze-backend.onrender.com/api/status || echo "❌ Falha na verificação de saúde"
+          
+      - name: Log Timestamp
+        run: |
+          echo "⏰ Ping executado em: $(date -u)"
