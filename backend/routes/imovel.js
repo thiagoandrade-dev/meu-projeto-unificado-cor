@@ -348,8 +348,8 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
-// Rota para migrar imóveis existentes adicionando campo imagens (temporária sem auth)
-router.post("/migrate-images-temp", async (req, res) => {
+// Rota para migrar imóveis existentes adicionando campo imagens
+router.post("/migrate-images", verificarToken, async (req, res) => {
   try {
     // Atualizar todos os imóveis que não possuem o campo imagens
     const resultado = await Imovel.updateMany(
