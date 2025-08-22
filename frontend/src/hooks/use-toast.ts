@@ -6,7 +6,7 @@ import type {
 } from "@/components/ui/toast"
 
 const TOAST_LIMIT = 1
-const TOAST_REMOVE_DELAY = 1000000
+const TOAST_REMOVE_DELAY = 5000
 
 type ToasterToast = ToastProps & {
   id: string
@@ -57,10 +57,13 @@ const toastTimeouts = new Map<string, ReturnType<typeof setTimeout>>()
 
 const addToRemoveQueue = (toastId: string) => {
   if (toastTimeouts.has(toastId)) {
+    console.log('🔄 Toast já na fila de remoção:', toastId)
     return
   }
 
+  console.log('⏰ Criando timeout para toast:', toastId, 'delay:', TOAST_REMOVE_DELAY)
   const timeout = setTimeout(() => {
+    console.log('🗑️ Removendo toast por timeout:', toastId)
     toastTimeouts.delete(toastId)
     dispatch({
       type: "REMOVE_TOAST",
@@ -69,6 +72,7 @@ const addToRemoveQueue = (toastId: string) => {
   }, TOAST_REMOVE_DELAY)
 
   toastTimeouts.set(toastId, timeout)
+  console.log('📊 Total de timeouts ativos:', toastTimeouts.size)
 }
 
 export const reducer = (state: State, action: Action): State => {
@@ -93,9 +97,24 @@ export const reducer = (state: State, action: Action): State => {
       // ! Side effects ! - This could be extracted into a dismissToast() action,
       // but I'll keep it here for simplicity
       if (toastId) {
+        // Limpar timeout existente antes de adicionar à fila de remoção
+         const existingTimeout = toastTimeouts.get(toastId)
+         if (existingTimeout) {
+           console.log('🧹 Limpando timeout existente para toast:', toastId)
+           clearTimeout(existingTimeout)
+           toastTimeouts.delete(toastId)
+           console.log('📊 Total de timeouts após limpeza:', toastTimeouts.size)
+         }
         addToRemoveQueue(toastId)
       } else {
-        state.toasts.forEach((toast) => {
+        // Limpar todos os timeouts existentes antes de adicionar à fila de remoção
+          state.toasts.forEach((toast) => {
+           const existingTimeout = toastTimeouts.get(toast.id)
+           if (existingTimeout) {
+             console.log('🧹 Limpando timeout existente para toast:', toast.id)
+             clearTimeout(existingTimeout)
+             toastTimeouts.delete(toast.id)
+           }
           addToRemoveQueue(toast.id)
         })
       }
@@ -114,11 +133,26 @@ export const reducer = (state: State, action: Action): State => {
     }
     case "REMOVE_TOAST":
       if (action.toastId === undefined) {
+        // Limpar todos os timeouts quando removendo todos os toasts
+         console.log('🧹 Limpando todos os timeouts. Total:', toastTimeouts.size)
+         toastTimeouts.forEach((timeout) => {
+           clearTimeout(timeout)
+         })
+         toastTimeouts.clear()
+         console.log('✅ Todos os timeouts limpos')
         return {
           ...state,
           toasts: [],
         }
       }
+      // Limpar o timeout específico do toast sendo removido
+       const timeout = toastTimeouts.get(action.toastId)
+       if (timeout) {
+         console.log('🧹 Limpando timeout para toast removido:', action.toastId)
+         clearTimeout(timeout)
+         toastTimeouts.delete(action.toastId)
+         console.log('📊 Total de timeouts após remoção:', toastTimeouts.size)
+       }
       return {
         ...state,
         toasts: state.toasts.filter((t) => t.id !== action.toastId),
@@ -179,7 +213,7 @@ function useToast() {
         listeners.splice(index, 1)
       }
     }
-  }, [state])
+  }, [])
 
   return {
     ...state,
