@@ -9,26 +9,19 @@ import { Car, Ruler, Building, Calendar, Tag, MapPin, Phone, MessageSquare, Buil
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { AxiosError } from 'axios';
+import { buildImageUrls } from '@/utils/imageUtils';
 
 // Componente para a galeria de imagens
 const ImovelGaleria = ({ imagens }: { imagens: string[] }) => {
-  // Imagens padrão para demonstração (usando placeholders locais)
-  const imagensPadrao = [
-    "/placeholder-imovel.svg",
-    "/placeholder-apartamento.svg",
-    "/placeholder-sala.svg",
-    "/placeholder-quarto.svg",
-    "/placeholder-cozinha.svg"
-  ];
-  
-  const imagensParaExibir = imagens && imagens.length > 0 ? imagens : imagensPadrao;
-  const [imagemPrincipal, setImagemPrincipal] = useState(imagensParaExibir[0]);
+  // Construir URLs completas das imagens
+  const imagensComUrls = buildImageUrls(imagens);
+  const [imagemPrincipal, setImagemPrincipal] = useState(imagensComUrls[0]);
 
   return (
     <div>
       <img src={imagemPrincipal} alt="Foto principal do imóvel" className="w-full h-96 object-cover rounded-lg mb-4" />
       <div className="grid grid-cols-5 gap-2">
-        {imagensParaExibir.slice(0, 5).map((imagem, index) => (
+        {imagensComUrls.slice(0, 5).map((imagem, index) => (
           <img
             key={index}
             src={imagem}
@@ -192,7 +185,7 @@ const ImovelDetalhe = () => {
     return <div className="flex h-screen items-center justify-center"><p>Imóvel não encontrado.</p></div>;
   }
 
-  const imagensImovel: string[] = []; // Usando imagens padrão da galeria
+  const imagensImovel: string[] = imovel.imagens || [];
 
   return (
     <div className="bg-gray-50">

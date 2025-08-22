@@ -73,6 +73,10 @@ const ImovelSchema = new mongoose.Schema({
       message: 'STATUS_ANUNCIO inválido.'
     },
   },
+  imagens: {
+    type: [String],
+    default: []
+  },
   // Campos de controle
   createdAt: {
     type: Date,

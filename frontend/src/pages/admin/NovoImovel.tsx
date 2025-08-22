@@ -87,6 +87,8 @@ const [imagensPreview, setImagensPreview] = useState<string[]>([]);
     }
   };
 
+
+
   // Mapeamento de configuração de planta para área útil (conforme backend)
   const areasEsperadas: Record<ConfiguracaoPlantaType, number> = {
     'Padrão (2 dorms)': 82,
@@ -99,17 +101,31 @@ const [imagensPreview, setImagensPreview] = useState<string[]>([]);
   // Atualizar campo select do formulário
   const handleSelectChange = (name: keyof typeof formData, value: string) => {
     setFormData(prev => {
+      let newFormData = { ...prev };
+      
       // Usar casting condicional para tipos específicos ou manter como string se não for um tipo literal
       if (name === 'configuracaoPlanta') {
         const configValue = value as ConfiguracaoPlantaType | '';
         const areaUtil = configValue && areasEsperadas[configValue] ? areasEsperadas[configValue].toString() : '';
-        return { ...prev, [name]: configValue, areaUtil };
+        newFormData = { ...newFormData, [name]: configValue, areaUtil };
       } else if (name === 'tipoVagaGaragem') {
-        return { ...prev, [name]: value as TipoVagaGaragemType | '' };
+        newFormData = { ...newFormData, [name]: value as TipoVagaGaragemType | '' };
       } else if (name === 'statusAnuncio') {
-        return { ...prev, [name]: value as StatusAnuncioType };
+        newFormData = { ...newFormData, [name]: value as StatusAnuncioType };
+      } else {
+        newFormData = { ...newFormData, [name]: value }; // Para outros campos que são apenas string
       }
-      return { ...prev, [name]: value }; // Para outros campos que são apenas string
+      
+      // Lógica de limpeza de campos dependentes
+      if (name === 'grupo') {
+        // Quando grupo muda, limpar bloco, andar e apartamento
+        newFormData = { ...newFormData, bloco: '', andar: '', apartamento: '' };
+      } else if (name === 'andar') {
+        // Quando andar muda, limpar apartamento
+        newFormData = { ...newFormData, apartamento: '' };
+      }
+      
+      return newFormData;
     });
     
     // Limpar erro do campo quando o usuário seleciona
@@ -250,24 +266,36 @@ const [imagensPreview, setImagensPreview] = useState<string[]>([]);
       // Preparar dados para envio
       const imovelData = new FormData();
       
-      // Preparar dados com conversões apropriadas
-      const preparedData = {
-        ...formData,
-        grupo: parseInt(formData.grupo) || 0,
-        andar: parseInt(formData.andar) || 0,
-        apartamento: parseInt(formData.apartamento) || 0,
-        areaUtil: parseFloat(formData.areaUtil) || 0,
-        preco: parseFloat(formData.preco) || 0,
-        numVagasGaragem: formData.numVagasGaragem ? parseInt(formData.numVagasGaragem) : undefined
+      // Adicionar campos apenas se tiverem valores válidos
+      const addFieldIfValid = (key: string, value: string, converter?: (val: string) => number) => {
+        if (value && value.trim() !== "") {
+          if (converter) {
+            const convertedValue = converter(value);
+            if (!isNaN(convertedValue)) {
+              imovelData.append(key, convertedValue.toString());
+            }
+          } else {
+            imovelData.append(key, value.trim());
+          }
+        }
       };
       
-      // Adicionar campos de texto
-      Object.entries(preparedData).forEach(([key, value]) => {
-        // Garantir que os valores sejam válidos
-        if (value !== null && value !== undefined && value !== "") {
-          imovelData.append(key, value.toString());
-        }
-      });
+      // Adicionar campos com validação
+      addFieldIfValid('grupo', formData.grupo, parseInt);
+      addFieldIfValid('bloco', formData.bloco);
+      addFieldIfValid('andar', formData.andar, parseInt);
+      addFieldIfValid('apartamento', formData.apartamento, parseInt);
+      addFieldIfValid('configuracaoPlanta', formData.configuracaoPlanta);
+      addFieldIfValid('areaUtil', formData.areaUtil, parseFloat);
+      addFieldIfValid('numVagasGaragem', formData.numVagasGaragem, parseInt);
+      addFieldIfValid('tipoVagaGaragem', formData.tipoVagaGaragem);
+      addFieldIfValid('preco', formData.preco, parseFloat);
+      addFieldIfValid('statusAnuncio', formData.statusAnuncio);
+      
+      // Adicionar destaque se for true
+      if (formData.destaque) {
+        imovelData.append('destaque', 'true');
+      }
       
       // Adicionar imagens
     imagens.forEach(imagem => {
@@ -293,13 +321,19 @@ const [imagensPreview, setImagensPreview] = useState<string[]>([]);
         console.error("Erro ao criar imóvel:", error);
         
         // Verificar se há erros específicos retornados pela API
-        if (error.response?.data?.errors) {
+        if (error.response?.data?.erros) {
           const apiErrors: Record<string, string> = {};
-          (error.response.data.errors as Record<string, string>[]).forEach((err: Record<string,string>) => {
+          (error.response.data.erros as Record<string, string>[]).forEach((err: Record<string,string>) => {
             const field = Object.keys(err)[0];
             apiErrors[field] = err[field];
           });
           setErrors(apiErrors);
+          
+          toast({
+            title: "Erro de validação",
+            description: "Verifique os campos destacados em vermelho",
+            variant: "destructive",
+          });
         } else {
           toast({
             title: "Erro ao criar imóvel",
@@ -388,14 +422,23 @@ const [imagensPreview, setImagensPreview] = useState<string[]>([]);
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                   <div className="space-y-2">
                     <Label htmlFor="grupo">Grupo <span className="text-danger">*</span></Label>
-                    <Input
-                      id="grupo"
-                      name="grupo"
-                      type="number"
-                      value={formData.grupo}
-                      onChange={handleFormChange}
-                      className={errors.grupo ? "border-danger" : ""}
-                    />
+                    <Select
+                       value={formData.grupo}
+                       onValueChange={(value) => handleSelectChange("grupo", value)}
+                     >
+                       <SelectTrigger className={errors.grupo ? "border-danger" : ""}>
+                         <SelectValue placeholder="Selecione o grupo" />
+                       </SelectTrigger>
+                       <SelectContent>
+                         <SelectItem value="12">Grupo 12</SelectItem>
+                         <SelectItem value="13">Grupo 13</SelectItem>
+                         <SelectItem value="14">Grupo 14</SelectItem>
+                         <SelectItem value="15">Grupo 15</SelectItem>
+                         <SelectItem value="16">Grupo 16</SelectItem>
+                         <SelectItem value="17">Grupo 17</SelectItem>
+                         <SelectItem value="18">Grupo 18</SelectItem>
+                       </SelectContent>
+                     </Select>
                     {errors.grupo && (
                       <p className="text-sm text-danger">{errors.grupo}</p>
                     )}
@@ -403,13 +446,26 @@ const [imagensPreview, setImagensPreview] = useState<string[]>([]);
                   
                   <div className="space-y-2">
                     <Label htmlFor="bloco">Bloco <span className="text-danger">*</span></Label>
-                    <Input
-                      id="bloco"
-                      name="bloco"
-                      value={formData.bloco}
-                      onChange={handleFormChange}
-                      className={errors.bloco ? "border-danger" : ""}
-                    />
+                    <Select
+                       value={formData.bloco}
+                       onValueChange={(value) => handleSelectChange("bloco", value)}
+                     >
+                       <SelectTrigger className={errors.bloco ? "border-danger" : ""}>
+                         <SelectValue placeholder="Selecione o bloco" />
+                       </SelectTrigger>
+                       <SelectContent>
+                         <SelectItem value="A">Bloco A</SelectItem>
+                         <SelectItem value="B">Bloco B</SelectItem>
+                         <SelectItem value="C">Bloco C</SelectItem>
+                         <SelectItem value="D">Bloco D</SelectItem>
+                         <SelectItem value="E">Bloco E</SelectItem>
+                         <SelectItem value="F">Bloco F</SelectItem>
+                         {/* Bloco G apenas para grupos ímpares */}
+                         {formData.grupo && parseInt(formData.grupo) % 2 !== 0 && (
+                           <SelectItem value="G">Bloco G</SelectItem>
+                         )}
+                       </SelectContent>
+                     </Select>
                     {errors.bloco && (
                       <p className="text-sm text-danger">{errors.bloco}</p>
                     )}
@@ -417,14 +473,20 @@ const [imagensPreview, setImagensPreview] = useState<string[]>([]);
                   
                   <div className="space-y-2">
                     <Label htmlFor="andar">Andar <span className="text-danger">*</span></Label>
-                    <Input
-                      id="andar"
-                      name="andar"
-                      type="number"
-                      value={formData.andar}
-                      onChange={handleFormChange}
-                      className={errors.andar ? "border-danger" : ""}
-                    />
+                    <Select
+                       value={formData.andar}
+                       onValueChange={(value) => handleSelectChange("andar", value)}
+                     >
+                       <SelectTrigger className={errors.andar ? "border-danger" : ""}>
+                         <SelectValue placeholder="Selecione o andar" />
+                       </SelectTrigger>
+                       <SelectContent>
+                         {/* Andares baseados no grupo selecionado */}
+                         {Array.from({ length: formData.grupo && parseInt(formData.grupo) % 2 === 0 ? 28 : 36 }, (_, i) => i + 1).map(andar => (
+                           <SelectItem key={andar} value={andar.toString()}>{andar}º Andar</SelectItem>
+                         ))}
+                       </SelectContent>
+                     </Select>
                     {errors.andar && (
                       <p className="text-sm text-danger">{errors.andar}</p>
                     )}
@@ -432,14 +494,31 @@ const [imagensPreview, setImagensPreview] = useState<string[]>([]);
                   
                   <div className="space-y-2">
                     <Label htmlFor="apartamento">Apartamento <span className="text-danger">*</span></Label>
-                    <Input
-                      id="apartamento"
-                      name="apartamento"
-                      type="number"
-                      value={formData.apartamento}
-                      onChange={handleFormChange}
-                      className={errors.apartamento ? "border-danger" : ""}
-                    />
+                    <Select
+                       value={formData.apartamento}
+                       onValueChange={(value) => handleSelectChange("apartamento", value)}
+                     >
+                       <SelectTrigger className={errors.apartamento ? "border-danger" : ""}>
+                         <SelectValue placeholder="Selecione o apartamento" />
+                       </SelectTrigger>
+                       <SelectContent>
+                         {/* Apartamentos baseados no grupo e andar selecionados */}
+                         {formData.grupo && formData.andar && (() => {
+                           const isGrupoPar = parseInt(formData.grupo) % 2 === 0;
+                           const andar = formData.andar;
+                           const numApartamentos = isGrupoPar ? 8 : 4; // Grupos pares: 8 aptos, ímpares: 4 aptos
+                           
+                           return Array.from({ length: numApartamentos }, (_, i) => {
+                             const apartamento = parseInt(andar + (i + 1).toString());
+                             return (
+                               <SelectItem key={apartamento} value={apartamento.toString()}>
+                                 Apartamento {apartamento}
+                               </SelectItem>
+                             );
+                           });
+                         })()}
+                       </SelectContent>
+                     </Select>
                     {errors.apartamento && (
                       <p className="text-sm text-danger">{errors.apartamento}</p>
                     )}
@@ -550,14 +629,19 @@ const [imagensPreview, setImagensPreview] = useState<string[]>([]);
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <Label htmlFor="numVagasGaragem">Número de Vagas</Label>
-                    <Input
-                      id="numVagasGaragem"
-                      name="numVagasGaragem"
-                      type="number"
+                    <Select
                       value={formData.numVagasGaragem}
-                      onChange={handleFormChange}
-                      className={errors.numVagasGaragem ? "border-danger" : ""}
-                    />
+                      onValueChange={(value) => handleSelectChange("numVagasGaragem", value)}
+                    >
+                      <SelectTrigger className={errors.numVagasGaragem ? "border-danger" : ""}>
+                        <SelectValue placeholder="Selecione o número de vagas" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">1 vaga</SelectItem>
+                        <SelectItem value="2">2 vagas</SelectItem>
+                        <SelectItem value="3">3 vagas</SelectItem>
+                      </SelectContent>
+                    </Select>
                     {errors.numVagasGaragem && (
                       <p className="text-sm text-danger">{errors.numVagasGaragem}</p>
                     )}

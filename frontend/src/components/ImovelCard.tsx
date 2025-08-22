@@ -4,6 +4,7 @@ import { Home, MapPin, Ruler, Bed, Bath, Heart } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
 import { Imovel } from "@/services/apiService";
+import { buildImageUrl } from "@/utils/imageUtils";
 
 interface ImovelCardProps {
   imovel: Imovel;
@@ -29,7 +30,7 @@ const ImovelCard = ({ imovel, featured = false }: ImovelCardProps) => {
         {/* Imagem */}
         <div className={`relative ${featured ? 'lg:w-2/5' : 'h-48'} overflow-hidden`}>
           <img
-            src={imovel.imagens?.[0] || "/placeholder-imovel.svg"}
+            src={buildImageUrl(imovel.imagens?.[0])}
             alt={`${imovel.configuracaoPlanta} - Grupo ${imovel.grupo}, Bloco ${imovel.bloco}`}
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           />

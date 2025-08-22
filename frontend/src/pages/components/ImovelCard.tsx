@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Home, MapPin, Ruler, Bed, Bath, Heart } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
+import { buildImageUrl } from "@/utils/imageUtils";
 
 export type Imovel = {
   id: string;
@@ -51,7 +52,7 @@ const ImovelCard = ({ imovel, featured = false }: ImovelCardProps) => {
         {/* Imagem */}
         <div className={`relative ${featured ? 'lg:w-2/5' : 'h-48'} overflow-hidden`}>
           <img
-            src={imovel.fotos[0] || "/placeholder-imovel.svg"}
+            src={buildImageUrl(imovel.fotos[0])}
             alt={imovel.titulo}
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           />

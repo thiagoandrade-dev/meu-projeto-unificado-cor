@@ -347,4 +347,24 @@ router.delete("/:id", async (req, res) => {
     res.status(500).json({ erro: "Erro interno ao deletar imóvel: " + err.message });
   }
 });
+
+// Rota para migrar imóveis existentes adicionando campo imagens
+router.post("/migrate-images", verificarToken, async (req, res) => {
+  try {
+    // Atualizar todos os imóveis que não possuem o campo imagens
+    const resultado = await Imovel.updateMany(
+      { imagens: { $exists: false } },
+      { $set: { imagens: [] } }
+    );
+    
+    res.json({ 
+      mensagem: "Migração concluída com sucesso!", 
+      imoveisAtualizados: resultado.modifiedCount 
+    });
+  } catch (err) {
+    console.error("Erro na migração:", err);
+    res.status(500).json({ erro: "Erro na migração: " + err.message });
+  }
+});
+
 module.exports = router;
