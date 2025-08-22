@@ -3,10 +3,10 @@ import { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import PropertySearch from "@/components/PropertySearch";
-import ImovelCard, { Imovel } from "@/components/ImovelCard";
+import ImovelCard from "@/components/ImovelCard";
 import { Button } from "@/components/ui/button";
 import { Filter, Grid3X3, LayoutList } from "lucide-react";
-import { imoveisService, Imovel as ApiImovel } from "@/services/apiService";
+import { imoveisService, Imovel, Imovel as ApiImovel } from "@/services/apiService";
 
 // Função para converter dados da API para o formato do componente
 const convertApiToDisplay = (apiImovel: ApiImovel): Imovel => {
@@ -23,44 +23,31 @@ const convertApiToDisplay = (apiImovel: ApiImovel): Imovel => {
     if (imovel.configuracaoPlanta.includes('Despensa')) caracteristicas.push('Despensa');
     if (imovel.configuracaoPlanta.includes('Dependência')) caracteristicas.push('Dependência de Empregada');
     if (imovel.tipoVagaGaragem === 'Coberta') caracteristicas.push('Garagem Coberta');
-    if (imovel.numVagasGaragem > 1) caracteristicas.push(`${imovel.numVagasGaragem} Vagas`);
+    if (imovel.numVagasGaragem && imovel.numVagasGaragem > 1) caracteristicas.push(`${imovel.numVagasGaragem} Vagas`);
     caracteristicas.push('Sacada', 'Área de Serviço');
     return caracteristicas;
   };
 
   return {
-    id: apiImovel._id,
-    titulo: `Apartamento ${apiImovel.configuracaoPlanta} - Grupo ${apiImovel.grupo}`,
-    tipo: "Apartamento",
-    operacao: apiImovel.statusAnuncio.includes('Venda') ? "Venda" : "Aluguel",
-    preco: apiImovel.preco,
-    precoCondominio: 350, // Valor padrão para condomínio
-    endereco: `Bloco ${apiImovel.bloco}, Andar ${apiImovel.andar}, Apt ${apiImovel.apartamento}`,
-    bairro: "Residencial Firenze",
-    cidade: "São Paulo",
-    estado: "SP",
+    _id: apiImovel._id,
+    grupo: apiImovel.grupo,
+    bloco: apiImovel.bloco,
+    andar: apiImovel.andar,
+    apartamento: apiImovel.apartamento,
+    configuracaoPlanta: apiImovel.configuracaoPlanta,
     areaUtil: apiImovel.areaUtil,
-    quartos: getQuartosFromConfig(apiImovel.configuracaoPlanta),
-    suites: apiImovel.configuracaoPlanta.includes('3 dorms') ? 1 : 0,
-    banheiros: apiImovel.configuracaoPlanta.includes('3 dorms') ? 2 : 1,
-    vagas: apiImovel.numVagasGaragem,
-    descricao: `${apiImovel.configuracaoPlanta} com ${apiImovel.areaUtil}m² de área útil. ${apiImovel.numVagasGaragem} vaga${apiImovel.numVagasGaragem > 1 ? 's' : ''} de garagem ${apiImovel.tipoVagaGaragem.toLowerCase()}.`,
+    numVagasGaragem: apiImovel.numVagasGaragem,
+    tipoVagaGaragem: apiImovel.tipoVagaGaragem,
+    preco: apiImovel.preco,
+    statusAnuncio: apiImovel.statusAnuncio,
+    endereco: apiImovel.endereco,
     caracteristicas: getCaracteristicas(apiImovel),
-    fotos: [
+    fotos: apiImovel.fotos || [
       "/placeholder-imovel.svg",
       "/placeholder-apartamento.svg"
     ],
-    destaque: Math.random() > 0.7, // Alguns imóveis aleatórios como destaque
-    grupo: `Grupo ${apiImovel.grupo}`,
-    // Campos específicos do backend preservados
-    _id: apiImovel._id,
-    bloco: apiImovel.bloco,
-    apartamento: apiImovel.apartamento?.toString(),
-    andar: apiImovel.andar?.toString(),
-    configuracaoPlanta: apiImovel.configuracaoPlanta,
-    statusAnuncio: apiImovel.statusAnuncio as 'Disponível' | 'Alugado' | 'Vendido' | 'Manutenção',
-    tipoVagaGaragem: apiImovel.tipoVagaGaragem,
-    numVagasGaragem: apiImovel.numVagasGaragem
+    descricao: `${apiImovel.configuracaoPlanta} com ${apiImovel.areaUtil}m² de área útil. ${apiImovel.numVagasGaragem || 0} vaga${(apiImovel.numVagasGaragem || 0) > 1 ? 's' : ''} de garagem ${apiImovel.tipoVagaGaragem?.toLowerCase() || 'não informada'}.`,
+    destaque: apiImovel.destaque || Math.random() > 0.7
   };
 };
 
