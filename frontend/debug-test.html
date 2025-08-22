@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Test - Imobiliária Firenze</title>
+</head>
+<body>
+    <h1>Debug Test</h1>
+    <div id="status">Testando conexão com API...</div>
+    
+    <script>
+        console.log('Debug test iniciado');
+        
+        // Testar conexão com API
+        fetch('https://imobiliaria-firenze-backend.onrender.com/api/imoveis')
+            .then(response => {
+                console.log('Response status:', response.status);
+                return response.json();
+            })
+            .then(data => {
+                console.log('API funcionando:', data.length, 'imóveis encontrados');
+                document.getElementById('status').innerHTML = `✅ API funcionando: ${data.length} imóveis encontrados`;
+            })
+            .catch(error => {
+                console.error('Erro na API:', error);
+                document.getElementById('status').innerHTML = `❌ Erro na API: ${error.message}`;
+            });
+            
+        // Simular erro que pode estar acontecendo
+        setTimeout(() => {
+            console.log('Teste de timeout após 1 segundo');
+        }, 1000);
+    </script>
+</body>
+</html>
