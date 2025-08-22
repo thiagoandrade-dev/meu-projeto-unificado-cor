@@ -65,7 +65,9 @@ import { Imovel } from "@/services/apiService";
 
 // Componente principal
 const Imoveis = () => {
-  const { toast, clearAllToasts } = useToast();
+  const { toast } = useToast();
+
+
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -82,6 +84,61 @@ const Imoveis = () => {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [operationInProgress, setOperationInProgress] = useState(false);
 
+
+
+
+  // Event listener para debug de cliques
+  useEffect(() => {
+    const handleGlobalClick = (e: MouseEvent) => {
+      console.log('🖱️ Clique global capturado:', {
+        target: e.target,
+        currentTarget: e.currentTarget,
+        eventPhase: e.eventPhase,
+        bubbles: e.bubbles,
+        cancelable: e.cancelable,
+        defaultPrevented: e.defaultPrevented,
+        coordinates: { x: e.clientX, y: e.clientY }
+      });
+      
+      // Verificar se o elemento clicado tem algum bloqueador
+      const element = e.target as HTMLElement;
+      if (element) {
+        const computedStyle = window.getComputedStyle(element);
+        console.log('🎯 Elemento clicado:', {
+          tagName: element.tagName,
+          className: element.className,
+          id: element.id,
+          pointerEvents: computedStyle.pointerEvents,
+          position: computedStyle.position,
+          zIndex: computedStyle.zIndex
+        });
+        
+        // Verificar elementos pai que podem estar bloqueando
+        let parent = element.parentElement;
+        let level = 0;
+        while (parent && level < 5) {
+          const parentStyle = window.getComputedStyle(parent);
+          if (parentStyle.pointerEvents === 'none' || parseInt(parentStyle.zIndex) > 40) {
+            console.log(`🔍 Elemento pai suspeito (nível ${level}):`, {
+              tagName: parent.tagName,
+              className: parent.className,
+              pointerEvents: parentStyle.pointerEvents,
+              zIndex: parentStyle.zIndex
+            });
+          }
+          parent = parent.parentElement;
+          level++;
+        }
+      }
+    };
+    
+    // Adicionar listener em fase de captura para pegar todos os cliques
+    document.addEventListener('click', handleGlobalClick, true);
+    
+    return () => {
+      document.removeEventListener('click', handleGlobalClick, true);
+    };
+  }, []);
 
   // Carregar imóveis
   const carregarImoveis = useCallback(async () => {
@@ -246,10 +303,89 @@ const Imoveis = () => {
       }
     } finally {
       console.log('🧹 Limpando estados no finally...');
+      
+      // Limpar estados imediatamente
       setDeletingId(null);
       setOperationInProgress(false);
       setDeleteDialogOpen(false);
       setImovelToDelete(null);
+      
+      // Forçar limpeza imediata de overlays
+      setTimeout(() => {
+        console.log('🧹 Limpeza imediata de overlays após exclusão...');
+        
+        // CORREÇÃO PRINCIPAL: Forçar remoção de pointer-events: none do body
+        document.body.style.pointerEvents = 'auto';
+        document.body.style.removeProperty('pointer-events');
+        console.log('✅ Pointer-events do body resetado para auto');
+        
+        // Buscar e remover TODOS os overlays de diálogo
+        const overlaySelectors = [
+          '[data-radix-dialog-overlay]',
+          '[data-radix-alert-dialog-overlay]',
+          '[data-state="open"][data-radix-dialog-overlay]',
+          '.fixed.inset-0.z-\[45\]',
+          '[role="dialog"] + div'
+        ];
+        
+        overlaySelectors.forEach(selector => {
+          const overlays = document.querySelectorAll(selector);
+          overlays.forEach(overlay => {
+            if (document.contains(overlay) && overlay.parentNode) {
+              console.log('🗑️ Removendo overlay:', { selector, element: overlay });
+              overlay.parentNode.removeChild(overlay);
+            }
+          });
+        });
+        
+        // Remover qualquer elemento com pointer-events que possa estar bloqueando
+        const blockingElements = document.querySelectorAll('*');
+        blockingElements.forEach(el => {
+          const styles = getComputedStyle(el);
+          if (styles.position === 'fixed' && 
+              styles.zIndex && parseInt(styles.zIndex) > 40 &&
+              (styles.pointerEvents === 'auto' || styles.pointerEvents === 'all') &&
+              el.getAttribute('data-radix-dialog-overlay') !== null) {
+            console.log('🚫 Removendo elemento bloqueador:', el);
+            if (el.parentNode) {
+              el.parentNode.removeChild(el);
+            }
+          }
+        });
+        
+        // Chamar função global de limpeza se disponível
+        const cleanupFn = (window as Window & { emergencyCleanupAllOverlays?: () => void }).emergencyCleanupAllOverlays;
+        if (typeof cleanupFn === 'function') {
+          console.log('🧹 Chamando limpeza de emergência global');
+          cleanupFn();
+        }
+        
+        // Forçar reflow do DOM
+        document.body.offsetHeight;
+        
+        console.log('✅ Limpeza completa de overlays concluída');
+      }, 100);
+      
+      // Segunda limpeza após um tempo maior para garantir
+      setTimeout(() => {
+        console.log('🧹 Segunda limpeza de segurança...');
+        
+        // Forçar novamente a remoção de pointer-events do body
+        document.body.style.pointerEvents = 'auto';
+        document.body.style.removeProperty('pointer-events');
+        console.log('✅ Pointer-events do body resetado novamente para auto');
+        
+        const remainingOverlays = document.querySelectorAll('[data-radix-dialog-overlay], [data-radix-alert-dialog-overlay]');
+        if (remainingOverlays.length > 0) {
+          console.log(`⚠️ Ainda existem ${remainingOverlays.length} overlays. Removendo...`);
+          remainingOverlays.forEach(overlay => {
+            if (overlay.parentNode) {
+              overlay.parentNode.removeChild(overlay);
+            }
+          });
+        }
+      }, 1000);
+      
       console.log('✅ Estados limpos com sucesso');
     }
   };
@@ -336,16 +472,7 @@ const Imoveis = () => {
             </div>
             
             <div className="flex items-center gap-3">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={clearAllToasts}
-                className="flex items-center gap-2 text-red-600 hover:text-red-700"
-                title="Limpar todos os toasts e overlays invisíveis"
-              >
-                <X size={16} />
-                Limpar Toasts
-              </Button>
+
               
               <Button
                 variant="outline"
@@ -729,6 +856,8 @@ const Imoveis = () => {
           )}
         </DialogContent>
       </Dialog>
+      
+
     </div>
   );
 };

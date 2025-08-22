@@ -16,10 +16,75 @@ const DialogOverlay = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Overlay>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay>
 >(({ className, ...props }, ref) => {
-  console.log('🔍 DialogOverlay renderizado - props:', props);
+  const overlayRef = React.useRef<HTMLDivElement | null>(null);
+  
+  React.useEffect(() => {
+    const overlay = overlayRef.current;
+    if (overlay) {
+      console.log('🔍 DialogOverlay montado:', {
+        element: overlay,
+        zIndex: getComputedStyle(overlay).zIndex,
+        pointerEvents: getComputedStyle(overlay).pointerEvents,
+        display: getComputedStyle(overlay).display,
+        visibility: getComputedStyle(overlay).visibility
+      });
+      
+      // Verificar se o overlay ainda existe após 10 segundos E se o diálogo está fechado
+      const checkTimeout = setTimeout(() => {
+        if (document.contains(overlay)) {
+          const styles = getComputedStyle(overlay);
+          const dataState = overlay.getAttribute('data-state');
+          
+          console.log('⚠️ DialogOverlay ainda existe após 10s:', {
+            element: overlay,
+            dataState: dataState,
+            zIndex: styles.zIndex,
+            pointerEvents: styles.pointerEvents,
+            display: styles.display,
+            visibility: styles.visibility,
+            opacity: styles.opacity
+          });
+          
+          // APENAS remover se o diálogo estiver fechado (data-state="closed") ou invisível
+          // E se ainda estiver bloqueando cliques
+          if ((dataState === 'closed' || styles.opacity === '0' || styles.visibility === 'hidden') &&
+              styles.pointerEvents !== 'none' && styles.display !== 'none') {
+            console.log('🧹 Removendo overlay de diálogo fechado');
+            // Verificar se o elemento ainda tem um pai antes de remover
+            if (overlay.parentNode) {
+              overlay.parentNode.removeChild(overlay);
+            }
+          } else if (dataState === 'open') {
+            console.log('✅ Overlay pertence a diálogo ativo, mantendo');
+          }
+        }
+      }, 10000);
+      
+      return () => {
+        clearTimeout(checkTimeout);
+        console.log('🔍 DialogOverlay desmontado');
+      };
+    }
+  }, []);
+  
   return (
     <DialogPrimitive.Overlay
-      ref={ref}
+      ref={(node) => {
+        if (overlayRef.current !== node) {
+          overlayRef.current = node;
+        }
+        if (typeof ref === 'function') {
+          ref(node);
+        } else if (ref && 'current' in ref) {
+          // Verificar se o ref é mutável antes de tentar atribuir
+          const descriptor = Object.getOwnPropertyDescriptor(ref, 'current');
+          if (descriptor && descriptor.set) {
+            // Ref tem setter, é seguro atribuir
+            (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
+          }
+          // Se não tem setter, é readonly - não fazer nada
+        }
+      }}
       className={cn(
         "fixed inset-0 z-[45] bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:pointer-events-none",
         className
