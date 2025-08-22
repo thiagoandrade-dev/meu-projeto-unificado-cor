@@ -28,24 +28,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { api } from "@/services/apiService";
-
-// Definição do tipo de imóvel (conforme modelo do backend)
-interface Imovel {
-  id: string;
-  grupo: number;
-  bloco: "A" | "B" | "C" | "D" | "E" | "F" | "G";
-  andar: number;
-  apartamento: number;
-  configuracaoPlanta: "Padrão (2 dorms)" | "2 dorms + Despensa" | "2 dorms + Dependência" | "Padrão (3 dorms)" | "3 dorms + Dependência";
-  areaUtil: number;
-  numVagasGaragem: number;
-  tipoVagaGaragem: "Coberta" | "Descoberta";
-  preco: number;
-  statusAnuncio: "Disponível para Venda" | "Disponível para Locação" | "Vendido" | "Alugado" | "Reservado" | "Indisponível";
-  imagens?: string[];
-  dataCadastro?: string;
-}
+import { api, Imovel } from "@/services/apiService";
 
 const EditarImovel = () => {
   const { id } = useParams<{ id: string }>();
@@ -585,10 +568,6 @@ const EditarImovel = () => {
                       <SelectContent>
                         <SelectItem value="Disponível para Venda">Disponível para Venda</SelectItem>
                         <SelectItem value="Disponível para Locação">Disponível para Locação</SelectItem>
-                        <SelectItem value="Vendido">Vendido</SelectItem>
-                        <SelectItem value="Alugado">Alugado</SelectItem>
-                        <SelectItem value="Reservado">Reservado</SelectItem>
-                        <SelectItem value="Indisponível">Indisponível</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

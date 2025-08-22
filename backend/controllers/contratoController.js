@@ -179,7 +179,7 @@ const atualizarContrato = async (req, res) => {
 
     // Se um novo arquivo foi enviado, atualizar o caminho
     if (req.file) {
-      dadosAtualizacao.arquivoContrato = req.file.path.replace(/\/g, "/");
+      dadosAtualizacao.arquivoContrato = req.file.path.replace(/\\/g, "/");
     }
 
     if (numero) dadosAtualizacao.numero = numero;

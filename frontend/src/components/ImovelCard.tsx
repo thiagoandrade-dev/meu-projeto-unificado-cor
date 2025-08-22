@@ -3,37 +3,7 @@ import { Link } from "react-router-dom";
 import { Home, MapPin, Ruler, Bed, Bath, Heart } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
-
-export type Imovel = {
-  id: string;
-  _id?: string;
-  titulo: string;
-  tipo: "Apartamento" | "Casa" | "Comercial" | "Terreno";
-  operacao: "Venda" | "Aluguel";
-  preco: number;
-  precoCondominio?: number;
-  endereco: string;
-  bairro: string;
-  cidade: string;
-  estado: string;
-  areaUtil: number;
-  quartos?: number;
-  suites?: number;
-  banheiros?: number;
-  vagas?: number;
-  descricao: string;
-  caracteristicas: string[];
-  fotos: string[];
-  destaque: boolean;
-  grupo?: string;
-  bloco?: string;
-  andar?: string;
-  apartamento?: string;
-  statusAnuncio?: 'Disponível' | 'Alugado' | 'Vendido' | 'Manutenção';
-  configuracaoPlanta?: string;
-  numVagasGaragem?: number;
-  tipoVagaGaragem?: string;
-};
+import { Imovel } from "@/services/apiService";
 
 interface ImovelCardProps {
   imovel: Imovel;

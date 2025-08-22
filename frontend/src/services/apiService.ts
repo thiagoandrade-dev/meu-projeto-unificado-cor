@@ -45,12 +45,25 @@ export interface Imovel {
   bloco: string;
   andar: number;
   apartamento: number;
-  configuracaoPlanta: string;
+  configuracaoPlanta: "Padrão (2 dorms)" | "2 dorms + Despensa" | "2 dorms + Dependência" | "Padrão (3 dorms)" | "3 dorms + Dependência";
   areaUtil: number;
-  numVagasGaragem: number;
-  tipoVagaGaragem: string;
+  numVagasGaragem?: number;
+  tipoVagaGaragem?: "Coberta" | "Descoberta";
   preco: number;
-  statusAnuncio: string;
+  statusAnuncio: "Disponível para Venda" | "Disponível para Locação";
+  endereco?: {
+    rua?: string;
+    numero?: string;
+    complemento?: string;
+    bairro?: string;
+    cidade?: string;
+    estado?: string;
+    cep?: string;
+  };
+  caracteristicas?: string[];
+  fotos?: string[];
+  descricao?: string;
+  destaque?: boolean;
   createdAt?: string;
   updatedAt?: string;
 }

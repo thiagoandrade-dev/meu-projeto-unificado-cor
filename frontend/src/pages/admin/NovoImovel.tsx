@@ -29,10 +29,10 @@ import { useToast } from "@/hooks/use-toast";
 import { api } from "@/services/apiService";
 import axios, { AxiosError } from "axios";
 
-// Definindo tipos literais para o formulário
-type ImovelType = "Apartamento" | "Casa" | "Comercial" | "Terreno";
-type OperacaoType = "Venda" | "Aluguel";
-type StatusImovelType = "Disponível" | "Ocupado" | "Reservado" | "Manutenção";
+// Definindo tipos literais para o formulário baseados no modelo backend
+type ConfiguracaoPlantaType = "Padrão (2 dorms)" | "2 dorms + Despensa" | "2 dorms + Dependência" | "Padrão (3 dorms)" | "3 dorms + Dependência";
+type TipoVagaGaragemType = "Coberta" | "Descoberta";
+type StatusAnuncioType = "Disponível para Venda" | "Disponível para Locação";
 
 const NovoImovel = () => {
   const { toast } = useToast();
@@ -40,43 +40,33 @@ const NovoImovel = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   
-  // Tipagem inicial do formData mais precisa
+  // Tipagem inicial do formData baseada no modelo backend
   const [formData, setFormData] = useState<{
-    titulo: string;
-    tipo: ImovelType | '';
-    operacao: OperacaoType | '';
-    preco: string;
-    precoCondominio: string;
-    endereco: string;
-    bairro: string;
-    cidade: string;
-    estado: string;
+    grupo: string;
+    bloco: string;
+    andar: string;
+    apartamento: string;
+    configuracaoPlanta: ConfiguracaoPlantaType | '';
     areaUtil: string;
-    quartos: string;
-    suites: string;
-    banheiros: string;
-    vagas: string;
+    numVagasGaragem: string;
+    tipoVagaGaragem: TipoVagaGaragemType | '';
+    preco: string;
     descricao: string;
+    statusAnuncio: StatusAnuncioType;
     destaque: boolean;
-    status: StatusImovelType;
   }>({
-    titulo: "",
-    tipo: "",
-    operacao: "",
-    preco: "",
-    precoCondominio: "",
-    endereco: "",
-    bairro: "",
-    cidade: "",
-    estado: "",
+    grupo: "",
+    bloco: "",
+    andar: "",
+    apartamento: "",
+    configuracaoPlanta: "",
     areaUtil: "",
-    quartos: "",
-    suites: "",
-    banheiros: "",
-    vagas: "",
+    numVagasGaragem: "",
+    tipoVagaGaragem: "",
+    preco: "",
     descricao: "",
-    destaque: false,
-    status: "Disponível" // Default já é um literal válido
+    statusAnuncio: "Disponível para Venda",
+    destaque: false
   });
   const [caracteristicas, setCaracteristicas] = useState<string[]>([]);
   const [novaCaracteristica, setNovaCaracteristica] = useState("");
@@ -99,16 +89,27 @@ const NovoImovel = () => {
     }
   };
 
+  // Mapeamento de configuração de planta para área útil (conforme backend)
+  const areasEsperadas: Record<ConfiguracaoPlantaType, number> = {
+    'Padrão (2 dorms)': 82,
+    '2 dorms + Despensa': 84,
+    '2 dorms + Dependência': 86,
+    'Padrão (3 dorms)': 125,
+    '3 dorms + Dependência': 135,
+  };
+
   // Atualizar campo select do formulário
   const handleSelectChange = (name: keyof typeof formData, value: string) => {
     setFormData(prev => {
       // Usar casting condicional para tipos específicos ou manter como string se não for um tipo literal
-      if (name === 'tipo') {
-        return { ...prev, [name]: value as ImovelType | '' };
-      } else if (name === 'operacao') {
-        return { ...prev, [name]: value as OperacaoType | '' };
-      } else if (name === 'status') {
-        return { ...prev, [name]: value as StatusImovelType };
+      if (name === 'configuracaoPlanta') {
+        const configValue = value as ConfiguracaoPlantaType | '';
+        const areaUtil = configValue && areasEsperadas[configValue] ? areasEsperadas[configValue].toString() : '';
+        return { ...prev, [name]: configValue, areaUtil };
+      } else if (name === 'tipoVagaGaragem') {
+        return { ...prev, [name]: value as TipoVagaGaragemType | '' };
+      } else if (name === 'statusAnuncio') {
+        return { ...prev, [name]: value as StatusAnuncioType };
       }
       return { ...prev, [name]: value }; // Para outros campos que são apenas string
     });
@@ -169,15 +170,13 @@ const NovoImovel = () => {
     
     // Validar campos obrigatórios
     const requiredFields = [
-      { name: "titulo", label: "Título" },
-      { name: "tipo", label: "Tipo" },
-      { name: "operacao", label: "Operação" },
-      { name: "preco", label: "Preço" },
-      { name: "endereco", label: "Endereço" },
-      { name: "bairro", label: "Bairro" },
-      { name: "cidade", label: "Cidade" },
-      { name: "estado", label: "Estado" },
+      { name: "grupo", label: "Grupo" },
+      { name: "bloco", label: "Bloco" },
+      { name: "andar", label: "Andar" },
+      { name: "apartamento", label: "Apartamento" },
+      { name: "configuracaoPlanta", label: "Configuração da Planta" },
       { name: "areaUtil", label: "Área útil" },
+      { name: "preco", label: "Preço" },
       { name: "descricao", label: "Descrição" }
     ];
     
@@ -190,14 +189,34 @@ const NovoImovel = () => {
     
     // Validar valores numéricos
     const numericFields = [
-      { name: "preco", label: "Preço" },
-      { name: "precoCondominio", label: "Preço do condomínio", required: false },
+      { name: "grupo", label: "Grupo" },
+      { name: "andar", label: "Andar" },
+      { name: "apartamento", label: "Apartamento" },
       { name: "areaUtil", label: "Área útil" },
-      { name: "quartos", label: "Quartos", required: false },
-      { name: "suites", label: "Suítes", required: false },
-      { name: "banheiros", label: "Banheiros", required: false },
-      { name: "vagas", label: "Vagas", required: false }
+      { name: "preco", label: "Preço" },
+      { name: "numVagasGaragem", label: "Número de vagas", required: false }
     ];
+    
+    // Validações específicas do backend
+    // Validar se bloco foi informado quando grupo > 0
+    if (formData.grupo && Number(formData.grupo) > 0 && !formData.bloco.trim()) {
+      newErrors.bloco = "Bloco é obrigatório quando grupo é informado";
+    }
+    
+    // Validar se andar foi informado quando grupo > 0
+    if (formData.grupo && Number(formData.grupo) > 0 && !formData.andar.trim()) {
+      newErrors.andar = "Andar é obrigatório quando grupo é informado";
+    }
+    
+    // Validar se área útil foi informada quando configuração da planta é informada
+    if (formData.configuracaoPlanta && !formData.areaUtil.trim()) {
+      newErrors.areaUtil = "Área útil é obrigatória quando configuração da planta é informada";
+    }
+    
+    // Validar se tipo de vaga foi informado quando número de vagas > 0
+    if (formData.numVagasGaragem && Number(formData.numVagasGaragem) > 0 && !formData.tipoVagaGaragem) {
+      newErrors.tipoVagaGaragem = "Tipo de vaga é obrigatório quando número de vagas é informado";
+    }
     
     numericFields.forEach(field => {
       const value = formData[field.name as keyof typeof formData];
@@ -234,9 +253,20 @@ const NovoImovel = () => {
       // Preparar dados para envio
       const imovelData = new FormData();
       
+      // Preparar dados com conversões apropriadas
+      const preparedData = {
+        ...formData,
+        grupo: parseInt(formData.grupo) || 0,
+        andar: parseInt(formData.andar) || 0,
+        apartamento: parseInt(formData.apartamento) || 0,
+        areaUtil: parseFloat(formData.areaUtil) || 0,
+        preco: parseFloat(formData.preco) || 0,
+        numVagasGaragem: formData.numVagasGaragem ? parseInt(formData.numVagasGaragem) : undefined
+      };
+      
       // Adicionar campos de texto
-      Object.entries(formData).forEach(([key, value]) => {
-        // Garantir que os valores de tipo, operacao, status sejam strings válidas
+      Object.entries(preparedData).forEach(([key, value]) => {
+        // Garantir que os valores sejam válidos
         if (value !== null && value !== undefined && value !== "") {
           imovelData.append(key, value.toString());
         }
@@ -261,7 +291,7 @@ const NovoImovel = () => {
       
       toast({
         title: "Imóvel criado com sucesso",
-        description: `O imóvel ${formData.titulo} foi adicionado ao sistema`,
+        description: `O imóvel foi adicionado ao sistema`,
       });
       
       // Redirecionar para a lista de imóveis
@@ -354,93 +384,141 @@ const NovoImovel = () => {
         {/* Conteúdo principal */}
         <main className="flex-1 overflow-y-auto bg-background p-4 sm:p-6 lg:p-8">
           <form onSubmit={handleSubmit}>
-            {/* Informações básicas */}
+            {/* Informações do Condomínio */}
             <Card className="mb-6">
               <CardHeader className="pb-2">
                 <CardTitle className="flex items-center">
                   <Home size={20} className="mr-2 text-primary" />
-                  Informações Básicas
+                  Informações do Condomínio
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="titulo">Título <span className="text-danger">*</span></Label>
+                    <Label htmlFor="grupo">Grupo <span className="text-danger">*</span></Label>
                     <Input
-                      id="titulo"
-                      name="titulo"
-                      value={formData.titulo}
+                      id="grupo"
+                      name="grupo"
+                      type="number"
+                      value={formData.grupo}
                       onChange={handleFormChange}
-                      className={errors.titulo ? "border-danger" : ""}
+                      className={errors.grupo ? "border-danger" : ""}
                     />
-                    {errors.titulo && (
-                      <p className="text-sm text-danger">{errors.titulo}</p>
+                    {errors.grupo && (
+                      <p className="text-sm text-danger">{errors.grupo}</p>
                     )}
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="tipo">Tipo <span className="text-danger">*</span></Label>
+                    <Label htmlFor="bloco">Bloco <span className="text-danger">*</span></Label>
+                    <Input
+                      id="bloco"
+                      name="bloco"
+                      value={formData.bloco}
+                      onChange={handleFormChange}
+                      className={errors.bloco ? "border-danger" : ""}
+                    />
+                    {errors.bloco && (
+                      <p className="text-sm text-danger">{errors.bloco}</p>
+                    )}
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="andar">Andar <span className="text-danger">*</span></Label>
+                    <Input
+                      id="andar"
+                      name="andar"
+                      type="number"
+                      value={formData.andar}
+                      onChange={handleFormChange}
+                      className={errors.andar ? "border-danger" : ""}
+                    />
+                    {errors.andar && (
+                      <p className="text-sm text-danger">{errors.andar}</p>
+                    )}
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="apartamento">Apartamento <span className="text-danger">*</span></Label>
+                    <Input
+                      id="apartamento"
+                      name="apartamento"
+                      type="number"
+                      value={formData.apartamento}
+                      onChange={handleFormChange}
+                      className={errors.apartamento ? "border-danger" : ""}
+                    />
+                    {errors.apartamento && (
+                      <p className="text-sm text-danger">{errors.apartamento}</p>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="configuracaoPlanta">Configuração da Planta <span className="text-danger">*</span></Label>
                     <Select
-                      value={formData.tipo}
-                      onValueChange={(value) => handleSelectChange("tipo", value)}
+                      value={formData.configuracaoPlanta}
+                      onValueChange={(value) => handleSelectChange("configuracaoPlanta", value)}
                     >
-                      <SelectTrigger className={errors.tipo ? "border-danger" : ""}>
-                        <SelectValue placeholder="Selecione o tipo" />
+                      <SelectTrigger className={errors.configuracaoPlanta ? "border-danger" : ""}>
+                        <SelectValue placeholder="Selecione a configuração" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Apartamento">Apartamento</SelectItem>
-                        <SelectItem value="Casa">Casa</SelectItem>
-                        <SelectItem value="Comercial">Comercial</SelectItem>
-                        <SelectItem value="Terreno">Terreno</SelectItem>
+                        <SelectItem value="Padrão (2 dorms)">Padrão (2 dorms)</SelectItem>
+                        <SelectItem value="2 dorms + Despensa">2 dorms + Despensa</SelectItem>
+                        <SelectItem value="2 dorms + Dependência">2 dorms + Dependência</SelectItem>
+                        <SelectItem value="Padrão (3 dorms)">Padrão (3 dorms)</SelectItem>
+                        <SelectItem value="3 dorms + Dependência">3 dorms + Dependência</SelectItem>
                       </SelectContent>
                     </Select>
-                    {errors.tipo && (
-                      <p className="text-sm text-danger">{errors.tipo}</p>
+                    {errors.configuracaoPlanta && (
+                      <p className="text-sm text-danger">{errors.configuracaoPlanta}</p>
                     )}
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="operacao">Operação <span className="text-danger">*</span></Label>
+                    <Label htmlFor="statusAnuncio">Status do Anúncio</Label>
                     <Select
-                      value={formData.operacao}
-                      onValueChange={(value) => handleSelectChange("operacao", value)}
-                    >
-                      <SelectTrigger className={errors.operacao ? "border-danger" : ""}>
-                        <SelectValue placeholder="Selecione a operação" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Venda">Venda</SelectItem>
-                        <SelectItem value="Aluguel">Aluguel</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {errors.operacao && (
-                      <p className="text-sm text-danger">{errors.operacao}</p>
-                    )}
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="status">Status <span className="text-danger">*</span></Label>
-                    <Select
-                      value={formData.status}
-                      onValueChange={(value) => handleSelectChange("status", value)}
+                      value={formData.statusAnuncio}
+                      onValueChange={(value) => handleSelectChange("statusAnuncio", value)}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione o status" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Disponível">Disponível</SelectItem>
-                        <SelectItem value="Ocupado">Ocupado</SelectItem>
-                        <SelectItem value="Reservado">Reservado</SelectItem>
-                        <SelectItem value="Manutenção">Manutenção</SelectItem>
+                        <SelectItem value="Disponível para Venda">Disponível para Venda</SelectItem>
+                        <SelectItem value="Disponível para Locação">Disponível para Locação</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
-                  
+                </div>
+                
+                <div className="flex items-center space-x-2 mt-6">
+                  <Checkbox
+                    id="destaque"
+                    checked={formData.destaque}
+                    onCheckedChange={(checked) => handleCheckboxChange("destaque", checked === true)}
+                  />
+                  <Label htmlFor="destaque">Destacar imóvel na página inicial</Label>
+                </div>
+              </CardContent>
+            </Card>
+            
+            {/* Informações Financeiras */}
+            <Card className="mb-6">
+              <CardHeader className="pb-2">
+                <CardTitle>Informações Financeiras</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <Label htmlFor="preco">Preço (R$) <span className="text-danger">*</span></Label>
                     <Input
                       id="preco"
                       name="preco"
+                      type="number"
+                      step="0.01"
                       value={formData.preco}
                       onChange={handleFormChange}
                       className={errors.preco ? "border-danger" : ""}
@@ -451,171 +529,64 @@ const NovoImovel = () => {
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="precoCondominio">Preço do Condomínio (R$)</Label>
-                    <Input
-                      id="precoCondominio"
-                      name="precoCondominio"
-                      value={formData.precoCondominio}
-                      onChange={handleFormChange}
-                      className={errors.precoCondominio ? "border-danger" : ""}
-                    />
-                    {errors.precoCondominio && (
-                      <p className="text-sm text-danger">{errors.precoCondominio}</p>
-                    )}
-                  </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="destaque"
-                      checked={formData.destaque}
-                      onCheckedChange={(checked) => handleCheckboxChange("destaque", checked === true)}
-                    />
-                    <Label htmlFor="destaque">Destacar imóvel na página inicial</Label>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            
-            {/* Localização */}
-            <Card className="mb-6">
-              <CardHeader className="pb-2">
-                <CardTitle>Localização</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="endereco">Endereço <span className="text-danger">*</span></Label>
-                    <Input
-                      id="endereco"
-                      name="endereco"
-                      value={formData.endereco}
-                      onChange={handleFormChange}
-                      className={errors.endereco ? "border-danger" : ""}
-                    />
-                    {errors.endereco && (
-                      <p className="text-sm text-danger">{errors.endereco}</p>
-                    )}
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="bairro">Bairro <span className="text-danger">*</span></Label>
-                    <Input
-                      id="bairro"
-                      name="bairro"
-                      value={formData.bairro}
-                      onChange={handleFormChange}
-                      className={errors.bairro ? "border-danger" : ""}
-                    />
-                    {errors.bairro && (
-                      <p className="text-sm text-danger">{errors.bairro}</p>
-                    )}
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="cidade">Cidade <span className="text-danger">*</span></Label>
-                    <Input
-                      id="cidade"
-                      name="cidade"
-                      value={formData.cidade}
-                      onChange={handleFormChange}
-                      className={errors.cidade ? "border-danger" : ""}
-                    />
-                    {errors.cidade && (
-                      <p className="text-sm text-danger">{errors.cidade}</p>
-                    )}
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="estado">Estado <span className="text-danger">*</span></Label>
-                    <Input
-                      id="estado"
-                      name="estado"
-                      value={formData.estado}
-                      onChange={handleFormChange}
-                      className={errors.estado ? "border-danger" : ""}
-                    />
-                    {errors.estado && (
-                      <p className="text-sm text-danger">{errors.estado}</p>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            
-            {/* Características */}
-            <Card className="mb-6">
-              <CardHeader className="pb-2">
-                <CardTitle>Características</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
                     <Label htmlFor="areaUtil">Área Útil (m²) <span className="text-danger">*</span></Label>
                     <Input
                       id="areaUtil"
                       name="areaUtil"
+                      type="number"
+                      step="0.01"
                       value={formData.areaUtil}
-                      onChange={handleFormChange}
-                      className={errors.areaUtil ? "border-danger" : ""}
+                      readOnly
+                      className={`bg-muted ${errors.areaUtil ? "border-danger" : ""}`}
+                      placeholder="Será preenchido automaticamente"
                     />
+                    <p className="text-xs text-muted-foreground">A área útil é definida automaticamente com base na configuração da planta</p>
                     {errors.areaUtil && (
                       <p className="text-sm text-danger">{errors.areaUtil}</p>
                     )}
                   </div>
-                  
+                </div>
+              </CardContent>
+            </Card>
+            
+            {/* Garagem */}
+            <Card className="mb-6">
+              <CardHeader className="pb-2">
+                <CardTitle>Garagem</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="quartos">Quartos</Label>
+                    <Label htmlFor="numVagasGaragem">Número de Vagas</Label>
                     <Input
-                      id="quartos"
-                      name="quartos"
-                      value={formData.quartos}
+                      id="numVagasGaragem"
+                      name="numVagasGaragem"
+                      type="number"
+                      value={formData.numVagasGaragem}
                       onChange={handleFormChange}
-                      className={errors.quartos ? "border-danger" : ""}
+                      className={errors.numVagasGaragem ? "border-danger" : ""}
                     />
-                    {errors.quartos && (
-                      <p className="text-sm text-danger">{errors.quartos}</p>
+                    {errors.numVagasGaragem && (
+                      <p className="text-sm text-danger">{errors.numVagasGaragem}</p>
                     )}
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="suites">Suítes</Label>
-                    <Input
-                      id="suites"
-                      name="suites"
-                      value={formData.suites}
-                      onChange={handleFormChange}
-                      className={errors.suites ? "border-danger" : ""}
-                    />
-                    {errors.suites && (
-                      <p className="text-sm text-danger">{errors.suites}</p>
-                    )}
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="banheiros">Banheiros</Label>
-                    <Input
-                      id="banheiros"
-                      name="banheiros"
-                      value={formData.banheiros}
-                      onChange={handleFormChange}
-                      className={errors.banheiros ? "border-danger" : ""}
-                    />
-                    {errors.banheiros && (
-                      <p className="text-sm text-danger">{errors.banheiros}</p>
-                    )}
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="vagas">Vagas de Garagem</Label>
-                    <Input
-                      id="vagas"
-                      name="vagas"
-                      value={formData.vagas}
-                      onChange={handleFormChange}
-                      className={errors.vagas ? "border-danger" : ""}
-                    />
-                    {errors.vagas && (
-                      <p className="text-sm text-danger">{errors.vagas}</p>
+                    <Label htmlFor="tipoVagaGaragem">Tipo de Vaga</Label>
+                    <Select
+                      value={formData.tipoVagaGaragem}
+                      onValueChange={(value) => handleSelectChange("tipoVagaGaragem", value)}
+                    >
+                      <SelectTrigger className={errors.tipoVagaGaragem ? "border-danger" : ""}>
+                        <SelectValue placeholder="Selecione o tipo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Coberta">Coberta</SelectItem>
+                        <SelectItem value="Descoberta">Descoberta</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {errors.tipoVagaGaragem && (
+                      <p className="text-sm text-danger">{errors.tipoVagaGaragem}</p>
                     )}
                   </div>
                 </div>
