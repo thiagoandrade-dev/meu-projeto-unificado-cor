@@ -86,10 +86,13 @@ const Imoveis = () => {
   // Carregar imóveis
   const carregarImoveis = useCallback(async () => {
     try {
+      console.log('📥 Iniciando carregamento de imóveis...');
       setLoading(true);
       const data = await imoveisService.getAll();
+      console.log('📥 Imóveis carregados:', data.length);
       setImoveis(data);
       setFilteredImoveis(data);
+      console.log('✅ Estados atualizados com sucesso');
     } catch (error) { // Removido 'any'
       if (axios.isAxiosError(error)) { // Correção da estrutura do catch
         console.error("Erro ao carregar imóveis:", error);
@@ -118,21 +121,27 @@ const Imoveis = () => {
 
   // Filtrar imóveis quando os filtros ou o termo de busca mudam
   useEffect(() => {
+    console.log('🔍 Executando filtros - Total imóveis:', imoveis.length);
+    console.log('🔍 Filtros ativos:', { grupoFilter, blocoFilter, statusFilter, searchTerm });
+    
     let result = [...imoveis];
     
     // Aplicar filtro de grupo
     if (grupoFilter !== "todos") {
       result = result.filter(imovel => imovel.grupo?.toString() === grupoFilter);
+      console.log('🔍 Após filtro grupo:', result.length);
     }
     
     // Aplicar filtro de bloco
     if (blocoFilter !== "todos") {
       result = result.filter(imovel => imovel.bloco === blocoFilter);
+      console.log('🔍 Após filtro bloco:', result.length);
     }
     
     // Aplicar filtro de status
     if (statusFilter !== "todos") {
       result = result.filter(imovel => imovel.statusAnuncio === statusFilter);
+      console.log('🔍 Após filtro status:', result.length);
     }
     
     // Aplicar termo de busca
@@ -149,9 +158,12 @@ const Imoveis = () => {
             );
           }
         );
+      console.log('🔍 Após filtro busca:', result.length);
     }
     
+    console.log('🔍 Atualizando filteredImoveis com', result.length, 'itens');
     setFilteredImoveis(result);
+    console.log('✅ Filtros aplicados com sucesso');
   }, [imoveis, grupoFilter, blocoFilter, statusFilter, searchTerm]);
 
   // Atualizar dados
@@ -195,54 +207,28 @@ const Imoveis = () => {
     if (!imovelToDelete) return;
     
     try {
+      console.log('🔄 Iniciando exclusão do imóvel:', imovelToDelete._id);
       setDeletingId(imovelToDelete._id);
       setOperationInProgress(true);
       
+      console.log('📡 Fazendo requisição de exclusão...');
       await imoveisService.delete(imovelToDelete._id);
+      console.log('✅ Imóvel excluído com sucesso no backend');
       
-      // Atualizar ambos os estados: imoveis e filteredImoveis
+      // Atualizar apenas o estado principal - deixar o useEffect cuidar da filtragem
+      console.log('🔄 Atualizando estado dos imóveis...');
       const updatedImoveis = imoveis.filter(i => i._id !== imovelToDelete._id);
       setImoveis(updatedImoveis);
+      console.log('✅ Estado dos imóveis atualizado');
       
-      // Aplicar os mesmos filtros aos dados atualizados usando a mesma lógica do useEffect
-      let result = [...updatedImoveis];
-      
-      // Aplicar filtro de grupo
-      if (grupoFilter !== "todos") {
-        result = result.filter(imovel => imovel.grupo?.toString() === grupoFilter);
-      }
-      
-      // Aplicar filtro de bloco
-      if (blocoFilter !== "todos") {
-        result = result.filter(imovel => imovel.bloco === blocoFilter);
-      }
-      
-      // Aplicar filtro de status
-      if (statusFilter !== "todos") {
-        result = result.filter(imovel => imovel.statusAnuncio === statusFilter);
-      }
-      
-      // Aplicar termo de busca
-      if (searchTerm) {
-        const term = searchTerm.toLowerCase();
-        result = result.filter(imovel => {
-          return (
-            imovel.grupo?.toString().toLowerCase().includes(term) ||
-            imovel.bloco?.toLowerCase().includes(term) ||
-            imovel.andar?.toString().toLowerCase().includes(term) ||
-            imovel.apartamento?.toString().toLowerCase().includes(term) ||
-            imovel.configuracaoPlanta?.toLowerCase().includes(term)
-          );
-        });
-      }
-      
-      setFilteredImoveis(result);
-      
+      console.log('🎉 Exibindo toast de sucesso...');
       toast({
         title: "Imóvel excluído",
         description: `O imóvel Grupo ${imovelToDelete.grupo} - Bloco ${imovelToDelete.bloco} - Apto ${imovelToDelete.apartamento} foi excluído com sucesso`,
       });
+      console.log('✅ Toast exibido com sucesso');
     } catch (error) {
+      console.log('❌ Erro durante exclusão:', error);
       if (axios.isAxiosError(error)) { // Correção da estrutura do catch
         console.error("Erro ao excluir imóvel:", error);
         toast({
@@ -259,10 +245,12 @@ const Imoveis = () => {
         });
       }
     } finally {
+      console.log('🧹 Limpando estados no finally...');
       setDeletingId(null);
       setOperationInProgress(false);
       setDeleteDialogOpen(false);
       setImovelToDelete(null);
+      console.log('✅ Estados limpos com sucesso');
     }
   };
 
