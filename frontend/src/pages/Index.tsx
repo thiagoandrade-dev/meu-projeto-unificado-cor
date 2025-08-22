@@ -4,9 +4,9 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import ImovelCard, { Imovel } from "@/components/ImovelCard";
+import ImovelCard from "@/components/ImovelCard";
 import { ArrowRight, Home as HomeIcon, FileText, Gavel, Building2 } from "lucide-react";
-import { imoveisService, Imovel as ApiImovel } from "@/services/apiService";
+import { imoveisService, Imovel, Imovel as ApiImovel } from "@/services/apiService";
 
 const Index = () => {
   const [imoveisDestaque, setImoveisDestaque] = useState<Imovel[]>([]);
@@ -25,36 +25,32 @@ const Index = () => {
       if (imovel.configuracaoPlanta.includes('Despensa')) caracteristicas.push('Despensa');
       if (imovel.configuracaoPlanta.includes('Dependência')) caracteristicas.push('Dependência de Empregada');
       if (imovel.tipoVagaGaragem === 'Coberta') caracteristicas.push('Garagem Coberta');
-      if (imovel.numVagasGaragem > 1) caracteristicas.push(`${imovel.numVagasGaragem} Vagas`);
+      if (imovel.numVagasGaragem && imovel.numVagasGaragem > 1) caracteristicas.push(`${imovel.numVagasGaragem} Vagas`);
       caracteristicas.push('Sacada', 'Área de Serviço', 'Portaria 24h');
       return caracteristicas;
     };
 
     return {
-      id: apiImovel._id,
-      titulo: `Apartamento ${apiImovel.configuracaoPlanta} - Grupo ${apiImovel.grupo}`,
-      tipo: "Apartamento",
-      operacao: apiImovel.statusAnuncio.includes('Venda') ? "Venda" : "Aluguel",
-      preco: apiImovel.preco,
-      precoCondominio: 350,
-      endereco: `Bloco ${apiImovel.bloco}, Andar ${apiImovel.andar}, Apt ${apiImovel.apartamento}`,
-      bairro: "Residencial Firenze",
-      cidade: "São Paulo",
-      estado: "SP",
+      _id: apiImovel._id,
+      grupo: apiImovel.grupo,
+      bloco: apiImovel.bloco,
+      andar: apiImovel.andar,
+      apartamento: apiImovel.apartamento,
+      configuracaoPlanta: apiImovel.configuracaoPlanta,
       areaUtil: apiImovel.areaUtil,
-      quartos: getQuartosFromConfig(apiImovel.configuracaoPlanta),
-      suites: apiImovel.configuracaoPlanta.includes('3 dorms') ? 1 : 0,
-      banheiros: apiImovel.configuracaoPlanta.includes('3 dorms') ? 2 : 1,
-      vagas: apiImovel.numVagasGaragem,
-      descricao: `${apiImovel.configuracaoPlanta} com ${apiImovel.areaUtil}m² de área útil no Grupo ${apiImovel.grupo}. ${apiImovel.numVagasGaragem} vaga${apiImovel.numVagasGaragem > 1 ? 's' : ''} de garagem ${apiImovel.tipoVagaGaragem.toLowerCase()}.`,
+      numVagasGaragem: apiImovel.numVagasGaragem,
+      tipoVagaGaragem: apiImovel.tipoVagaGaragem,
+      preco: apiImovel.preco,
+      statusAnuncio: apiImovel.statusAnuncio,
+      endereco: apiImovel.endereco,
       caracteristicas: getCaracteristicas(apiImovel),
-      fotos: [
+      fotos: apiImovel.fotos || [
         "/placeholder-imovel.svg",
         "/placeholder-apartamento.svg",
         "/placeholder-sala.svg"
       ],
-      destaque: true,
-      grupo: `Grupo ${apiImovel.grupo}`
+      descricao: `${apiImovel.configuracaoPlanta} com ${apiImovel.areaUtil}m² de área útil no Grupo ${apiImovel.grupo}. ${apiImovel.numVagasGaragem || 0} vaga${(apiImovel.numVagasGaragem || 0) > 1 ? 's' : ''} de garagem ${apiImovel.tipoVagaGaragem?.toLowerCase() || 'não informada'}.`,
+      destaque: apiImovel.destaque || true
     };
   };
 
