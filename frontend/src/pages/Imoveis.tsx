@@ -73,7 +73,6 @@ const Imoveis = () => {
         // Fallback para dados de exemplo em caso de erro
         setImoveis([
           {
-            id: "exemplo-1",
             titulo: "Apartamento Padrão (2 dorms) - Grupo 12",
             tipo: "Apartamento",
             operacao: "Venda",
