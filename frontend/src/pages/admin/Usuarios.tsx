@@ -211,6 +211,7 @@ const Usuarios = () => {
 
   // Abrir diálogo de exclusão
   const handleDeleteClick = (usuario: Usuario) => {
+    console.log('🗑️ Abrindo diálogo de exclusão para:', usuario.nome);
     setUsuarioToDelete(usuario);
     setDeleteDialogOpen(true);
   };
@@ -243,6 +244,7 @@ const Usuarios = () => {
         });
       }
     } finally {
+      console.log('🗑️ Fechando diálogo de exclusão');
       setDeleteDialogOpen(false);
       setUsuarioToDelete(null);
     }
@@ -250,6 +252,7 @@ const Usuarios = () => {
 
   // Abrir diálogo de edição
   const handleEditClick = (usuario: Usuario) => {
+    console.log('✏️ Abrindo diálogo de edição para:', usuario.nome);
     setUsuarioToEdit(usuario);
     setFormData({
       nome: usuario.nome,
@@ -332,6 +335,7 @@ const Usuarios = () => {
         description: `Os dados de ${formData.nome} foram atualizados com sucesso`,
       });
       
+      console.log('✏️ Fechando diálogo de edição após sucesso');
       setEditDialogOpen(false);
       setUsuarioToEdit(null);
     } catch (error: unknown) {
@@ -667,7 +671,10 @@ const Usuarios = () => {
       </div>
       
       {/* Diálogo de exclusão */}
-      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      <Dialog open={deleteDialogOpen} onOpenChange={(open) => {
+        console.log('🗑️ Dialog exclusão onOpenChange:', open);
+        setDeleteDialogOpen(open);
+      }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Confirmar exclusão</DialogTitle>
@@ -679,7 +686,10 @@ const Usuarios = () => {
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => setDeleteDialogOpen(false)}
+              onClick={() => {
+                console.log('🗑️ Cancelando exclusão via botão');
+                setDeleteDialogOpen(false);
+              }}
             >
               Cancelar
             </Button>
@@ -694,7 +704,10 @@ const Usuarios = () => {
       </Dialog>
       
       {/* Diálogo de edição */}
-      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+      <Dialog open={editDialogOpen} onOpenChange={(open) => {
+        console.log('✏️ Dialog edição onOpenChange:', open);
+        setEditDialogOpen(open);
+      }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Editar Usuário</DialogTitle>
@@ -939,7 +952,10 @@ const Usuarios = () => {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setEditDialogOpen(false)}
+                onClick={() => {
+                  console.log('✏️ Cancelando edição via botão');
+                  setEditDialogOpen(false);
+                }}
               >
                 Cancelar
               </Button>
