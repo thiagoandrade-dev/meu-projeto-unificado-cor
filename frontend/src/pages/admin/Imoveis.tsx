@@ -79,6 +79,8 @@ const Imoveis = () => {
   const [imovelToDelete, setImovelToDelete] = useState<Imovel | null>(null);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [imovelToView, setImovelToView] = useState<Imovel | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [operationInProgress, setOperationInProgress] = useState(false);
 
   // Carregar imóveis
   const carregarImoveis = useCallback(async () => {
@@ -192,8 +194,16 @@ const Imoveis = () => {
     if (!imovelToDelete) return;
     
     try {
+      setDeletingId(imovelToDelete._id);
+      setOperationInProgress(true);
+      
       await imoveisService.delete(imovelToDelete._id);
-      setImoveis(imoveis.filter(i => i._id !== imovelToDelete._id));
+      
+      // Atualizar ambos os estados: imoveis e filteredImoveis
+      const updatedImoveis = imoveis.filter(i => i._id !== imovelToDelete._id);
+      setImoveis(updatedImoveis);
+      setFilteredImoveis(filteredImoveis.filter(i => i._id !== imovelToDelete._id));
+      
       toast({
         title: "Imóvel excluído",
         description: `O imóvel Grupo ${imovelToDelete.grupo} - Bloco ${imovelToDelete.bloco} - Apto ${imovelToDelete.apartamento} foi excluído com sucesso`,
@@ -215,6 +225,8 @@ const Imoveis = () => {
         });
       }
     } finally {
+      setDeletingId(null);
+      setOperationInProgress(false);
       setDeleteDialogOpen(false);
       setImovelToDelete(null);
     }
@@ -500,19 +512,31 @@ const Imoveis = () => {
                           <TableCell className="text-right">
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="sm">
-                                  Ações
+                                <Button 
+                                  variant="ghost" 
+                                  className="h-8 w-8 p-0" 
+                                  disabled={operationInProgress || deletingId === imovel._id}
+                                >
+                                  <span className="sr-only">Abrir menu</span>
+                                  {deletingId === imovel._id ? (
+                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900"></div>
+                                  ) : (
+                                    <Edit size={16} />
+                                  )}
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuLabel>Opções</DropdownMenuLabel>
+                                <DropdownMenuLabel>Ações</DropdownMenuLabel>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => handleViewClick(imovel)}>
+                                <DropdownMenuItem 
+                                  onClick={() => handleViewClick(imovel)}
+                                  disabled={operationInProgress}
+                                >
                                   <Eye size={16} className="mr-2" />
                                   Visualizar
                                 </DropdownMenuItem>
-                                <DropdownMenuItem>
-                                  <Link to={`/admin/imoveis/editar/${imovel._id}`} className="flex items-center">
+                                <DropdownMenuItem asChild>
+                                  <Link to={`/admin/imoveis/editar/${imovel._id}`}>
                                     <Edit size={16} className="mr-2" />
                                     Editar
                                   </Link>
@@ -520,9 +544,10 @@ const Imoveis = () => {
                                 <DropdownMenuItem 
                                   onClick={() => handleDeleteClick(imovel)}
                                   className="text-danger"
+                                  disabled={operationInProgress}
                                 >
                                   <Trash2 size={16} className="mr-2" />
-                                  Excluir
+                                  {deletingId === imovel._id ? "Excluindo..." : "Excluir"}
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
@@ -558,8 +583,17 @@ const Imoveis = () => {
             <Button
               variant="destructive"
               onClick={handleDeleteConfirm}
+              disabled={operationInProgress}
+              className="flex items-center gap-2"
             >
-              Excluir
+              {operationInProgress ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  <span>Excluindo...</span>
+                </>
+              ) : (
+                "Excluir"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
