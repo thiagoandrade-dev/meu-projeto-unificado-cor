@@ -215,10 +215,35 @@ function useToast() {
     }
   }, [])
 
+  // Função para limpar todos os toasts e timeouts
+  const clearAllToasts = React.useCallback(() => {
+    console.log('🧹 Limpando TODOS os toasts e timeouts forçadamente');
+    
+    // Limpar todos os timeouts
+    toastTimeouts.forEach((timeout) => {
+      clearTimeout(timeout);
+    });
+    toastTimeouts.clear();
+    
+    // Remover todos os toasts
+    dispatch({ type: "REMOVE_TOAST" });
+    
+    // Limpar elementos DOM órfãos (se existirem)
+    setTimeout(() => {
+      const toastElements = document.querySelectorAll('[data-radix-toast-viewport], [data-radix-toast], [data-state="open"][role="status"]');
+      console.log('🔍 Elementos toast encontrados no DOM:', toastElements.length);
+      toastElements.forEach((element, index) => {
+        console.log(`🗑️ Removendo elemento toast órfão ${index + 1}:`, element);
+        element.remove();
+      });
+    }, 100);
+  }, []);
+
   return {
     ...state,
     toast,
     dismiss: (toastId?: string) => dispatch({ type: "DISMISS_TOAST", toastId }),
+    clearAllToasts,
   }
 }
 

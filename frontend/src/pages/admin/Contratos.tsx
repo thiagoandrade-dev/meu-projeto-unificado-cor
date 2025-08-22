@@ -180,7 +180,7 @@ const AdminContratos = () => {
         formDataToSend.append('valorCondominio', formData.valorCondominio.toString());
         formDataToSend.append('valorIPTU', formData.valorIPTU.toString());
         formDataToSend.append('diaVencimento', formData.diaVencimento.toString());
-        formDataToSend.append('observacoes', formData.observacoes);
+        formDataToSend.append('observacoes', formData.observacoes || '');
         
         // Dados do inquilino
         formDataToSend.append('inquilino[nome]', formData.inquilino.nome);

@@ -65,7 +65,7 @@ import { Imovel } from "@/services/apiService";
 
 // Componente principal
 const Imoveis = () => {
-  const { toast } = useToast();
+  const { toast, clearAllToasts } = useToast();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -336,6 +336,17 @@ const Imoveis = () => {
             </div>
             
             <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={clearAllToasts}
+                className="flex items-center gap-2 text-red-600 hover:text-red-700"
+                title="Limpar todos os toasts e overlays invisíveis"
+              >
+                <X size={16} />
+                Limpar Toasts
+              </Button>
+              
               <Button
                 variant="outline"
                 size="sm"

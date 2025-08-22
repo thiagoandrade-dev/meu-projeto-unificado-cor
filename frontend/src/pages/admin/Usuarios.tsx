@@ -85,7 +85,7 @@ interface Usuario {
 
 // Componente principal
 const Usuarios = () => {
-  const { toast } = useToast();
+  const { toast, clearAllToasts } = useToast();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -453,6 +453,17 @@ const Usuarios = () => {
             </div>
             
             <div className="flex items-center gap-3">
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={clearAllToasts}
+                className="flex items-center gap-2"
+                title="Limpar todos os toasts (use se a tela estiver bloqueada)"
+              >
+                <X size={16} />
+                Limpar Toasts
+              </Button>
+              
               <Button
                 variant="outline"
                 size="sm"
