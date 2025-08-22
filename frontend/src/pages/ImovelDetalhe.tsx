@@ -49,6 +49,46 @@ const ImovelDetalhe = () => {
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
+  // Listener para detectar e corrigir problemas de cliques bloqueados
+  useEffect(() => {
+    const handleGlobalClick = (e: MouseEvent) => {
+      // Verificar se o body tem pointer-events: none
+      const bodyStyle = getComputedStyle(document.body);
+      if (bodyStyle.pointerEvents === 'none') {
+        console.log('🚨 CLIQUE BLOQUEADO DETECTADO na página de detalhes! Corrigindo automaticamente...');
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // Corrigir imediatamente
+        document.body.style.pointerEvents = 'auto';
+        document.body.style.removeProperty('pointer-events');
+        
+        // Chamar função global de limpeza se disponível
+        const cleanupFn = (window as Window & { emergencyCleanupAllOverlays?: () => void }).emergencyCleanupAllOverlays;
+        if (typeof cleanupFn === 'function') {
+          console.log('🧹 Chamando limpeza de emergência global da página de detalhes');
+          cleanupFn();
+        }
+        
+        // Tentar executar o clique novamente após correção
+        setTimeout(() => {
+          const target = e.target as HTMLElement;
+          if (target && target.click) {
+            console.log('🔄 Tentando clique novamente após correção na página de detalhes');
+            target.click();
+          }
+        }, 50);
+      }
+    };
+
+    // Adicionar listener com capture para interceptar antes de outros handlers
+    document.addEventListener('click', handleGlobalClick, true);
+    
+    return () => {
+      document.removeEventListener('click', handleGlobalClick, true);
+    };
+  }, []);
+
   useEffect(() => {
     const fetchImovel = async () => {
       if (!id) {

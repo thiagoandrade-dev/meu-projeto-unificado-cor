@@ -88,9 +88,25 @@ function App() {
     return removedCount;
   }, []);
 
+  // Função para corrigir pointer-events do body
+  const fixBodyPointerEvents = useCallback(() => {
+    const bodyStyle = getComputedStyle(document.body);
+    if (bodyStyle.pointerEvents === 'none') {
+      console.log('🚨 DETECTADO: body com pointer-events: none! Corrigindo...');
+      document.body.style.pointerEvents = 'auto';
+      document.body.style.removeProperty('pointer-events');
+      console.log('✅ Pointer-events do body corrigido para auto');
+      return true;
+    }
+    return false;
+  }, []);
+
   // Função de emergência para limpar TODOS os overlays
   const emergencyCleanupAllOverlays = useCallback(() => {
     console.log('🚨 LIMPEZA DE EMERGÊNCIA: Removendo TODOS os overlays!');
+    
+    // Primeiro, corrigir pointer-events do body
+    fixBodyPointerEvents();
     
     const selectors = [
       '[data-radix-dialog-overlay]',
@@ -115,26 +131,61 @@ function App() {
     
     console.log(`✅ Limpeza de emergência concluída. ${totalRemoved} elementos removidos.`);
     return totalRemoved;
-  }, []);
+  }, [fixBodyPointerEvents]);
 
   // Disponibilizar funções globalmente para depuração
   useEffect(() => {
     (window as Window & { cleanupDialogOverlays?: () => void }).cleanupDialogOverlays = cleanupDialogOverlays;
     (window as Window & { emergencyCleanupAllOverlays?: () => void }).emergencyCleanupAllOverlays = emergencyCleanupAllOverlays;
+    (window as Window & { fixBodyPointerEvents?: () => void }).fixBodyPointerEvents = fixBodyPointerEvents;
     
     console.log('🔧 Funções de limpeza disponíveis no console:');
     console.log('- cleanupDialogOverlays(): Limpa overlays invisíveis');
     console.log('- emergencyCleanupAllOverlays(): Remove TODOS os overlays');
-  }, [cleanupDialogOverlays, emergencyCleanupAllOverlays]);
+    console.log('- fixBodyPointerEvents(): Corrige pointer-events do body');
+  }, [cleanupDialogOverlays, emergencyCleanupAllOverlays, fixBodyPointerEvents]);
 
   // Limpeza automática a cada 10 segundos
   useEffect(() => {
     const interval = setInterval(() => {
       cleanupDialogOverlays();
+      fixBodyPointerEvents(); // Verificar pointer-events do body também
     }, 10000);
     
     return () => clearInterval(interval);
-  }, [cleanupDialogOverlays]);
+  }, [cleanupDialogOverlays, fixBodyPointerEvents]);
+
+  // Listener global para detectar problemas de clique
+  useEffect(() => {
+    const handleGlobalClick = (e: MouseEvent) => {
+      // Verificar se o body tem pointer-events: none
+      const bodyStyle = getComputedStyle(document.body);
+      if (bodyStyle.pointerEvents === 'none') {
+        console.log('🚨 CLIQUE BLOQUEADO DETECTADO! Corrigindo automaticamente...');
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // Corrigir imediatamente
+        fixBodyPointerEvents();
+        
+        // Tentar executar o clique novamente após correção
+        setTimeout(() => {
+          const target = e.target as HTMLElement;
+          if (target && target.click) {
+            console.log('🔄 Tentando clique novamente após correção');
+            target.click();
+          }
+        }, 50);
+      }
+    };
+
+    // Adicionar listener com capture para interceptar antes de outros handlers
+    document.addEventListener('click', handleGlobalClick, true);
+    
+    return () => {
+      document.removeEventListener('click', handleGlobalClick, true);
+    };
+  }, [fixBodyPointerEvents]);
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
