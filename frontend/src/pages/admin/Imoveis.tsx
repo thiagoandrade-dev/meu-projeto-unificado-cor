@@ -81,7 +81,7 @@ const Imoveis = () => {
   const [imovelToView, setImovelToView] = useState<Imovel | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [operationInProgress, setOperationInProgress] = useState(false);
-  const [disabledButtons, setDisabledButtons] = useState(false);
+
 
   // Carregar imóveis
   const carregarImoveis = useCallback(async () => {
@@ -197,7 +197,6 @@ const Imoveis = () => {
     try {
       setDeletingId(imovelToDelete._id);
       setOperationInProgress(true);
-      setDisabledButtons(true);
       
       await imoveisService.delete(imovelToDelete._id);
       
@@ -260,14 +259,10 @@ const Imoveis = () => {
         });
       }
     } finally {
-      // Usar setTimeout para garantir que os estados sejam resetados após a renderização
-      setTimeout(() => {
-        setDeletingId(null);
-        setOperationInProgress(false);
-        setDisabledButtons(false);
-        setDeleteDialogOpen(false);
-        setImovelToDelete(null);
-      }, 100);
+      setDeletingId(null);
+      setOperationInProgress(false);
+      setDeleteDialogOpen(false);
+      setImovelToDelete(null);
     }
   };
 
@@ -554,7 +549,7 @@ const Imoveis = () => {
                                 <Button 
                                   variant="ghost" 
                                   className="h-8 w-8 p-0" 
-                                  disabled={disabledButtons || deletingId === imovel._id}
+                                  disabled={operationInProgress || deletingId === imovel._id}
                                 >
                                   <span className="sr-only">Abrir menu</span>
                                   {deletingId === imovel._id ? (
@@ -569,7 +564,7 @@ const Imoveis = () => {
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem 
                                   onClick={() => handleViewClick(imovel)}
-                                  disabled={disabledButtons}
+                                  disabled={operationInProgress}
                                 >
                                   <Eye size={16} className="mr-2" />
                                   Visualizar
@@ -583,7 +578,7 @@ const Imoveis = () => {
                                 <DropdownMenuItem 
                                   onClick={() => handleDeleteClick(imovel)}
                                   className="text-danger"
-                                  disabled={disabledButtons}
+                                  disabled={operationInProgress}
                                 >
                                   <Trash2 size={16} className="mr-2" />
                                   {deletingId === imovel._id ? "Excluindo..." : "Excluir"}
@@ -622,10 +617,10 @@ const Imoveis = () => {
             <Button
               variant="destructive"
               onClick={handleDeleteConfirm}
-              disabled={disabledButtons}
+              disabled={operationInProgress}
               className="flex items-center gap-2"
             >
-              {disabledButtons ? (
+              {operationInProgress ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                   <span>Excluindo...</span>
