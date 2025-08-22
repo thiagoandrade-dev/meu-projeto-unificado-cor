@@ -272,14 +272,9 @@ const NovoImovel = () => {
         }
       });
       
-      // Adicionar características
-      caracteristicas.forEach(caracteristica => {
-        imovelData.append("caracteristicas[]", caracteristica);
-      });
-      
       // Adicionar fotos
       fotos.forEach(foto => {
-        imovelData.append("fotos", foto);
+        imovelData.append("imagens", foto);
       });
       
       // Enviar requisição
