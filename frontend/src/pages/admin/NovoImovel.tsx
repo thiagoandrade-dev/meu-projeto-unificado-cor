@@ -174,8 +174,7 @@ const NovoImovel = () => {
       { name: "apartamento", label: "Apartamento" },
       { name: "configuracaoPlanta", label: "Configuração da Planta" },
       { name: "areaUtil", label: "Área útil" },
-      { name: "preco", label: "Preço" },
-      { name: "descricao", label: "Descrição" }
+      { name: "preco", label: "Preço" }
     ];
     
     requiredFields.forEach(field => {
@@ -223,9 +222,9 @@ const NovoImovel = () => {
       }
     });
     
-    // Validar fotos
+    // Validar imagens
     if (fotos.length === 0) {
-      newErrors.fotos = "Pelo menos uma foto é obrigatória";
+      newErrors.fotos = "Pelo menos uma imagem é obrigatória";
     }
     
     setErrors(newErrors);
