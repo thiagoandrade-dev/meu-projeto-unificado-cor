@@ -51,7 +51,6 @@ const NovoImovel = () => {
     numVagasGaragem: string;
     tipoVagaGaragem: TipoVagaGaragemType | '';
     preco: string;
-    descricao: string;
     statusAnuncio: StatusAnuncioType;
     destaque: boolean;
   }>({
@@ -64,7 +63,6 @@ const NovoImovel = () => {
     numVagasGaragem: "",
     tipoVagaGaragem: "",
     preco: "",
-    descricao: "",
     statusAnuncio: "Disponível para Venda",
     destaque: false
   });
@@ -628,32 +626,12 @@ const NovoImovel = () => {
               </CardContent>
             </Card>
             
-            {/* Descrição */}
-            <Card className="mb-6">
-              <CardHeader className="pb-2">
-                <CardTitle>Descrição</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <Label htmlFor="descricao">Descrição detalhada <span className="text-danger">*</span></Label>
-                  <Textarea
-                    id="descricao"
-                    name="descricao"
-                    value={formData.descricao}
-                    onChange={handleFormChange}
-                    className={`min-h-32 ${errors.descricao ? "border-danger" : ""}`}
-                  />
-                  {errors.descricao && (
-                    <p className="text-sm text-danger">{errors.descricao}</p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+
             
-            {/* Fotos */}
+            {/* Imagens */}
             <Card className="mb-6">
               <CardHeader className="pb-2">
-                <CardTitle>Fotos</CardTitle>
+                <CardTitle>Imagens</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -661,7 +639,7 @@ const NovoImovel = () => {
                   
                   {/* Upload de novas fotos */}
                   <div>
-                    <Label className="mb-2 block">Adicionar fotos <span className="text-danger">*</span></Label> {/* Adicionado asterisco de obrigatório */}
+                    <Label className="mb-2 block">Adicionar imagens <span className="text-danger">*</span></Label> {/* Adicionado asterisco de obrigatório */}
                     <div className="flex items-center justify-center w-full">
                       <label
                         htmlFor="fotos"
