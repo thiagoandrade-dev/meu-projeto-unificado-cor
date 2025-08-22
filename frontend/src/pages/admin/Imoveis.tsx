@@ -81,6 +81,7 @@ const Imoveis = () => {
   const [imovelToView, setImovelToView] = useState<Imovel | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [operationInProgress, setOperationInProgress] = useState(false);
+  const [disabledButtons, setDisabledButtons] = useState(false);
 
   // Carregar imóveis
   const carregarImoveis = useCallback(async () => {
@@ -193,11 +194,18 @@ const Imoveis = () => {
   const handleDeleteConfirm = async () => {
     if (!imovelToDelete) return;
     
+    console.log('Iniciando exclusão, operationInProgress:', operationInProgress);
+    
     try {
       setDeletingId(imovelToDelete._id);
       setOperationInProgress(true);
+      setDisabledButtons(true);
+      
+      console.log('Estados setados - deletingId:', imovelToDelete._id, 'operationInProgress: true');
       
       await imoveisService.delete(imovelToDelete._id);
+      
+      console.log('Exclusão bem-sucedida, atualizando estados...');
       
       // Atualizar ambos os estados: imoveis e filteredImoveis
       const updatedImoveis = imoveis.filter(i => i._id !== imovelToDelete._id);
@@ -209,6 +217,7 @@ const Imoveis = () => {
         description: `O imóvel Grupo ${imovelToDelete.grupo} - Bloco ${imovelToDelete.bloco} - Apto ${imovelToDelete.apartamento} foi excluído com sucesso`,
       });
     } catch (error) { // Removido 'any'
+      console.log('Erro durante exclusão:', error);
       if (axios.isAxiosError(error)) { // Correção da estrutura do catch
         console.error("Erro ao excluir imóvel:", error);
         toast({
@@ -225,10 +234,17 @@ const Imoveis = () => {
         });
       }
     } finally {
-      setDeletingId(null);
-      setOperationInProgress(false);
-      setDeleteDialogOpen(false);
-      setImovelToDelete(null);
+      console.log('Executando finally - resetando estados...');
+      
+      // Usar setTimeout para garantir que os estados sejam resetados após a renderização
+      setTimeout(() => {
+        setDeletingId(null);
+        setOperationInProgress(false);
+        setDisabledButtons(false);
+        setDeleteDialogOpen(false);
+        setImovelToDelete(null);
+        console.log('Estados resetados - deletingId: null, operationInProgress: false');
+      }, 100);
     }
   };
 
@@ -515,7 +531,7 @@ const Imoveis = () => {
                                 <Button 
                                   variant="ghost" 
                                   className="h-8 w-8 p-0" 
-                                  disabled={operationInProgress || deletingId === imovel._id}
+                                  disabled={disabledButtons || deletingId === imovel._id}
                                 >
                                   <span className="sr-only">Abrir menu</span>
                                   {deletingId === imovel._id ? (
@@ -530,7 +546,7 @@ const Imoveis = () => {
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem 
                                   onClick={() => handleViewClick(imovel)}
-                                  disabled={operationInProgress}
+                                  disabled={disabledButtons}
                                 >
                                   <Eye size={16} className="mr-2" />
                                   Visualizar
@@ -544,7 +560,7 @@ const Imoveis = () => {
                                 <DropdownMenuItem 
                                   onClick={() => handleDeleteClick(imovel)}
                                   className="text-danger"
-                                  disabled={operationInProgress}
+                                  disabled={disabledButtons}
                                 >
                                   <Trash2 size={16} className="mr-2" />
                                   {deletingId === imovel._id ? "Excluindo..." : "Excluir"}
@@ -583,10 +599,10 @@ const Imoveis = () => {
             <Button
               variant="destructive"
               onClick={handleDeleteConfirm}
-              disabled={operationInProgress}
+              disabled={disabledButtons}
               className="flex items-center gap-2"
             >
-              {operationInProgress ? (
+              {disabledButtons ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                   <span>Excluindo...</span>
