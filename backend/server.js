@@ -197,7 +197,8 @@ app.use("/api-docs",
 // =============================================
 // 6. ARQUIVOS ESTÁTICOS (FRONTEND)
 // =============================================
-//app.use("/uploads", verificarToken, express.static(path.join(__dirname, "uploads"))); // Protegido
+app.use("/uploads", express.static(path.join(__dirname, "uploads"))); // Arquivos de upload
+app.use("/contratos", express.static(path.join(__dirname, "uploads/contratos"))); // Arquivos de contratos
 //app.use(express.static(path.join(__dirname, "../frontend/public")));
 //app.use("/admin", express.static(path.join(__dirname, "../frontend/admin")));
 

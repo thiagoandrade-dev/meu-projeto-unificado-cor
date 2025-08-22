@@ -115,6 +115,64 @@ export const contratoService = {
       throw handleApiError(error, "enviar cobrança");
     }
   },
+
+  createWithFile: async (formData: FormData): Promise<Contrato> => {
+    try {
+      const response = await api.post<Contrato>("/contratos", formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error, "criar contrato com arquivo");
+    }
+  },
+
+  updateWithFile: async (id: string, formData: FormData): Promise<Contrato> => {
+    try {
+      const response = await api.put<Contrato>(`/contratos/${id}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error, `atualizar contrato ${id} com arquivo`);
+    }
+  },
+
+  downloadContrato: async (contratoId: string): Promise<void> => {
+    try {
+      const response = await api.get(`/contratos/${contratoId}/download`, {
+        responseType: 'blob',
+      });
+      
+      // Criar URL do blob e fazer download
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      
+      // Tentar extrair o nome do arquivo do header Content-Disposition
+      const contentDisposition = response.headers['content-disposition'];
+      let filename = `contrato-${contratoId}.pdf`;
+      
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+        if (filenameMatch) {
+          filename = filenameMatch[1];
+        }
+      }
+      
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      throw handleApiError(error, "baixar contrato");
+    }
+  },
 };
 
 

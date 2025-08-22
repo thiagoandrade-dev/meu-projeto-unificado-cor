@@ -25,18 +25,22 @@ const seedUsers = async () => {
         email: "admin@firenze.com",
         senha: "123456", // Enviando a senha original
         perfil: "admin",
-        status: "Ativo"
+        status: "ativo"
       },
       {
         nome: "Thiago Inquilino",
         email: "inquilino@teste.com",
         senha: "123456", // Enviando a senha original
         perfil: "inquilino",
-        status: "Ativo"
+        status: "ativo"
       }
     ];
 
-    await Inquilino.insertMany(usuariosParaCriar);
+    // Usar create() em vez de insertMany() para acionar o middleware pre-save
+    for (const userData of usuariosParaCriar) {
+      await Inquilino.create(userData);
+      console.log(`Usuário criado: ${userData.email}`);
+    }
     console.log("✅ Usuários de teste criados com sucesso (com senhas corretamente hasheadas pelo modelo)!");
     console.log("---");
     console.log("Admin: admin@firenze.com | Senha: 123456");

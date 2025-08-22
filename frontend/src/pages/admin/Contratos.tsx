@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import AdminSidebar from "@/components/AdminSidebar";
-import { Plus, Search, FileText, Eye, Download, Trash2, Calendar, DollarSign, Mail, Loader2 } from "lucide-react";
+import { Plus, Search, FileText, Eye, Download, Trash2, Calendar, DollarSign, Mail, Loader2, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import contratoService, { Contrato } from "@/services/contratoService";
@@ -75,6 +75,7 @@ const AdminContratos = () => {
   const [loadingSubmit, setLoadingSubmit] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingContratoId, setEditingContratoId] = useState<string | null>(null);
+  const [arquivoContrato, setArquivoContrato] = useState<File | null>(null);
   
   const [formData, setFormData] = useState<FormDataType>(INITIAL_FORM_DATA);
 
@@ -165,49 +166,103 @@ const AdminContratos = () => {
     e.preventDefault();
     setLoadingSubmit(true);
 
-    // Formata dados convertendo string para número onde necessário
-    const dataToSend: Contrato = {
-        ...formData,
-        valorAluguel: Number(formData.valorAluguel) || 0,
-        valorCondominio: Number(formData.valorCondominio) || 0,
-        valorIPTU: Number(formData.valorIPTU) || 0,
-        diaVencimento: Number(formData.diaVencimento) || 5,
-        proximoVencimento: formData.proximoVencimento || undefined,
-        dataUltimoReajuste: formData.dataUltimoReajuste || undefined,
-        percentualReajusteAnual: Number(formData.percentualReajusteAnual) || undefined,
-        indiceReajuste: formData.indiceReajuste || undefined,
-        arquivoContrato: formData.arquivoContrato || undefined,
-        imovel: {
-          _id: formData.imovel._id || "",
-          grupo: Number(formData.imovel.grupo) || 0,
-          bloco: formData.imovel.bloco,
-          apartamento: Number(formData.imovel.apartamento) || 0
-        },
-        inquilino: {
-          _id: formData.inquilino._id || "",
-          nome: formData.inquilino.nome,
-          email: formData.inquilino.email,
-          telefone: formData.inquilino.telefone,
-          cpf: formData.inquilino.cpf,
-          rg: formData.inquilino.rg,
-          perfil: formData.inquilino.perfil,
-          status: formData.inquilino.status
-        }
-    };
-
     try {
-      if (editingContratoId) {
-        await contratoService.update(editingContratoId, dataToSend);
-        toast({
-          title: "Contrato atualizado",
-          description: "Contrato atualizado com sucesso",
-        });
+      if (arquivoContrato) {
+        // Se há arquivo para upload, usar FormData
+        const formDataToSend = new FormData();
+        
+        // Adicionar dados do contrato
+        formDataToSend.append('numero', formData.numero);
+        formDataToSend.append('status', formData.status);
+        formDataToSend.append('dataInicio', formData.dataInicio);
+        formDataToSend.append('dataFim', formData.dataFim);
+        formDataToSend.append('valorAluguel', formData.valorAluguel.toString());
+        formDataToSend.append('valorCondominio', formData.valorCondominio.toString());
+        formDataToSend.append('valorIPTU', formData.valorIPTU.toString());
+        formDataToSend.append('diaVencimento', formData.diaVencimento.toString());
+        formDataToSend.append('observacoes', formData.observacoes);
+        
+        // Dados do inquilino
+        formDataToSend.append('inquilino[nome]', formData.inquilino.nome);
+        formDataToSend.append('inquilino[email]', formData.inquilino.email);
+        formDataToSend.append('inquilino[telefone]', formData.inquilino.telefone);
+        formDataToSend.append('inquilino[cpf]', formData.inquilino.cpf);
+        formDataToSend.append('inquilino[rg]', formData.inquilino.rg);
+        formDataToSend.append('inquilino[perfil]', formData.inquilino.perfil);
+        formDataToSend.append('inquilino[status]', formData.inquilino.status);
+        
+        // Dados do imóvel
+        formDataToSend.append('imovel[_id]', formData.imovel._id);
+        formDataToSend.append('imovel[grupo]', formData.imovel.grupo.toString());
+        formDataToSend.append('imovel[bloco]', formData.imovel.bloco);
+        formDataToSend.append('imovel[apartamento]', formData.imovel.apartamento.toString());
+        
+        // Campos opcionais
+        if (formData.proximoVencimento) formDataToSend.append('proximoVencimento', formData.proximoVencimento);
+        if (formData.dataUltimoReajuste) formDataToSend.append('dataUltimoReajuste', formData.dataUltimoReajuste);
+        if (formData.percentualReajusteAnual) formDataToSend.append('percentualReajusteAnual', formData.percentualReajusteAnual.toString());
+        if (formData.indiceReajuste) formDataToSend.append('indiceReajuste', formData.indiceReajuste);
+        
+        // Adicionar arquivo
+        formDataToSend.append('arquivoContrato', arquivoContrato);
+
+        if (editingContratoId) {
+          await contratoService.updateWithFile(editingContratoId, formDataToSend);
+          toast({
+            title: "Contrato atualizado",
+            description: "Contrato atualizado com sucesso",
+          });
+        } else {
+          await contratoService.createWithFile(formDataToSend);
+          toast({
+            title: "Contrato criado",
+            description: "Contrato criado com sucesso",
+          });
+        }
       } else {
-        await contratoService.create(dataToSend);
-        toast({
-          title: "Contrato criado",
-          description: "Contrato criado com sucesso",
-        });
+        // Sem arquivo, usar método tradicional
+        const dataToSend: Contrato = {
+            ...formData,
+            valorAluguel: Number(formData.valorAluguel) || 0,
+            valorCondominio: Number(formData.valorCondominio) || 0,
+            valorIPTU: Number(formData.valorIPTU) || 0,
+            diaVencimento: Number(formData.diaVencimento) || 5,
+            proximoVencimento: formData.proximoVencimento || undefined,
+            dataUltimoReajuste: formData.dataUltimoReajuste || undefined,
+            percentualReajusteAnual: Number(formData.percentualReajusteAnual) || undefined,
+            indiceReajuste: formData.indiceReajuste || undefined,
+            arquivoContrato: formData.arquivoContrato || undefined,
+            imovel: {
+              _id: formData.imovel._id || "",
+              grupo: Number(formData.imovel.grupo) || 0,
+              bloco: formData.imovel.bloco,
+              apartamento: Number(formData.imovel.apartamento) || 0
+            },
+            inquilino: {
+              _id: formData.inquilino._id || "",
+              nome: formData.inquilino.nome,
+              email: formData.inquilino.email,
+              telefone: formData.inquilino.telefone,
+              cpf: formData.inquilino.cpf,
+              rg: formData.inquilino.rg,
+              perfil: formData.inquilino.perfil,
+              status: formData.inquilino.status
+            }
+        };
+
+        if (editingContratoId) {
+          await contratoService.update(editingContratoId, dataToSend);
+          toast({
+            title: "Contrato atualizado",
+            description: "Contrato atualizado com sucesso",
+          });
+        } else {
+          await contratoService.create(dataToSend);
+          toast({
+            title: "Contrato criado",
+            description: "Contrato criado com sucesso",
+          });
+        }
       }
       
       setDialogOpen(false);
@@ -228,6 +283,7 @@ const AdminContratos = () => {
   const resetForm = () => {
     setFormData(INITIAL_FORM_DATA);
     setEditingContratoId(null);
+    setArquivoContrato(null);
   };
 
   const handleEdit = (contrato: Contrato) => {
@@ -250,6 +306,7 @@ const AdminContratos = () => {
       observacoes: contrato.observacoes || ""
     });
     setEditingContratoId(contrato._id || "");
+    setArquivoContrato(null); // Reset arquivo ao editar
     setDialogOpen(true);
   };
 
@@ -281,6 +338,23 @@ const AdminContratos = () => {
   const handleEnviarCobranca = async (contrato: Contrato) => {
      toast({ title: "Funcionalidade Pendente", description: `Enviar cobrança para ${contrato.inquilino.email} ainda não implementado.`, variant: "default" });
      console.warn("Enviar cobrança para", contrato.inquilino.email);
+  };
+
+  const handleDownloadContrato = async (contratoId: string) => {
+    try {
+      await contratoService.downloadContrato(contratoId);
+      toast({
+        title: "Download iniciado",
+        description: "O download do contrato foi iniciado",
+      });
+    } catch (error) {
+      console.error("Erro ao baixar contrato:", error);
+      toast({
+        title: "Erro ao baixar contrato",
+        description: error instanceof Error ? error.message : "Não foi possível baixar o contrato.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -563,14 +637,40 @@ const AdminContratos = () => {
                       </Select>
                     </div>
                   </div>
-                  <div className="space-y-1">
-                    <Label htmlFor="arquivoContrato">Arquivo do Contrato (URL)</Label>
-                    <Input
-                      id="arquivoContrato"
-                      value={formData.arquivoContrato}
-                      onChange={(e) => handleChange(e, "arquivoContrato")}
-                      placeholder="URL do arquivo do contrato assinado"
-                    />
+                  <div className="space-y-2">
+                    <Label htmlFor="arquivoContrato">Arquivo do Contrato</Label>
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center gap-2">
+                        <Input
+                          id="arquivoContrato"
+                          type="file"
+                          accept=".pdf,.doc,.docx"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              setArquivoContrato(file);
+                            }
+                          }}
+                          className="flex-1"
+                        />
+                        <Upload className="h-4 w-4 text-gray-400" />
+                      </div>
+                      {arquivoContrato && (
+                        <p className="text-sm text-green-600 flex items-center gap-1">
+                          <FileText className="h-3 w-3" />
+                          {arquivoContrato.name}
+                        </p>
+                      )}
+                      {formData.arquivoContrato && !arquivoContrato && (
+                        <p className="text-sm text-blue-600 flex items-center gap-1">
+                          <FileText className="h-3 w-3" />
+                          Arquivo atual: {formData.arquivoContrato.split('/').pop()}
+                        </p>
+                      )}
+                      <p className="text-xs text-gray-500">
+                        Formatos aceitos: PDF, DOC, DOCX (máx. 10MB)
+                      </p>
+                    </div>
                   </div>
                 </fieldset>
 
@@ -662,6 +762,11 @@ const AdminContratos = () => {
                           <Button variant="ghost" size="icon" title="Visualizar/Editar" onClick={() => handleEdit(contrato)}>
                             <Eye className="h-4 w-4 text-blue-600" />
                           </Button>
+                          {contrato.arquivoContrato && (
+                            <Button variant="ghost" size="icon" title="Download do Contrato" onClick={() => handleDownloadContrato(contrato._id || "")}>
+                              <Download className="h-4 w-4 text-purple-600" />
+                            </Button>
+                          )}
                           <Button variant="ghost" size="icon" title="Gerar Pagamentos" onClick={() => handleGerarPagamentos(contrato._id || "")}>
                             <DollarSign className="h-4 w-4 text-green-600" />
                           </Button>

@@ -2,6 +2,8 @@
 const Contrato = require("../models/Contrato");
 const Inquilino = require("../models/Inquilino");
 const Imovel = require("../models/Imovel");
+const path = require('path');
+const fs = require('fs');
 const { validationResult } = require("express-validator");
 
 // Listar todos os contratos
@@ -83,9 +85,14 @@ const criarContrato = async (req, res) => {
       proximoVencimento,
       dataUltimoReajuste,
       percentualReajusteAnual,
-      indiceReajuste,
-      arquivoContrato
+      indiceReajuste
     } = req.body;
+
+    // Se um arquivo foi enviado, salvar o caminho
+    let arquivoContrato = null;
+    if (req.file) {
+      arquivoContrato = req.file.path.replace(/\\/g, "/");
+    }
 
     // Verificar se inquilino e imóvel existem
     const inquilino = await Inquilino.findById(inquilinoId);
@@ -170,6 +177,11 @@ const atualizarContrato = async (req, res) => {
 
     const dadosAtualizacao = {};
 
+    // Se um novo arquivo foi enviado, atualizar o caminho
+    if (req.file) {
+      dadosAtualizacao.arquivoContrato = req.file.path.replace(/\/g, "/");
+    }
+
     if (numero) dadosAtualizacao.numero = numero;
     if (inquilinoId) dadosAtualizacao.inquilinoId = inquilinoId;
     if (imovelId) dadosAtualizacao.imovelId = imovelId;
@@ -252,11 +264,70 @@ const atualizarStatusContrato = async (req, res) => {
   }
 };
 
+// Download de arquivo de contrato
+const downloadContrato = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { perfil, id: usuarioId } = req.user;
+
+    const contrato = await Contrato.findById(id);
+    if (!contrato) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Contrato não encontrado' 
+      });
+    }
+
+    // Verificar permissões
+    if (perfil !== 'admin' && contrato.inquilinoId.toString() !== usuarioId) {
+      return res.status(403).json({ 
+        success: false, 
+        message: 'Acesso negado' 
+      });
+    }
+
+    if (!contrato.arquivoContrato) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Arquivo de contrato não encontrado' 
+      });
+    }
+
+    const filePath = path.resolve(contrato.arquivoContrato);
+    
+    // Verificar se o arquivo existe
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Arquivo físico não encontrado' 
+      });
+    }
+
+    // Definir o nome do arquivo para download
+    const fileName = `contrato-${contrato.numero || contrato._id}.${path.extname(filePath).substring(1)}`;
+    
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    res.setHeader('Content-Type', 'application/octet-stream');
+    
+    // Enviar o arquivo
+    res.sendFile(filePath);
+
+  } catch (error) {
+    console.error('Erro ao fazer download do contrato:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Erro interno do servidor',
+      error: error.message 
+    });
+  }
+};
+
 module.exports = {
   listarContratos,
   buscarContratoPorId,
   criarContrato,
   atualizarContrato,
   excluirContrato,
-  atualizarStatusContrato
+  atualizarStatusContrato,
+  downloadContrato
 };

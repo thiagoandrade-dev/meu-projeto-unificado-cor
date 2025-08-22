@@ -4,6 +4,40 @@ const contratoController = require("../controllers/contratoController");
 const Contrato = require("../models/Contrato");
 const mongoose = require("mongoose");
 const { body, validationResult } = require("express-validator");
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+
+// Configuração do Multer para upload de contratos
+const contratoStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const uploadPath = "uploads/contratos/";
+    if (!fs.existsSync(uploadPath)) {
+      fs.mkdirSync(uploadPath, { recursive: true });
+    }
+    cb(null, uploadPath);
+  },
+  filename: function (req, file, cb) {
+    // Nome do arquivo: contrato-{timestamp}-{nome-original}
+    const timestamp = Date.now();
+    const originalName = file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
+    cb(null, `contrato-${timestamp}-${originalName}`);
+  }
+});
+
+const uploadContrato = multer({
+  storage: contratoStorage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // Limite de 10MB por arquivo
+  fileFilter: function (req, file, cb) {
+    const filetypes = /pdf|doc|docx/;
+    const mimetype = filetypes.test(file.mimetype);
+    const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+    if (mimetype && extname) {
+      return cb(null, true);
+    }
+    cb(new Error("Erro: Apenas arquivos PDF, DOC ou DOCX são permitidos para contratos!"));
+  }
+});
 
 // Validações
 const contratoValidationRules = () => [
@@ -28,16 +62,19 @@ router.get("/", contratoController.listarContratos);
 router.get("/:id", contratoController.buscarContratoPorId);
 
 // Criar novo contrato
-router.post("/", contratoValidationRules(), contratoController.criarContrato);
+router.post("/", uploadContrato.single('arquivoContrato'), contratoValidationRules(), contratoController.criarContrato);
 
 // Atualizar contrato
-router.put("/:id", contratoValidationRules(), contratoController.atualizarContrato);
+router.put("/:id", uploadContrato.single('arquivoContrato'), contratoValidationRules(), contratoController.atualizarContrato);
 
 // Atualizar status do contrato
 router.patch("/:id/status", contratoController.atualizarStatusContrato);
 
 // Excluir contrato
 router.delete("/:id", contratoController.excluirContrato);
+
+// Download de arquivo de contrato
+router.get("/:id/download", contratoController.downloadContrato);
 
 // Se não houver contratos no banco de dados, vamos adicionar alguns para teste
 router.get("/seed", verificarToken, async (req, res) => {

@@ -3,8 +3,8 @@ const mongoose = require("mongoose");
 const Inquilino = require("../models/Inquilino");
 
 const emailsParaVerificar = [
-  "admin@imobiliariafirenze.com.br",
-  "thiago@email.com"
+  "admin@firenze.com",
+  "inquilino@teste.com"
 ];
 
 const dbURI = process.env.MONGODB_URI;
