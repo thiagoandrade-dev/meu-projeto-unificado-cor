@@ -73,11 +73,17 @@ const Imoveis = () => {
         // Fallback para dados de exemplo em caso de erro
         setImoveis([
           {
-            titulo: "Apartamento Padrão (2 dorms) - Grupo 12",
-            tipo: "Apartamento",
-            operacao: "Venda",
+            _id: "exemplo-1",
+            grupo: 12,
+            bloco: "A",
+            andar: 10,
+            apartamento: 101,
+            configuracaoPlanta: "2Q",
+            areaUtil: 82,
+            numVagasGaragem: 1,
+            tipoVagaGaragem: "Coberta",
             preco: 320000,
-            precoCondominio: 350,
+            statusAnuncio: "Disponível para Venda",
             endereco: {
               rua: "Rua das Flores",
               numero: "123",
@@ -87,30 +93,13 @@ const Imoveis = () => {
               estado: "SP",
               cep: "01234-567"
             },
-            bairro: "Residencial Firenze",
-            cidade: "São Paulo",
-            estado: "SP",
-            areaUtil: 82,
-            quartos: 2,
-            suites: 0,
-            banheiros: 1,
-            vagas: 1,
-            descricao: "Apartamento padrão com 2 dormitórios e 82m² de área útil. 1 vaga de garagem coberta.",
             caracteristicas: ["Garagem Coberta", "Sacada", "Área de Serviço"],
             fotos: [
               "/placeholder-imovel.svg",
               "/placeholder-apartamento.svg"
             ],
-            destaque: true,
-            grupo: 12,
-            _id: "exemplo-1",
-            bloco: "A",
-            apartamento: 101,
-            andar: 10,
-            configuracaoPlanta: "2Q",
-            statusAnuncio: "Disponível para Venda",
-            tipoVagaGaragem: "Coberta",
-            numVagasGaragem: 1
+            descricao: "Apartamento padrão com 2 dormitórios e 82m² de área útil. 1 vaga de garagem coberta.",
+            destaque: true
           }
         ]);
       } finally {
