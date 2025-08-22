@@ -300,6 +300,7 @@ const Usuarios = () => {
         }
         
         // Forçar reflow do DOM
+        // eslint-disable-next-line @typescript-eslint/no-unused-expressions
         document.body.offsetHeight;
         
         console.log('✅ Limpeza completa de overlays concluída');

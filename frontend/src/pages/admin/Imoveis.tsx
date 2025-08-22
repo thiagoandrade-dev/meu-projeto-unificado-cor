@@ -324,7 +324,7 @@ const Imoveis = () => {
           '[data-radix-dialog-overlay]',
           '[data-radix-alert-dialog-overlay]',
           '[data-state="open"][data-radix-dialog-overlay]',
-          '.fixed.inset-0.z-\[45\]',
+          '.fixed.inset-0.z-[45]',
           '[role="dialog"] + div'
         ];
         
@@ -361,6 +361,7 @@ const Imoveis = () => {
         }
         
         // Forçar reflow do DOM
+        // eslint-disable-next-line @typescript-eslint/no-unused-expressions
         document.body.offsetHeight;
         
         console.log('✅ Limpeza completa de overlays concluída');
@@ -655,7 +656,7 @@ const Imoveis = () => {
                           </TableCell>
                           <TableCell>
                             <div className="text-sm">
-                              <div>{imovel.numVagasGaragem} vaga{imovel.numVagasGaragem > 1 ? 's' : ''}</div>
+                              <div>{imovel.numVagasGaragem || 0} vaga{(imovel.numVagasGaragem || 0) > 1 ? 's' : ''}</div>
                               <div className="text-xs text-muted">{imovel.tipoVagaGaragem}</div>
                             </div>
                           </TableCell>

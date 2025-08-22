@@ -24,23 +24,23 @@ const ImovelCard = ({ imovel, featured = false }: ImovelCardProps) => {
   };
 
   return (
-    <Link to={`/imoveis/${imovel.id}`}>
+    <Link to={`/imoveis/${imovel._id}`}>
       <div className={`card firenze-card group ${featured ? 'lg:flex' : ''} transition-all duration-300 hover:shadow-lg`}>
         {/* Imagem */}
         <div className={`relative ${featured ? 'lg:w-2/5' : 'h-48'} overflow-hidden`}>
           <img
-            src={imovel.fotos[0] || "/placeholder-imovel.svg"}
-            alt={imovel.titulo}
+            src={imovel.fotos?.[0] || "/placeholder-imovel.svg"}
+            alt={`${imovel.configuracaoPlanta} - Grupo ${imovel.grupo}, Bloco ${imovel.bloco}`}
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
           <Badge 
             className={`absolute top-3 left-3 ${
-              imovel.operacao === "Venda" 
+              imovel.statusAnuncio === "Disponível para Venda" 
                 ? "bg-primary text-white" 
                 : "bg-secondary text-primary-dark"
             }`}
           >
-            {imovel.operacao}
+            {imovel.statusAnuncio === "Disponível para Venda" ? "Venda" : "Locação"}
           </Badge>
           {imovel.destaque && (
             <Badge className="absolute top-3 right-12 bg-warning text-white">
@@ -61,57 +61,61 @@ const ImovelCard = ({ imovel, featured = false }: ImovelCardProps) => {
         {/* Informações */}
         <div className={`p-4 ${featured ? 'lg:w-3/5' : ''}`}>
           <div className="flex items-start justify-between mb-2">
-            <h3 className="text-lg font-semibold line-clamp-1">{imovel.titulo}</h3>
+            <h3 className="text-lg font-semibold line-clamp-1">
+              {imovel.configuracaoPlanta} - Grupo {imovel.grupo}, Bloco {imovel.bloco}
+            </h3>
             <span className="text-lg font-bold text-primary">
               {formatCurrency(imovel.preco)}
-              {imovel.operacao === "Aluguel" && <span className="text-xs text-muted">/mês</span>}
+              {imovel.statusAnuncio === "Disponível para Locação" && <span className="text-xs text-muted">/mês</span>}
             </span>
           </div>
           
           <div className="flex items-center text-muted text-sm mb-3">
             <MapPin size={16} className="mr-1" />
-            <span className="line-clamp-1">{imovel.bairro}, {imovel.cidade}</span>
+            <span className="line-clamp-1">
+              {imovel.endereco?.bairro || 'Bairro não informado'}, {imovel.endereco?.cidade || 'Cidade não informada'}
+            </span>
           </div>
           
           <div className="flex flex-wrap gap-3 text-sm text-muted">
             <div className="flex items-center">
               <Home size={16} className="mr-1 text-primary" />
-              <span>{imovel.tipo}</span>
+              <span>Apartamento</span>
             </div>
             <div className="flex items-center">
               <Ruler size={16} className="mr-1 text-primary" />
               <span>{imovel.areaUtil}m²</span>
             </div>
-            {imovel.quartos !== undefined && (
-              <div className="flex items-center">
-                <Bed size={16} className="mr-1 text-primary" />
-                <span>{imovel.quartos} quartos</span>
-              </div>
-            )}
-            {imovel.banheiros !== undefined && (
+            <div className="flex items-center">
+              <Bed size={16} className="mr-1 text-primary" />
+              <span>
+                {imovel.configuracaoPlanta.includes('2 dorms') ? '2' : '3'} quartos
+              </span>
+            </div>
+            {imovel.numVagasGaragem && (
               <div className="flex items-center">
                 <Bath size={16} className="mr-1 text-primary" />
-                <span>{imovel.banheiros} banheiros</span>
+                <span>{imovel.numVagasGaragem} vaga{imovel.numVagasGaragem > 1 ? 's' : ''}</span>
               </div>
             )}
           </div>
           
-          {featured && (
+          {featured && imovel.descricao && (
             <p className="mt-3 text-muted line-clamp-2">{imovel.descricao}</p>
           )}
           
-          {featured && (
-            <div className="mt-4">
-              <span className="inline-block px-3 py-1 text-xs font-medium bg-primary/10 text-primary rounded-full mr-2 mb-2">
-                {imovel.caracteristicas[0]}
-              </span>
-              <span className="inline-block px-3 py-1 text-xs font-medium bg-primary/10 text-primary rounded-full mr-2 mb-2">
-                {imovel.caracteristicas[1]}
-              </span>
-              {imovel.caracteristicas.length > 2 && (
-                <span className="inline-block px-3 py-1 text-xs font-medium bg-primary/10 text-primary rounded-full mb-2">
-                  +{imovel.caracteristicas.length - 2}
+          {imovel.caracteristicas && imovel.caracteristicas.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-1">
+              {imovel.caracteristicas.slice(0, 3).map((caracteristica, index) => (
+                <span 
+                  key={index} 
+                  className="text-xs bg-muted text-muted-foreground px-2 py-1 rounded"
+                >
+                  {caracteristica}
                 </span>
+              ))}
+              {imovel.caracteristicas.length > 3 && (
+                <span className="text-xs text-muted">+{imovel.caracteristicas.length - 3} mais</span>
               )}
             </div>
           )}

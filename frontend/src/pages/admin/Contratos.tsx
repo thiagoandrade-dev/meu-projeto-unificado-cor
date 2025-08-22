@@ -100,7 +100,10 @@ const AdminContratos = () => {
   const carregarImoveis = useCallback(async () => {
     try {
       const data = await imoveisService.getAll();
-      setImoveis(data.filter(imovel => imovel.statusAnuncio === "Disponível")); 
+      setImoveis(data.filter(imovel => 
+        imovel.statusAnuncio === "Disponível para Venda" || 
+        imovel.statusAnuncio === "Disponível para Locação"
+      )); 
     } catch (error) {
       console.error("Erro ao carregar imóveis:", error);
     }
