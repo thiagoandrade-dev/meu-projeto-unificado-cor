@@ -79,7 +79,15 @@ const Imoveis = () => {
             operacao: "Venda",
             preco: 320000,
             precoCondominio: 350,
-            endereco: "Bloco A, Andar 10, Apt 101",
+            endereco: {
+              rua: "Rua das Flores",
+              numero: "123",
+              complemento: "Bloco A, Apt 101",
+              bairro: "Residencial Firenze",
+              cidade: "São Paulo",
+              estado: "SP",
+              cep: "01234-567"
+            },
             bairro: "Residencial Firenze",
             cidade: "São Paulo",
             estado: "SP",
@@ -95,13 +103,13 @@ const Imoveis = () => {
               "/placeholder-apartamento.svg"
             ],
             destaque: true,
-            grupo: "Grupo 12",
+            grupo: 12,
             _id: "exemplo-1",
             bloco: "A",
-            apartamento: "101",
-            andar: "10",
-            configuracaoPlanta: "Padrão (2 dorms)",
-            statusAnuncio: "Disponível",
+            apartamento: 101,
+            andar: 10,
+            configuracaoPlanta: "2Q",
+            statusAnuncio: "Disponível para Venda",
             tipoVagaGaragem: "Coberta",
             numVagasGaragem: 1
           }
@@ -197,13 +205,13 @@ const Imoveis = () => {
             visualizacao === "grid" ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {imoveis.map((imovel) => (
-                  <ImovelCard key={imovel.id} imovel={imovel} />
+                  <ImovelCard key={imovel._id} imovel={imovel} />
                 ))}
               </div>
             ) : (
               <div className="space-y-6">
                 {imoveis.map((imovel) => (
-                  <ImovelCard key={imovel.id} imovel={imovel} featured={true} />
+                  <ImovelCard key={imovel._id} imovel={imovel} featured={true} />
                 ))}
               </div>
             )
