@@ -42,7 +42,7 @@ const convertApiToDisplay = (apiImovel: ApiImovel): Imovel => {
     statusAnuncio: apiImovel.statusAnuncio,
     endereco: apiImovel.endereco,
     caracteristicas: getCaracteristicas(apiImovel),
-    fotos: apiImovel.fotos || [
+    imagens: apiImovel.imagens || [
       "/placeholder-imovel.svg",
       "/placeholder-apartamento.svg"
     ],
@@ -94,7 +94,7 @@ const Imoveis = () => {
               cep: "01234-567"
             },
             caracteristicas: ["Garagem Coberta", "Sacada", "Área de Serviço"],
-            fotos: [
+            imagens: [
               "/placeholder-imovel.svg",
               "/placeholder-apartamento.svg"
             ],

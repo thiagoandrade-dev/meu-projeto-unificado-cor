@@ -51,10 +51,10 @@ const EditarImovel = () => {
   });
   const [caracteristicas, setCaracteristicas] = useState<string[]>([]);
   const [novaCaracteristica, setNovaCaracteristica] = useState("");
-  const [fotos, setFotos] = useState<File[]>([]);
-  const [fotosExistentes, setFotosExistentes] = useState<string[]>([]);
-  const [fotosParaRemover, setFotosParaRemover] = useState<string[]>([]);
-  const [fotosPreview, setFotosPreview] = useState<string[]>([]);
+  const [imagens, setImagens] = useState<File[]>([]);
+  const [imagensExistentes, setImagensExistentes] = useState<string[]>([]);
+  const [imagensParaRemover, setImagensParaRemover] = useState<string[]>([]);
+  const [imagensPreview, setImagensPreview] = useState<string[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Carregar dados do imóvel
@@ -79,7 +79,7 @@ const EditarImovel = () => {
           statusAnuncio: imovel.statusAnuncio || "Disponível para Venda"
         });
         
-        setFotosExistentes(imovel.imagens || []);
+        setImagensExistentes(imovel.imagens || []);
       } catch (error) { // Removido 'any'
         if (axios.isAxiosError(error)) { // Correção da estrutura do catch
           console.error("Erro ao carregar imóvel:", error);
@@ -154,32 +154,32 @@ const EditarImovel = () => {
     setCaracteristicas(prev => prev.filter((_, i) => i !== index));
   };
 
-  // Manipular upload de fotos
-  const handleFotosChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Manipular upload de imagens
+  const handleImagensChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const filesArray = Array.from(e.target.files);
       
       // Criar URLs para preview
       const newPreviewUrls = filesArray.map(file => URL.createObjectURL(file));
       
-      setFotos(prev => [...prev, ...filesArray]);
-      setFotosPreview(prev => [...prev, ...newPreviewUrls]);
+      setImagens(prev => [...prev, ...filesArray]);
+    setImagensPreview(prev => [...prev, ...newPreviewUrls]);
     }
   };
 
-  // Remover foto nova
-  const handleRemoveFoto = (index: number) => {
+  // Remover imagem nova
+  const handleRemoveImagem = (index: number) => {
     // Revogar URL do objeto para liberar memória
-    URL.revokeObjectURL(fotosPreview[index]);
+    URL.revokeObjectURL(imagensPreview[index]);
     
-    setFotos(prev => prev.filter((_, i) => i !== index));
-    setFotosPreview(prev => prev.filter((_, i) => i !== index));
+    setImagens(prev => prev.filter((_, i) => i !== index));
+    setImagensPreview(prev => prev.filter((_, i) => i !== index));
   };
 
-  // Remover foto existente
-  const handleRemoveFotoExistente = (url: string) => {
-    setFotosExistentes(prev => prev.filter(foto => foto !== url));
-    setFotosParaRemover(prev => [...prev, url]);
+  // Remover imagem existente
+  const handleRemoveImagemExistente = (url: string) => {
+    setImagensExistentes(prev => prev.filter(imagem => imagem !== url));
+    setImagensParaRemover(prev => [...prev, url]);
   };
 
   // Validar formulário
@@ -261,15 +261,15 @@ const EditarImovel = () => {
         }
       });
       
-      // Adicionar fotos existentes
-      imovelData.append("fotosExistentes", JSON.stringify(fotosExistentes));
+      // Adicionar imagens existentes
+      imovelData.append("imagensExistentes", JSON.stringify(imagensExistentes));
       
-      // Adicionar fotos para remover
-      imovelData.append("fotosParaRemover", JSON.stringify(fotosParaRemover));
+      // Adicionar imagens para remover
+      imovelData.append("imagensParaRemover", JSON.stringify(imagensParaRemover));
       
-      // Adicionar novas fotos
-      fotos.forEach(foto => {
-        imovelData.append("imagens", foto);
+      // Adicionar novas imagens
+      imagens.forEach(imagem => {
+        imovelData.append("imagens", imagem);
       });
       
       // Enviar requisição
@@ -583,20 +583,20 @@ const EditarImovel = () => {
               <CardContent>
                 <div className="space-y-4">
                   {/* Imagens existentes */}
-                  {fotosExistentes.length > 0 && (
+                  {imagensExistentes.length > 0 && (
                     <div>
                       <h4 className="text-sm font-medium mb-2">Imagens atuais:</h4>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        {fotosExistentes.map((url, index) => (
+                        {imagensExistentes.map((url, index) => (
                           <div key={index} className="relative">
                             <img
                               src={url}
-                              alt={`Foto ${index + 1}`}
+                              alt={`Imagem ${index + 1}`}
                               className="w-full h-32 object-cover rounded-md"
                             />
                             <button
                               type="button"
-                              onClick={() => handleRemoveFotoExistente(url)}
+                              onClick={() => handleRemoveImagemExistente(url)}
                               className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
                             >
                               <Trash2 size={16} />
@@ -607,21 +607,21 @@ const EditarImovel = () => {
                     </div>
                   )}
                   
-                  {/* Preview das novas fotos */}
-                  {fotosPreview.length > 0 && (
+                  {/* Preview das novas imagens */}
+                  {imagensPreview.length > 0 && (
                     <div>
                       <h4 className="text-sm font-medium mb-2">Novas imagens:</h4>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        {fotosPreview.map((url, index) => (
+                        {imagensPreview.map((url, index) => (
                           <div key={index} className="relative">
                             <img
                               src={url}
-                              alt={`Nova foto ${index + 1}`}
+                              alt={`Nova imagem ${index + 1}`}
                               className="w-full h-32 object-cover rounded-md"
                             />
                             <button
                               type="button"
-                              onClick={() => handleRemoveFoto(index)}
+                              onClick={() => handleRemoveImagem(index)}
                               className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
                             >
                               <Trash2 size={16} />
@@ -632,12 +632,12 @@ const EditarImovel = () => {
                     </div>
                   )}
                   
-                  {/* Upload de novas fotos */}
+                  {/* Upload de novas imagens */}
                   <div>
                     <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
                       <Upload className="mx-auto h-12 w-12 text-gray-400" />
                       <div className="mt-4">
-                        <label htmlFor="fotos" className="cursor-pointer">
+                        <label htmlFor="imagens" className="cursor-pointer">
                           <span className="mt-2 block text-sm font-medium text-gray-900">
                             Adicionar novas imagens
                           </span>
@@ -646,11 +646,11 @@ const EditarImovel = () => {
                           </span>
                         </label>
                         <input
-                          id="fotos"
+                          id="imagens"
                           type="file"
                           accept="image/*"
                           multiple
-                          onChange={handleFotosChange}
+                          onChange={handleImagensChange}
                           className="hidden"
                         />
                       </div>

@@ -44,7 +44,7 @@ const Index = () => {
       statusAnuncio: apiImovel.statusAnuncio,
       endereco: apiImovel.endereco,
       caracteristicas: getCaracteristicas(apiImovel),
-      fotos: apiImovel.fotos || [
+      imagens: apiImovel.imagens || [
         "/placeholder-imovel.svg",
         "/placeholder-apartamento.svg",
         "/placeholder-sala.svg"

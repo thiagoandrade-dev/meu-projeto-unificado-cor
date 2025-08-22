@@ -24,12 +24,12 @@ const ImovelCard = ({ imovel, featured = false }: ImovelCardProps) => {
   };
 
   return (
-    <Link to={`/imoveis/${imovel._id}`}>
+    <Link to={`/imovel/${imovel._id}`}>
       <div className={`card firenze-card group ${featured ? 'lg:flex' : ''} transition-all duration-300 hover:shadow-lg`}>
         {/* Imagem */}
         <div className={`relative ${featured ? 'lg:w-2/5' : 'h-48'} overflow-hidden`}>
           <img
-            src={imovel.fotos?.[0] || "/placeholder-imovel.svg"}
+            src={imovel.imagens?.[0] || "/placeholder-imovel.svg"}
             alt={`${imovel.configuracaoPlanta} - Grupo ${imovel.grupo}, Bloco ${imovel.bloco}`}
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           />

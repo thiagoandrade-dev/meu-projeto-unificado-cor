@@ -45,7 +45,7 @@ export interface Imovel {
   bloco: string;
   andar: number;
   apartamento: number;
-  configuracaoPlanta: "Padrão (2 dorms)" | "2 dorms + Despensa" | "2 dorms + Dependência" | "Padrão (3 dorms)" | "3 dorms + Dependência";
+  configuracaoPlanta: "1Q" | "2Q" | "3Q" | "4Q" | "Cobertura" | "Studio";
   areaUtil: number;
   numVagasGaragem?: number;
   tipoVagaGaragem?: "Coberta" | "Descoberta";
@@ -61,7 +61,7 @@ export interface Imovel {
     cep?: string;
   };
   caracteristicas?: string[];
-  fotos?: string[];
+  imagens?: string[];
   descricao?: string;
   destaque?: boolean;
   createdAt?: string;

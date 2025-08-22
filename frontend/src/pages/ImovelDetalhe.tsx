@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { AxiosError } from 'axios';
 
 // Componente para a galeria de imagens
-const ImovelGaleria = ({ fotos }: { fotos: string[] }) => {
+const ImovelGaleria = ({ imagens }: { imagens: string[] }) => {
   // Imagens padrão para demonstração (usando placeholders locais)
   const imagensPadrao = [
     "/placeholder-imovel.svg",
@@ -21,20 +21,20 @@ const ImovelGaleria = ({ fotos }: { fotos: string[] }) => {
     "/placeholder-cozinha.svg"
   ];
   
-  const fotosParaExibir = fotos && fotos.length > 0 ? fotos : imagensPadrao;
-  const [fotoPrincipal, setFotoPrincipal] = useState(fotosParaExibir[0]);
+  const imagensParaExibir = imagens && imagens.length > 0 ? imagens : imagensPadrao;
+  const [imagemPrincipal, setImagemPrincipal] = useState(imagensParaExibir[0]);
 
   return (
     <div>
-      <img src={fotoPrincipal} alt="Foto principal do imóvel" className="w-full h-96 object-cover rounded-lg mb-4" />
+      <img src={imagemPrincipal} alt="Foto principal do imóvel" className="w-full h-96 object-cover rounded-lg mb-4" />
       <div className="grid grid-cols-5 gap-2">
-        {fotosParaExibir.slice(0, 5).map((foto, index) => (
+        {imagensParaExibir.slice(0, 5).map((imagem, index) => (
           <img
             key={index}
-            src={foto}
+            src={imagem}
             alt={`Foto ${index + 1} do imóvel`}
-            className={`w-full h-24 object-cover rounded-md cursor-pointer transition-transform duration-200 hover:scale-105 ${foto === fotoPrincipal ? 'ring-2 ring-imobiliaria-azul' : ''}`}
-            onClick={() => setFotoPrincipal(foto)}
+            className={`w-full h-24 object-cover rounded-md cursor-pointer transition-transform duration-200 hover:scale-105 ${imagem === imagemPrincipal ? 'ring-2 ring-imobiliaria-azul' : ''}`}
+            onClick={() => setImagemPrincipal(imagem)}
           />
         ))}
       </div>
@@ -152,7 +152,7 @@ const ImovelDetalhe = () => {
     return <div className="flex h-screen items-center justify-center"><p>Imóvel não encontrado.</p></div>;
   }
 
-  const fotosImovel: string[] = []; // Usando imagens padrão da galeria
+  const imagensImovel: string[] = []; // Usando imagens padrão da galeria
 
   return (
     <div className="bg-gray-50">
@@ -169,7 +169,7 @@ const ImovelDetalhe = () => {
                 <MapPin size={16} className="mr-2" />
                 {imovel.andar}º andar - {imovel.configuracaoPlanta}
               </p>
-              <ImovelGaleria fotos={fotosImovel} />
+              <ImovelGaleria imagens={imagensImovel} />
             </div>
 
             {/* Coluna de Informações e Contato */}

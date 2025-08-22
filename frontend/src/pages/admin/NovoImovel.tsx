@@ -68,8 +68,8 @@ const NovoImovel = () => {
   });
   const [caracteristicas, setCaracteristicas] = useState<string[]>([]);
   const [novaCaracteristica, setNovaCaracteristica] = useState("");
-  const [fotos, setFotos] = useState<File[]>([]);
-  const [fotosPreview, setFotosPreview] = useState<string[]>([]);
+  const [imagens, setImagens] = useState<File[]>([]);
+const [imagensPreview, setImagensPreview] = useState<string[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Atualizar campo do formulário
@@ -140,26 +140,26 @@ const NovoImovel = () => {
     setCaracteristicas(prev => prev.filter((_, i) => i !== index));
   };
 
-  // Manipular upload de fotos
-  const handleFotosChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Manipular upload de imagens
+  const handleImagensChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const filesArray = Array.from(e.target.files);
       
       // Criar URLs para preview
       const newPreviewUrls = filesArray.map(file => URL.createObjectURL(file));
       
-      setFotos(prev => [...prev, ...filesArray]);
-      setFotosPreview(prev => [...prev, ...newPreviewUrls]);
+      setImagens(prev => [...prev, ...filesArray]);
+      setImagensPreview(prev => [...prev, ...newPreviewUrls]);
     }
   };
 
-  // Remover foto
-  const handleRemoveFoto = (index: number) => {
+  // Remover imagem
+  const handleRemoveImagem = (index: number) => {
     // Revogar URL do objeto para liberar memória
-    URL.revokeObjectURL(fotosPreview[index]);
+    URL.revokeObjectURL(imagensPreview[index]);
     
-    setFotos(prev => prev.filter((_, i) => i !== index));
-    setFotosPreview(prev => prev.filter((_, i) => i !== index));
+    setImagens(prev => prev.filter((_, i) => i !== index));
+    setImagensPreview(prev => prev.filter((_, i) => i !== index));
   };
 
   // Validar formulário
@@ -223,8 +223,8 @@ const NovoImovel = () => {
     });
     
     // Validar imagens
-    if (fotos.length === 0) {
-      newErrors.fotos = "Pelo menos uma imagem é obrigatória";
+    if (imagens.length === 0) {
+      newErrors.imagens = "Pelo menos uma imagem é obrigatória";
     }
     
     setErrors(newErrors);
@@ -269,10 +269,10 @@ const NovoImovel = () => {
         }
       });
       
-      // Adicionar fotos
-      fotos.forEach(foto => {
-        imovelData.append("imagens", foto);
-      });
+      // Adicionar imagens
+    imagens.forEach(imagem => {
+      imovelData.append("imagens", imagem);
+    });
       
       // Enviar requisição
       await api.post('/imoveis', imovelData, {
@@ -636,12 +636,12 @@ const NovoImovel = () => {
                 <div className="space-y-4">
                   {/* Removido o bloco de fotos existentes e suas referências, pois este é um NOVO imóvel */}
                   
-                  {/* Upload de novas fotos */}
+                  {/* Upload de novas imagens */}
                   <div>
-                    <Label className="mb-2 block">Adicionar imagens <span className="text-danger">*</span></Label> {/* Adicionado asterisco de obrigatório */}
+                    <Label className="mb-2 block">Adicionar imagens <span className="text-danger">*</span></Label>
                     <div className="flex items-center justify-center w-full">
                       <label
-                        htmlFor="fotos"
+                        htmlFor="imagens"
                         className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50"
                       >
                         <div className="flex flex-col items-center justify-center pt-5 pb-6">
@@ -654,33 +654,33 @@ const NovoImovel = () => {
                           </p>
                         </div>
                         <input
-                          id="fotos"
+                          id="imagens"
                           type="file"
                           accept="image/*"
                           multiple
-                          onChange={handleFotosChange}
+                          onChange={handleImagensChange}
                           className="hidden"
                         />
                       </label>
                     </div>
                   </div>
                   
-                  {errors.fotos && (
-                    <p className="text-sm text-danger">{errors.fotos}</p>
+                  {errors.imagens && (
+                    <p className="text-sm text-danger">{errors.imagens}</p>
                   )}
                   
-                  {fotosPreview.length > 0 && (
+                  {imagensPreview.length > 0 && (
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
-                      {fotosPreview.map((url, index) => (
+                      {imagensPreview.map((url, index) => (
                         <div key={index} className="relative group">
                           <img
                             src={url}
-                            alt={`Nova foto ${index + 1}`}
+                            alt={`Nova imagem ${index + 1}`}
                             className="w-full h-32 object-cover rounded-md"
                           />
                           <button
                             type="button"
-                            onClick={() => handleRemoveFoto(index)}
+                            onClick={() => handleRemoveImagem(index)}
                             className="absolute top-2 right-2 bg-danger text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                           >
                             <Trash2 size={16} />
