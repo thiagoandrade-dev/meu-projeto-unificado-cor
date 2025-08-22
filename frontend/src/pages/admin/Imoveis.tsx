@@ -194,30 +194,56 @@ const Imoveis = () => {
   const handleDeleteConfirm = async () => {
     if (!imovelToDelete) return;
     
-    console.log('Iniciando exclusão, operationInProgress:', operationInProgress);
-    
     try {
       setDeletingId(imovelToDelete._id);
       setOperationInProgress(true);
       setDisabledButtons(true);
       
-      console.log('Estados setados - deletingId:', imovelToDelete._id, 'operationInProgress: true');
-      
       await imoveisService.delete(imovelToDelete._id);
-      
-      console.log('Exclusão bem-sucedida, atualizando estados...');
       
       // Atualizar ambos os estados: imoveis e filteredImoveis
       const updatedImoveis = imoveis.filter(i => i._id !== imovelToDelete._id);
       setImoveis(updatedImoveis);
-      setFilteredImoveis(filteredImoveis.filter(i => i._id !== imovelToDelete._id));
+      
+      // Aplicar os mesmos filtros aos dados atualizados usando a mesma lógica do useEffect
+      let result = [...updatedImoveis];
+      
+      // Aplicar filtro de grupo
+      if (grupoFilter !== "todos") {
+        result = result.filter(imovel => imovel.grupo?.toString() === grupoFilter);
+      }
+      
+      // Aplicar filtro de bloco
+      if (blocoFilter !== "todos") {
+        result = result.filter(imovel => imovel.bloco === blocoFilter);
+      }
+      
+      // Aplicar filtro de status
+      if (statusFilter !== "todos") {
+        result = result.filter(imovel => imovel.statusAnuncio === statusFilter);
+      }
+      
+      // Aplicar termo de busca
+      if (searchTerm) {
+        const term = searchTerm.toLowerCase();
+        result = result.filter(imovel => {
+          return (
+            imovel.grupo?.toString().toLowerCase().includes(term) ||
+            imovel.bloco?.toLowerCase().includes(term) ||
+            imovel.andar?.toString().toLowerCase().includes(term) ||
+            imovel.apartamento?.toString().toLowerCase().includes(term) ||
+            imovel.configuracaoPlanta?.toLowerCase().includes(term)
+          );
+        });
+      }
+      
+      setFilteredImoveis(result);
       
       toast({
         title: "Imóvel excluído",
         description: `O imóvel Grupo ${imovelToDelete.grupo} - Bloco ${imovelToDelete.bloco} - Apto ${imovelToDelete.apartamento} foi excluído com sucesso`,
       });
-    } catch (error) { // Removido 'any'
-      console.log('Erro durante exclusão:', error);
+    } catch (error) {
       if (axios.isAxiosError(error)) { // Correção da estrutura do catch
         console.error("Erro ao excluir imóvel:", error);
         toast({
@@ -234,8 +260,6 @@ const Imoveis = () => {
         });
       }
     } finally {
-      console.log('Executando finally - resetando estados...');
-      
       // Usar setTimeout para garantir que os estados sejam resetados após a renderização
       setTimeout(() => {
         setDeletingId(null);
@@ -243,7 +267,6 @@ const Imoveis = () => {
         setDisabledButtons(false);
         setDeleteDialogOpen(false);
         setImovelToDelete(null);
-        console.log('Estados resetados - deletingId: null, operationInProgress: false');
       }, 100);
     }
   };
