@@ -572,9 +572,11 @@ const Imoveis = () => {
                         <SelectItem value="todos">Todos os status</SelectItem>
                         <SelectItem value="Disponível para Venda">Disponível para Venda</SelectItem>
                         <SelectItem value="Disponível para Locação">Disponível para Locação</SelectItem>
-                        <SelectItem value="Ocupado">Ocupado</SelectItem>
+                        <SelectItem value="Locado Ativo">Locado Ativo</SelectItem>
+                        <SelectItem value="Vendido">Vendido</SelectItem>
                         <SelectItem value="Reservado">Reservado</SelectItem>
-                        <SelectItem value="Manutenção">Manutenção</SelectItem>
+                        <SelectItem value="Indisponível">Indisponível</SelectItem>
+                        <SelectItem value="Em Reforma">Em Reforma</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -663,8 +665,14 @@ const Imoveis = () => {
                           <TableCell>
                             <Badge
                               className={
-                                imovel.statusAnuncio?.includes('Disponível') ? 'bg-success/10 text-success' :
-                                'bg-primary/10 text-primary'
+                                imovel.statusAnuncio === 'Disponível para Venda' ? 'bg-blue-100 text-blue-800' :
+                                imovel.statusAnuncio === 'Disponível para Locação' ? 'bg-green-100 text-green-800' :
+                                imovel.statusAnuncio === 'Locado Ativo' ? 'bg-purple-100 text-purple-800' :
+                                imovel.statusAnuncio === 'Vendido' ? 'bg-gray-100 text-gray-800' :
+                                imovel.statusAnuncio === 'Reservado' ? 'bg-yellow-100 text-yellow-800' :
+                                imovel.statusAnuncio === 'Indisponível' ? 'bg-red-100 text-red-800' :
+                                imovel.statusAnuncio === 'Em Reforma' ? 'bg-orange-100 text-orange-800' :
+                                'bg-gray-100 text-gray-800'
                               }
                             >
                               {imovel.statusAnuncio}

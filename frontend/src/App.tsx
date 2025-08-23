@@ -34,6 +34,7 @@ import AdminJuridico from "@/pages/admin/Juridico";
 import AdminNotificacoes from "@/pages/admin/Notificacoes";
 import AdminRelatorios from "@/pages/admin/Relatorios";
 import AdminConfiguracoes from "@/pages/admin/Configuracoes";
+import AdminImoveisVendidos from "@/pages/admin/ImoveisVendidos";
 
 // Páginas do Locatário
 import AreaLocatario from "./pages/locatario/AreaLocatario";
@@ -247,6 +248,11 @@ function App() {
               <Route path="/admin/imoveis/editar/:id" element={
                 <ProtectedRoute requiredRole="admin">
                   <AdminEditarImovel />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/imoveis/vendidos" element={
+                <ProtectedRoute requiredRole="admin">
+                  <AdminImoveisVendidos />
                 </ProtectedRoute>
               } />
               <Route path="/admin/contratos" element={
