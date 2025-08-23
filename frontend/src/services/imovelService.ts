@@ -1,5 +1,37 @@
 import { api, handleApiError, Imovel } from "./apiService";
 
+// Interfaces específicas para o imovelService
+export interface HistoricoImovel {
+  _id: string;
+  imovelId: string;
+  acao: string;
+  dataAcao: string;
+  usuario: string;
+  detalhes: {
+    statusAnterior?: string;
+    statusNovo?: string;
+    valorVenda?: number;
+    nomeComprador?: string;
+    cpfComprador?: string;
+    motivo?: string;
+    observacoes?: string;
+  };
+}
+
+export interface EstatisticasVendas {
+  totalVendas: number;
+  valorTotalVendas: number;
+  valorMedioVenda: number;
+}
+
+export interface ListaImoveisVendidos {
+  imoveis: Imovel[];
+  total: number;
+  pagina: number;
+  totalPaginas: number;
+  estatisticas: EstatisticasVendas;
+}
+
 export const imovelService = {
   getAll: async (): Promise<Imovel[]> => {
     try {
@@ -74,9 +106,9 @@ export const imovelService = {
     }
   },
 
-  obterHistorico: async (id: string): Promise<any[]> => {
+  obterHistorico: async (id: string): Promise<HistoricoImovel[]> => {
     try {
-      const response = await api.get<any[]>(`/imoveis/${id}/historico`);
+      const response = await api.get<HistoricoImovel[]>(`/imoveis/${id}/historico`);
       return response.data;
     } catch (error) {
       throw handleApiError(error, `obter histórico do imóvel ${id}`);
@@ -91,17 +123,7 @@ export const imovelService = {
     valorMaximo?: number;
     pagina?: number;
     limite?: number;
-  }): Promise<{
-    imoveis: any[];
-    total: number;
-    pagina: number;
-    totalPaginas: number;
-    estatisticas: {
-      totalVendas: number;
-      valorTotalVendas: number;
-      valorMedioVenda: number;
-    };
-  }> => {
+  }): Promise<ListaImoveisVendidos> => {
     try {
       const params = new URLSearchParams();
       if (filtros) {
@@ -111,7 +133,7 @@ export const imovelService = {
           }
         });
       }
-      const response = await api.get(`/imoveis/vendidos/listar?${params.toString()}`);
+      const response = await api.get<ListaImoveisVendidos>(`/imoveis/vendidos/listar?${params.toString()}`);
       return response.data;
     } catch (error) {
       throw handleApiError(error, 'listar imóveis vendidos');

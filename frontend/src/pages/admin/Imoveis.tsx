@@ -11,15 +11,10 @@ import {
   Menu,
   X,
   RefreshCw,
-  Filter,
   Download,
   Plus,
   Eye,
-  MapPin,
-  Bed,
-  Bath,
-  Ruler,
-  Tag
+  Ruler
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,7 +52,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { imoveisService } from "@/services/apiService";
-import axios, { AxiosError } from "axios"; // Adicionado para correção
+import axios from "axios";
 import { exportToCsv } from "@/utils/csvUtils";
 
 // Importar a interface Imovel do apiService para manter consistência

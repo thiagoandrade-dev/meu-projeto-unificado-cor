@@ -1,5 +1,5 @@
 // frontend/src/pages/admin/EditarImovel.tsx
-import axios, { AxiosError } from "axios";
+import axios from "axios";
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import AdminSidebar from "@/components/AdminSidebar";
@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+
 import {
   Select,
   SelectContent,
@@ -25,10 +25,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
+
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { api, Imovel } from "@/services/apiService";
+import { api } from "@/services/apiService";
 
 const EditarImovel = () => {
   const { id } = useParams<{ id: string }>();
@@ -140,9 +140,7 @@ const EditarImovel = () => {
     }
   };
 
-  const handleCheckboxChange = (name: string, checked: boolean) => {
-    // Implementar lógica de checkbox se necessário
-  };
+
 
   const handleAddCaracteristica = () => {
     if (novaCaracteristica.trim() && !caracteristicas.includes(novaCaracteristica.trim())) {
@@ -268,7 +266,7 @@ const EditarImovel = () => {
       
       // Definir foto principal
       if (imagensExistentes.length > 0 || imagens.length > 0) {
-        const totalImagens = imagensExistentes.length + imagens.length;
+
         if (fotoPrincipalIndex < imagensExistentes.length) {
           imovelData.append('fotoPrincipal', imagensExistentes[fotoPrincipalIndex]);
         } else {
