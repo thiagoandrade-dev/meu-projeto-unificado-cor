@@ -30,7 +30,7 @@ const ImovelCard = ({ imovel, featured = false }: ImovelCardProps) => {
         {/* Imagem */}
         <div className={`relative ${featured ? 'lg:w-2/5' : 'h-48'} overflow-hidden`}>
           <img
-            src={buildImageUrl(imovel.imagens?.[0])}
+            src={buildImageUrl(imovel.imagens?.[imovel.fotoPrincipal || 0] || imovel.imagens?.[0])}
             alt={`${imovel.configuracaoPlanta} - Grupo ${imovel.grupo}, Bloco ${imovel.bloco}`}
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           />

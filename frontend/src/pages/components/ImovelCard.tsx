@@ -24,6 +24,7 @@ export type Imovel = {
   descricao: string;
   caracteristicas: string[];
   fotos: string[];
+  fotoPrincipal?: number;
   destaque: boolean;
   grupo?: string;
 };
@@ -52,7 +53,7 @@ const ImovelCard = ({ imovel, featured = false }: ImovelCardProps) => {
         {/* Imagem */}
         <div className={`relative ${featured ? 'lg:w-2/5' : 'h-48'} overflow-hidden`}>
           <img
-            src={buildImageUrl(imovel.fotos[0])}
+            src={buildImageUrl(imovel.fotos[imovel.fotoPrincipal || 0] || imovel.fotos[0])}
             alt={imovel.titulo}
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           />

@@ -62,6 +62,7 @@ export interface Imovel {
   };
   caracteristicas?: string[];
   imagens?: string[];
+  fotoPrincipal?: number;
   descricao?: string;
   destaque?: boolean;
   createdAt?: string;

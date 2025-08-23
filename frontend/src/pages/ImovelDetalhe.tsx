@@ -12,10 +12,12 @@ import { AxiosError } from 'axios';
 import { buildImageUrls } from '@/utils/imageUtils';
 
 // Componente para a galeria de imagens
-const ImovelGaleria = ({ imagens }: { imagens: string[] }) => {
+const ImovelGaleria = ({ imagens, fotoPrincipal }: { imagens: string[]; fotoPrincipal?: number }) => {
   // Construir URLs completas das imagens
   const imagensComUrls = buildImageUrls(imagens);
-  const [imagemPrincipal, setImagemPrincipal] = useState(imagensComUrls[0]);
+  // Usar a foto principal se definida, senão usar a primeira imagem
+  const imagemPrincipalInicial = imagensComUrls[fotoPrincipal || 0] || imagensComUrls[0];
+  const [imagemPrincipal, setImagemPrincipal] = useState(imagemPrincipalInicial);
 
   return (
     <div>
@@ -202,7 +204,7 @@ const ImovelDetalhe = () => {
                 <MapPin size={16} className="mr-2" />
                 {imovel.andar}º andar - {imovel.configuracaoPlanta}
               </p>
-              <ImovelGaleria imagens={imagensImovel} />
+              <ImovelGaleria imagens={imagensImovel} fotoPrincipal={imovel.fotoPrincipal} />
             </div>
 
             {/* Coluna de Informações e Contato */}

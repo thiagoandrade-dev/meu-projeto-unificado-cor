@@ -70,6 +70,7 @@ const NovoImovel = () => {
   const [novaCaracteristica, setNovaCaracteristica] = useState("");
   const [imagens, setImagens] = useState<File[]>([]);
 const [imagensPreview, setImagensPreview] = useState<string[]>([]);
+  const [fotoPrincipalIndex, setFotoPrincipalIndex] = useState<number>(0);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Atualizar campo do formulário
@@ -176,6 +177,13 @@ const [imagensPreview, setImagensPreview] = useState<string[]>([]);
     
     setImagens(prev => prev.filter((_, i) => i !== index));
     setImagensPreview(prev => prev.filter((_, i) => i !== index));
+    
+    // Ajustar índice da foto principal
+    if (fotoPrincipalIndex === index) {
+      setFotoPrincipalIndex(0); // Define a primeira imagem como principal
+    } else if (fotoPrincipalIndex > index) {
+      setFotoPrincipalIndex(prev => prev - 1); // Ajusta o índice se a imagem removida estava antes
+    }
   };
 
   // Validar formulário
@@ -301,6 +309,11 @@ const [imagensPreview, setImagensPreview] = useState<string[]>([]);
     imagens.forEach(imagem => {
       imovelData.append("imagens", imagem);
     });
+    
+    // Adicionar índice da foto principal se houver imagens
+    if (imagens.length > 0) {
+      imovelData.append('fotoPrincipal', fotoPrincipalIndex.toString());
+    }
       
       // Enviar requisição
       await api.post('/imoveis', imovelData, {
@@ -754,23 +767,48 @@ const [imagensPreview, setImagensPreview] = useState<string[]>([]);
                   )}
                   
                   {imagensPreview.length > 0 && (
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
-                      {imagensPreview.map((url, index) => (
-                        <div key={index} className="relative group">
-                          <img
-                            src={url}
-                            alt={`Nova imagem ${index + 1}`}
-                            className="w-full h-32 object-cover rounded-md"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveImagem(index)}
-                            className="absolute top-2 right-2 bg-danger text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      ))}
+                    <div>
+                      <Label className="mb-2 block text-sm font-medium">Selecione a foto principal (capa)</Label>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                        {imagensPreview.map((url, index) => (
+                          <div key={index} className="relative group">
+                            <div 
+                              className={`relative border-2 rounded-md overflow-hidden cursor-pointer transition-all ${
+                                fotoPrincipalIndex === index 
+                                  ? 'border-primary ring-2 ring-primary/20' 
+                                  : 'border-transparent hover:border-primary/50'
+                              }`}
+                              onClick={() => setFotoPrincipalIndex(index)}
+                            >
+                              <img
+                                src={url}
+                                alt={`Nova imagem ${index + 1}`}
+                                className="w-full h-32 object-cover"
+                              />
+                              {fotoPrincipalIndex === index && (
+                                <div className="absolute inset-0 bg-primary/10 flex items-center justify-center">
+                                  <div className="bg-primary text-white px-2 py-1 rounded text-xs font-medium">
+                                    Foto Principal
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRemoveImagem(index);
+                              }}
+                              className="absolute top-2 right-2 bg-danger text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Clique em uma imagem para defini-la como foto principal (será exibida na capa)
+                      </p>
                     </div>
                   )}
                 </div>

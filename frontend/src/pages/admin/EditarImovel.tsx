@@ -1,5 +1,5 @@
 // frontend/src/pages/admin/EditarImovel.tsx
-import axios, { AxiosError } from "axios"; // Adicionado para correção
+import axios, { AxiosError } from "axios";
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import AdminSidebar from "@/components/AdminSidebar";
@@ -55,6 +55,7 @@ const EditarImovel = () => {
   const [imagensExistentes, setImagensExistentes] = useState<string[]>([]);
   const [imagensParaRemover, setImagensParaRemover] = useState<string[]>([]);
   const [imagensPreview, setImagensPreview] = useState<string[]>([]);
+  const [fotoPrincipalIndex, setFotoPrincipalIndex] = useState<number>(0);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Carregar dados do imóvel
@@ -79,40 +80,44 @@ const EditarImovel = () => {
           statusAnuncio: imovel.statusAnuncio || "Disponível para Venda"
         });
         
-        setImagensExistentes(imovel.imagens || []);
-      } catch (error) { // Removido 'any'
-        if (axios.isAxiosError(error)) { // Correção da estrutura do catch
-          console.error("Erro ao carregar imóvel:", error);
-          toast({
-            title: "Erro ao carregar imóvel",
-            description: "Não foi possível carregar os dados do imóvel",
-            variant: "destructive",
-          });
-        } else { // Adicionado tratamento para erros não-Axios
-          console.error("Erro inesperado ao carregar imóvel:", error);
-          toast({
-            title: "Erro inesperado",
-            description: "Ocorreu um erro inesperado ao carregar o imóvel.",
-            variant: "destructive",
-          });
+        // Carregar características
+        if (imovel.caracteristicas && Array.isArray(imovel.caracteristicas)) {
+          setCaracteristicas(imovel.caracteristicas);
         }
+        
+        // Carregar imagens existentes
+        if (imovel.imagens && Array.isArray(imovel.imagens)) {
+          setImagensExistentes(imovel.imagens);
+          // Definir a primeira imagem como principal se não houver uma definida
+          if (imovel.imagens.length > 0 && imovel.fotoPrincipal) {
+            const principalIndex = imovel.imagens.findIndex((img: string) => img === imovel.fotoPrincipal);
+            setFotoPrincipalIndex(principalIndex >= 0 ? principalIndex : 0);
+          }
+        }
+        
+      } catch (error) {
+        console.error('Erro ao carregar imóvel:', error);
+        toast({
+          title: "Erro",
+          description: "Erro ao carregar dados do imóvel",
+          variant: "destructive",
+        });
         navigate('/admin/imoveis');
       } finally {
         setLoadingImovel(false);
       }
     };
-    
+
     if (id) {
       carregarImovel();
     }
   }, [id, navigate, toast]);
 
-  // Atualizar campo do formulário
   const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
     
-    // Limpar erro do campo quando o usuário digita
+    // Limpar erro do campo quando o usuário começar a digitar
     if (errors[name]) {
       setErrors(prev => {
         const newErrors = { ...prev };
@@ -122,11 +127,10 @@ const EditarImovel = () => {
     }
   };
 
-  // Atualizar campo select do formulário
-  const handleSelectChange = (name: string, value: string) => {
+  const handleSelectChange = (name: keyof typeof formData, value: string) => {
     setFormData(prev => ({ ...prev, [name]: value }));
     
-    // Limpar erro do campo quando o usuário seleciona
+    // Limpar erro do campo
     if (errors[name]) {
       setErrors(prev => {
         const newErrors = { ...prev };
@@ -136,180 +140,139 @@ const EditarImovel = () => {
     }
   };
 
-  // Atualizar campo checkbox do formulário
   const handleCheckboxChange = (name: string, checked: boolean) => {
-    setFormData(prev => ({ ...prev, [name]: checked }));
+    // Implementar lógica de checkbox se necessário
   };
 
-  // Adicionar característica
   const handleAddCaracteristica = () => {
     if (novaCaracteristica.trim() && !caracteristicas.includes(novaCaracteristica.trim())) {
-      setCaracteristicas(prev => [...prev, novaCaracteristica.trim()]);
+      setCaracteristicas([...caracteristicas, novaCaracteristica.trim()]);
       setNovaCaracteristica("");
     }
   };
 
-  // Remover característica
   const handleRemoveCaracteristica = (index: number) => {
-    setCaracteristicas(prev => prev.filter((_, i) => i !== index));
+    setCaracteristicas(caracteristicas.filter((_, i) => i !== index));
   };
 
-  // Manipular upload de imagens
   const handleImagensChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      const filesArray = Array.from(e.target.files);
+      const files = Array.from(e.target.files);
+      setImagens(prev => [...prev, ...files]);
       
-      // Criar URLs para preview
-      const newPreviewUrls = filesArray.map(file => URL.createObjectURL(file));
+      // Criar previews
+      files.forEach(file => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          if (e.target?.result) {
+            setImagensPreview(prev => [...prev, e.target!.result as string]);
+          }
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+  };
+
+  const handleRemoveImagem = (index: number, isExistente: boolean = false) => {
+    if (isExistente) {
+      const imagemRemovida = imagensExistentes[index];
+      setImagensParaRemover(prev => [...prev, imagemRemovida]);
+      setImagensExistentes(prev => prev.filter((_, i) => i !== index));
       
-      setImagens(prev => [...prev, ...filesArray]);
-    setImagensPreview(prev => [...prev, ...newPreviewUrls]);
-    }
-  };
-
-  // Remover imagem nova
-  const handleRemoveImagem = (index: number) => {
-    // Revogar URL do objeto para liberar memória
-    URL.revokeObjectURL(imagensPreview[index]);
-    
-    setImagens(prev => prev.filter((_, i) => i !== index));
-    setImagensPreview(prev => prev.filter((_, i) => i !== index));
-  };
-
-  // Remover imagem existente
-  const handleRemoveImagemExistente = (url: string) => {
-    setImagensExistentes(prev => prev.filter(imagem => imagem !== url));
-    setImagensParaRemover(prev => [...prev, url]);
-  };
-
-  // Validar formulário
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {};
-    
-    // Validar campos obrigatórios
-    const requiredFields = [
-      { name: "grupo", label: "Grupo" },
-      { name: "bloco", label: "Bloco" },
-      { name: "andar", label: "Andar" },
-      { name: "apartamento", label: "Apartamento" },
-      { name: "configuracaoPlanta", label: "Configuração da Planta" },
-      { name: "areaUtil", label: "Área útil" },
-      { name: "numVagasGaragem", label: "Número de vagas" },
-      { name: "tipoVagaGaragem", label: "Tipo de vaga" },
-      { name: "preco", label: "Preço" }
-    ];
-    
-    requiredFields.forEach(field => {
-      if (!formData[field.name as keyof typeof formData]) {
-        newErrors[field.name] = `${field.label} é obrigatório`;
+      // Ajustar índice da foto principal
+      if (fotoPrincipalIndex === index) {
+        setFotoPrincipalIndex(0);
+      } else if (fotoPrincipalIndex > index) {
+        setFotoPrincipalIndex(prev => prev - 1);
       }
-    });
-    
-    // Validar valores numéricos
-    const numericFields = [
-      { name: "grupo", label: "Grupo" },
-      { name: "andar", label: "Andar" },
-      { name: "apartamento", label: "Apartamento" },
-      { name: "areaUtil", label: "Área útil" },
-      { name: "numVagasGaragem", label: "Número de vagas" },
-      { name: "preco", label: "Preço" }
-    ];
-    
-    numericFields.forEach(field => {
-      const value = formData[field.name as keyof typeof formData];
-      if (value && isNaN(Number(value))) {
-        newErrors[field.name] = `${field.label} deve ser um número`;
+    } else {
+      setImagens(prev => prev.filter((_, i) => i !== index));
+      setImagensPreview(prev => prev.filter((_, i) => i !== index));
+      
+      // Ajustar índice da foto principal para novas imagens
+      const totalExistentes = imagensExistentes.length;
+      const indexNovasImagens = index - totalExistentes;
+      if (fotoPrincipalIndex >= totalExistentes && fotoPrincipalIndex - totalExistentes === indexNovasImagens) {
+        setFotoPrincipalIndex(0);
       }
-    });
-    
-    // Validações específicas
-    if (formData.grupo && Number(formData.grupo) < 12) {
-      newErrors.grupo = "Grupo deve ser 12 ou maior";
     }
-    
-    if (formData.andar && Number(formData.andar) < 1) {
-      newErrors.andar = "Andar deve ser maior que 0";
-    }
-    
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
   };
 
-  // Enviar formulário
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!validateForm()) {
-      toast({
-        title: "Formulário inválido",
-        description: "Por favor, corrija os erros antes de continuar",
-        variant: "destructive",
-      });
-      return;
-    }
-    
+    setLoading(true);
+    setErrors({});
+
     try {
-      setLoading(true);
-      
-      // Preparar dados para envio
       const imovelData = new FormData();
       
-      // Adicionar campos de texto
+      // Adicionar dados do formulário
       Object.entries(formData).forEach(([key, value]) => {
-        if (value !== "") {
-          imovelData.append(key, value.toString());
+        if (value && value.trim() !== "") {
+          imovelData.append(key, value);
         }
       });
       
-      // Adicionar imagens existentes
-      imovelData.append("imagensExistentes", JSON.stringify(imagensExistentes));
+      // Adicionar características
+      if (caracteristicas.length > 0) {
+        imovelData.append('caracteristicas', JSON.stringify(caracteristicas));
+      }
+      
+      // Adicionar imagens existentes (que não foram removidas)
+      if (imagensExistentes.length > 0) {
+        imovelData.append('imagensExistentes', JSON.stringify(imagensExistentes));
+      }
       
       // Adicionar imagens para remover
-      imovelData.append("imagensParaRemover", JSON.stringify(imagensParaRemover));
+      if (imagensParaRemover.length > 0) {
+        imovelData.append('imagensParaRemover', JSON.stringify(imagensParaRemover));
+      }
       
       // Adicionar novas imagens
       imagens.forEach(imagem => {
-        imovelData.append("imagens", imagem);
+        imovelData.append('imagens', imagem);
       });
       
-      // Enviar requisição
+      // Definir foto principal
+      if (imagensExistentes.length > 0 || imagens.length > 0) {
+        const totalImagens = imagensExistentes.length + imagens.length;
+        if (fotoPrincipalIndex < imagensExistentes.length) {
+          imovelData.append('fotoPrincipal', imagensExistentes[fotoPrincipalIndex]);
+        } else {
+          imovelData.append('fotoPrincipalIndex', (fotoPrincipalIndex - imagensExistentes.length).toString());
+        }
+      }
+      
       await api.put(`/imoveis/${id}`, imovelData, {
         headers: {
-          'Content-Type': 'multipart/form-data'
-        }
+          'Content-Type': 'multipart/form-data',
+        },
       });
       
       toast({
-        title: "Imóvel atualizado com sucesso",
-        description: `O imóvel Grupo ${formData.grupo}, Bloco ${formData.bloco}, Apto ${formData.apartamento} foi atualizado no sistema`,
+        title: "Sucesso",
+        description: "Imóvel atualizado com sucesso!",
       });
       
-      // Redirecionar para a lista de imóveis
       navigate('/admin/imoveis');
-    } catch (error) { // Removido 'any'
-      if (axios.isAxiosError(error)) { // Correção da estrutura do catch
-        console.error("Erro ao atualizar imóvel:", error);
+      
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        console.error('Erro ao atualizar imóvel:', error.response?.data);
         
-        // Verificar se há erros específicos retornados pela API
-        if (error.response?.data?.errors) {
-          const apiErrors: Record<string, string> = {};
-          (error.response.data.errors as Record<string, string>[]).forEach((err) => {
-            const field = Object.keys(err)[0];
-            apiErrors[field] = err[field];
-          });
-          setErrors(apiErrors);
-        } else {
-          toast({
-            title: "Erro ao atualizar imóvel",
-            description: error.response?.data?.message || "Não foi possível atualizar o imóvel",
-            variant: "destructive",
-          });
+        if (error.response?.data?.erros) {
+          setErrors(error.response.data.erros);
         }
-      } else { // Adicionado tratamento para erros não-Axios
-        console.error("Erro inesperado ao atualizar imóvel:", error);
+        
         toast({
-          title: "Erro inesperado",
-          description: "Ocorreu um erro inesperado ao atualizar o imóvel.",
+          title: "Erro",
+          description: error.response?.data?.message || "Erro ao atualizar imóvel",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Erro",
+          description: "Erro inesperado ao atualizar imóvel",
           variant: "destructive",
         });
       }
@@ -339,9 +302,10 @@ const EditarImovel = () => {
       
       {/* Menu móvel */}
       <div className="md:hidden">
-        <div className="fixed inset-0 bg-gray-800 bg-opacity-75 z-40 transition-opacity duration-300 ease-in-out"
-             style={{ display: mobileMenuOpen ? "block" : "none" }}
-             onClick={() => setMobileMenuOpen(false)}
+        <div 
+          className="fixed inset-0 bg-gray-800 bg-opacity-75 z-40 transition-opacity duration-300 ease-in-out"
+          style={{ display: mobileMenuOpen ? "block" : "none" }}
+          onClick={() => setMobileMenuOpen(false)}
         />
         
         <div className={`fixed top-0 left-0 bottom-0 flex flex-col w-64 bg-primary z-50 transform transition-transform duration-300 ease-in-out ${
@@ -377,290 +341,364 @@ const EditarImovel = () => {
                 className="flex items-center gap-2"
               >
                 <ArrowLeft size={16} />
-                Voltar
+                <span className="hidden sm:inline">Voltar</span>
               </Button>
             </div>
           </div>
         </header>
-        
-        {/* Conteúdo principal */}
-        <main className="flex-1 overflow-y-auto bg-background p-4 sm:p-6 lg:p-8">
-          <form onSubmit={handleSubmit}>
-            {/* Informações do Condomínio */}
-            <Card className="mb-6">
-              <CardHeader className="pb-2">
-                <CardTitle className="flex items-center">
-                  <Home size={20} className="mr-2 text-primary" />
-                  Informações do Condomínio
+
+        {/* Conteúdo */}
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+          <form onSubmit={handleSubmit} className="max-w-4xl mx-auto space-y-6">
+            {/* Informações Básicas */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Home className="h-5 w-5" />
+                  Informações Básicas
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="grupo">Grupo <span className="text-danger">*</span></Label>
-                    <Input
-                      id="grupo"
-                      name="grupo"
-                      type="number"
-                      min="12"
-                      value={formData.grupo}
-                      onChange={handleFormChange}
-                      className={errors.grupo ? "border-danger" : ""}
-                    />
-                    {errors.grupo && (
-                      <p className="text-sm text-danger">{errors.grupo}</p>
-                    )}
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="bloco">Bloco <span className="text-danger">*</span></Label>
-                    <Select
-                      value={formData.bloco}
-                      onValueChange={(value) => handleSelectChange("bloco", value)}
-                    >
-                      <SelectTrigger className={errors.bloco ? "border-danger" : ""}>
-                        <SelectValue placeholder="Selecione o bloco" />
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div>
+                    <Label htmlFor="grupo">Grupo</Label>
+                    <Select value={formData.grupo} onValueChange={(value) => handleSelectChange('grupo', value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o grupo" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="A">A</SelectItem>
-                        <SelectItem value="B">B</SelectItem>
-                        <SelectItem value="C">C</SelectItem>
-                        <SelectItem value="D">D</SelectItem>
-                        <SelectItem value="E">E</SelectItem>
-                        <SelectItem value="F">F</SelectItem>
-                        <SelectItem value="G">G</SelectItem>
+                        {Array.from({ length: 10 }, (_, i) => i + 1).map(grupo => (
+                          <SelectItem key={grupo} value={grupo.toString()}>
+                            Grupo {grupo}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
-                    {errors.bloco && (
-                      <p className="text-sm text-danger">{errors.bloco}</p>
+                    {errors.grupo && (
+                      <p className="text-sm text-destructive mt-1">{errors.grupo}</p>
                     )}
                   </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="andar">Andar <span className="text-danger">*</span></Label>
-                    <Input
-                      id="andar"
-                      name="andar"
-                      type="number"
-                      min="1"
-                      value={formData.andar}
-                      onChange={handleFormChange}
-                      className={errors.andar ? "border-danger" : ""}
-                    />
+
+                  {formData.grupo && parseInt(formData.grupo) % 2 !== 0 && (
+                    <div>
+                      <Label htmlFor="bloco">Bloco</Label>
+                      <Input
+                        id="bloco"
+                        name="bloco"
+                        value={formData.bloco}
+                        onChange={handleFormChange}
+                        placeholder="Ex: A, B, C"
+                      />
+                      {errors.bloco && (
+                        <p className="text-sm text-destructive mt-1">{errors.bloco}</p>
+                      )}
+                    </div>
+                  )}
+
+                  <div>
+                    <Label htmlFor="andar">Andar</Label>
+                    <Select value={formData.andar} onValueChange={(value) => handleSelectChange('andar', value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o andar" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Array.from({ length: formData.grupo && parseInt(formData.grupo) % 2 === 0 ? 28 : 36 }, (_, i) => i + 1).map(andar => (
+                          <SelectItem key={andar} value={andar.toString()}>
+                            {andar}º Andar
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     {errors.andar && (
-                      <p className="text-sm text-danger">{errors.andar}</p>
+                      <p className="text-sm text-destructive mt-1">{errors.andar}</p>
                     )}
                   </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="apartamento">Apartamento <span className="text-danger">*</span></Label>
-                    <Input
-                      id="apartamento"
-                      name="apartamento"
-                      type="number"
-                      value={formData.apartamento}
-                      onChange={handleFormChange}
-                      className={errors.apartamento ? "border-danger" : ""}
-                    />
-                    {errors.apartamento && (
-                      <p className="text-sm text-danger">{errors.apartamento}</p>
-                    )}
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="configuracaoPlanta">Configuração da Planta <span className="text-danger">*</span></Label>
-                    <Select
-                      value={formData.configuracaoPlanta}
-                      onValueChange={(value) => handleSelectChange("configuracaoPlanta", value)}
-                    >
-                      <SelectTrigger className={errors.configuracaoPlanta ? "border-danger" : ""}>
+
+                  {formData.grupo && formData.andar && (() => {
+                    const grupo = parseInt(formData.grupo);
+                    const andar = parseInt(formData.andar);
+                    const numApartamentos = grupo % 2 === 0 ? 4 : (andar <= 28 ? 4 : 2);
+                    return Array.from({ length: numApartamentos }, (_, i) => {
+                      const apartamento = andar * 100 + (i + 1);
+                      return (
+                        <div key={apartamento}>
+                          <Label htmlFor="apartamento">Apartamento</Label>
+                          <Select value={formData.apartamento} onValueChange={(value) => handleSelectChange('apartamento', value)}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione o apartamento" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value={apartamento.toString()}>
+                                {apartamento}
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                          {errors.apartamento && (
+                            <p className="text-sm text-destructive mt-1">{errors.apartamento}</p>
+                          )}
+                        </div>
+                      );
+                    });
+                  })()}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="configuracaoPlanta">Configuração da Planta</Label>
+                    <Select value={formData.configuracaoPlanta} onValueChange={(value) => handleSelectChange('configuracaoPlanta', value)}>
+                      <SelectTrigger>
                         <SelectValue placeholder="Selecione a configuração" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Padrão (2 dorms)">Padrão (2 dorms)</SelectItem>
-                        <SelectItem value="2 dorms + Despensa">2 dorms + Despensa</SelectItem>
-                        <SelectItem value="2 dorms + Dependência">2 dorms + Dependência</SelectItem>
-                        <SelectItem value="Padrão (3 dorms)">Padrão (3 dorms)</SelectItem>
-                        <SelectItem value="3 dorms + Dependência">3 dorms + Dependência</SelectItem>
+                        <SelectItem value="1 quarto">1 quarto</SelectItem>
+                        <SelectItem value="2 quartos">2 quartos</SelectItem>
+                        <SelectItem value="3 quartos">3 quartos</SelectItem>
+                        <SelectItem value="4 quartos">4 quartos</SelectItem>
+                        <SelectItem value="Cobertura">Cobertura</SelectItem>
+                        <SelectItem value="Loft">Loft</SelectItem>
+                        <SelectItem value="Studio">Studio</SelectItem>
+                        <SelectItem value="Kitnet">Kitnet</SelectItem>
                       </SelectContent>
                     </Select>
                     {errors.configuracaoPlanta && (
-                      <p className="text-sm text-danger">{errors.configuracaoPlanta}</p>
+                      <p className="text-sm text-destructive mt-1">{errors.configuracaoPlanta}</p>
                     )}
                   </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="areaUtil">Área Útil (m²) <span className="text-danger">*</span></Label>
+
+                  <div>
+                    <Label htmlFor="preco">Preço (R$)</Label>
+                    <Input
+                      id="preco"
+                      name="preco"
+                      type="number"
+                      value={formData.preco}
+                      onChange={handleFormChange}
+                      placeholder="Ex: 350000"
+                    />
+                    {errors.preco && (
+                      <p className="text-sm text-destructive mt-1">{errors.preco}</p>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Detalhes do Imóvel */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Detalhes do Imóvel</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="areaUtil">Área Útil (m²)</Label>
                     <Input
                       id="areaUtil"
                       name="areaUtil"
                       type="number"
                       value={formData.areaUtil}
                       onChange={handleFormChange}
-                      className={errors.areaUtil ? "border-danger" : ""}
+                      placeholder="Ex: 65"
                     />
                     {errors.areaUtil && (
-                      <p className="text-sm text-danger">{errors.areaUtil}</p>
+                      <p className="text-sm text-destructive mt-1">{errors.areaUtil}</p>
                     )}
                   </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="numVagasGaragem">Número de Vagas <span className="text-danger">*</span></Label>
+
+                  <div>
+                    <Label htmlFor="numVagasGaragem">Número de Vagas na Garagem</Label>
                     <Input
                       id="numVagasGaragem"
                       name="numVagasGaragem"
                       type="number"
-                      min="0"
                       value={formData.numVagasGaragem}
                       onChange={handleFormChange}
-                      className={errors.numVagasGaragem ? "border-danger" : ""}
+                      placeholder="Ex: 1"
                     />
                     {errors.numVagasGaragem && (
-                      <p className="text-sm text-danger">{errors.numVagasGaragem}</p>
+                      <p className="text-sm text-destructive mt-1">{errors.numVagasGaragem}</p>
                     )}
                   </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="tipoVagaGaragem">Tipo de Vaga <span className="text-danger">*</span></Label>
-                    <Select
-                      value={formData.tipoVagaGaragem}
-                      onValueChange={(value) => handleSelectChange("tipoVagaGaragem", value)}
-                    >
-                      <SelectTrigger className={errors.tipoVagaGaragem ? "border-danger" : ""}>
-                        <SelectValue placeholder="Selecione o tipo de vaga" />
+
+                  <div>
+                    <Label htmlFor="tipoVagaGaragem">Tipo de Vaga na Garagem</Label>
+                    <Select value={formData.tipoVagaGaragem} onValueChange={(value) => handleSelectChange('tipoVagaGaragem', value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o tipo" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="Coberta">Coberta</SelectItem>
                         <SelectItem value="Descoberta">Descoberta</SelectItem>
+                        <SelectItem value="Box">Box</SelectItem>
                       </SelectContent>
                     </Select>
                     {errors.tipoVagaGaragem && (
-                      <p className="text-sm text-danger">{errors.tipoVagaGaragem}</p>
+                      <p className="text-sm text-destructive mt-1">{errors.tipoVagaGaragem}</p>
                     )}
                   </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="preco">Preço (R$) <span className="text-danger">*</span></Label>
-                    <Input
-                      id="preco"
-                      name="preco"
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={formData.preco}
-                      onChange={handleFormChange}
-                      className={errors.preco ? "border-danger" : ""}
-                    />
-                    {errors.preco && (
-                      <p className="text-sm text-danger">{errors.preco}</p>
-                    )}
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="statusAnuncio">Status do Anúncio <span className="text-danger">*</span></Label>
-                    <Select
-                      value={formData.statusAnuncio}
-                      onValueChange={(value) => handleSelectChange("statusAnuncio", value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione o status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Disponível para Venda">Disponível para Venda</SelectItem>
-                        <SelectItem value="Disponível para Locação">Disponível para Locação</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="statusAnuncio">Status do Anúncio</Label>
+                  <Select value={formData.statusAnuncio} onValueChange={(value) => handleSelectChange('statusAnuncio', value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Disponível para Venda">Disponível para Venda</SelectItem>
+                      <SelectItem value="Vendido">Vendido</SelectItem>
+                      <SelectItem value="Reservado">Reservado</SelectItem>
+                      <SelectItem value="Em Negociação">Em Negociação</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </CardContent>
             </Card>
-            
-            {/* Imagens */}
-            <Card className="mb-6">
-              <CardHeader className="pb-2">
-                <CardTitle>Imagens</CardTitle>
+
+            {/* Características */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Características</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {/* Imagens existentes */}
-                  {imagensExistentes.length > 0 && (
-                    <div>
-                      <h4 className="text-sm font-medium mb-2">Imagens atuais:</h4>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        {imagensExistentes.map((url, index) => (
-                          <div key={index} className="relative">
-                            <img
-                              src={url}
-                              alt={`Imagem ${index + 1}`}
-                              className="w-full h-32 object-cover rounded-md"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveImagemExistente(url)}
-                              className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Preview das novas imagens */}
-                  {imagensPreview.length > 0 && (
-                    <div>
-                      <h4 className="text-sm font-medium mb-2">Novas imagens:</h4>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        {imagensPreview.map((url, index) => (
-                          <div key={index} className="relative">
-                            <img
-                              src={url}
-                              alt={`Nova imagem ${index + 1}`}
-                              className="w-full h-32 object-cover rounded-md"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveImagem(index)}
-                              className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Upload de novas imagens */}
-                  <div>
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                      <Upload className="mx-auto h-12 w-12 text-gray-400" />
-                      <div className="mt-4">
-                        <label htmlFor="imagens" className="cursor-pointer">
-                          <span className="mt-2 block text-sm font-medium text-gray-900">
-                            Adicionar novas imagens
-                          </span>
-                          <span className="mt-1 block text-sm text-gray-500">
-                            PNG, JPG, GIF até 10MB cada
-                          </span>
-                        </label>
-                        <input
-                          id="imagens"
-                          type="file"
-                          accept="image/*"
-                          multiple
-                          onChange={handleImagensChange}
-                          className="hidden"
-                        />
-                      </div>
-                    </div>
-                  </div>
+              <CardContent className="space-y-4">
+                <div className="flex gap-2">
+                  <Input
+                    value={novaCaracteristica}
+                    onChange={(e) => setNovaCaracteristica(e.target.value)}
+                    placeholder="Digite uma característica"
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddCaracteristica();
+                      }
+                    }}
+                  />
+                  <Button type="button" onClick={handleAddCaracteristica} size="sm">
+                    <Plus size={16} />
+                  </Button>
                 </div>
+                
+                {caracteristicas.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {caracteristicas.map((caracteristica, index) => (
+                      <div key={index} className="flex items-center gap-1 bg-secondary px-3 py-1 rounded-full text-sm">
+                        <span>{caracteristica}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveCaracteristica(index)}
+                          className="text-muted-foreground hover:text-destructive"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
-            
-            {/* Botões de ação */}
+
+            {/* Upload de Imagens */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Upload className="h-5 w-5" />
+                  Imagens do Imóvel
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="imagens">Adicionar Novas Imagens</Label>
+                  <Input
+                    id="imagens"
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={handleImagensChange}
+                    className="cursor-pointer"
+                  />
+                  {errors.imagens && (
+                    <p className="text-sm text-destructive mt-1">{errors.imagens}</p>
+                  )}
+                </div>
+                
+                {/* Imagens Existentes */}
+                {imagensExistentes.length > 0 && (
+                  <div>
+                    <h4 className="text-sm font-medium mb-2">Imagens Atuais</h4>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      {imagensExistentes.map((imagem, index) => (
+                        <div key={index} className={`relative border-2 rounded-md overflow-hidden cursor-pointer transition-all ${
+                          fotoPrincipalIndex === index ? 'border-primary ring-2 ring-primary/20' : 'border-border hover:border-primary/50'
+                        }`}>
+                          <img
+                            src={`http://localhost:5000/uploads/imoveis/${imagem}`}
+                            alt={`Imagem ${index + 1}`}
+                            className="w-full h-32 object-cover"
+                            onClick={() => setFotoPrincipalIndex(index)}
+                          />
+                          {fotoPrincipalIndex === index && (
+                            <div className="absolute top-1 left-1 bg-primary text-primary-foreground px-2 py-1 rounded text-xs font-medium">
+                              Principal
+                            </div>
+                          )}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRemoveImagem(index, true);
+                            }}
+                            className="absolute top-1 right-1 bg-destructive text-destructive-foreground p-1 rounded-full hover:bg-destructive/80 transition-colors"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Preview das Novas Imagens */}
+                {imagensPreview.length > 0 && (
+                  <div>
+                    <h4 className="text-sm font-medium mb-2">Novas Imagens</h4>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      {imagensPreview.map((preview, index) => {
+                        const globalIndex = imagensExistentes.length + index;
+                        return (
+                          <div key={index} className={`relative border-2 rounded-md overflow-hidden cursor-pointer transition-all ${
+                            fotoPrincipalIndex === globalIndex ? 'border-primary ring-2 ring-primary/20' : 'border-border hover:border-primary/50'
+                          }`}>
+                            <img
+                              src={preview}
+                              alt={`Nova imagem ${index + 1}`}
+                              className="w-full h-32 object-cover"
+                              onClick={() => setFotoPrincipalIndex(globalIndex)}
+                            />
+                            {fotoPrincipalIndex === globalIndex && (
+                              <div className="absolute top-1 left-1 bg-primary text-primary-foreground px-2 py-1 rounded text-xs font-medium">
+                                Principal
+                              </div>
+                            )}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRemoveImagem(globalIndex, false);
+                              }}
+                              className="absolute top-1 right-1 bg-destructive text-destructive-foreground p-1 rounded-full hover:bg-destructive/80 transition-colors"
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Botões de Ação */}
             <div className="flex justify-end gap-4">
               <Button
                 type="button"
@@ -669,14 +707,10 @@ const EditarImovel = () => {
               >
                 Cancelar
               </Button>
-              <Button
-                type="submit"
-                disabled={loading}
-                className="flex items-center gap-2"
-              >
+              <Button type="submit" disabled={loading}>
                 {loading ? (
                   <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     <span>Salvando...</span>
                   </>
                 ) : (

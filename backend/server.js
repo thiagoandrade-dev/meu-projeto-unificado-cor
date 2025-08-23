@@ -24,6 +24,7 @@ const esqueceuSenhaRoutes = require('./routes/esqueceuSenha');
 const relatorioRoutes = require('./routes/relatorio');
 const configRoutes = require('./routes/configRoutes');
 const notificacaoAutomaticaRoutes = require('./routes/notificacaoAutomaticaRoutes');
+const fileSyncRoutes = require('./routes/fileSync');
 const app = express();
 
 // =============================================
@@ -143,6 +144,7 @@ app.use('/api/senha', esqueceuSenhaRoutes);
 app.use('/api/relatorios', relatorioRoutes);
 app.use('/api/config', configRoutes);
 app.use('/api/notificacoes-automaticas', notificacaoAutomaticaRoutes);
+app.use('/api/file-sync', fileSyncRoutes);
 // Rota raiz para verificar se o servidor está funcionando
 app.get("/", (req, res) => {
   res.json({

@@ -129,6 +129,10 @@ router.post("/", uploadImovel.array("imagens", 10), imovelValidationRules(), val
     const dadosImovel = { ...req.body };
     if (req.files && req.files.length > 0) {
       dadosImovel.imagens = req.files.map(file => file.path.replace(/\\/g, "/")); // Salva o caminho do arquivo
+      // Se fotoPrincipal não foi definida, usar a primeira imagem como padrão
+      if (!dadosImovel.fotoPrincipal && dadosImovel.imagens.length > 0) {
+        dadosImovel.fotoPrincipal = dadosImovel.imagens[0];
+      }
     }
     const novoImovel = new Imovel(dadosImovel);
     const imovelSalvo = await novoImovel.save();
@@ -298,6 +302,10 @@ router.put("/:id", uploadImovel.array("imagens", 10), imovelValidationRules(), v
       // Se quiser adicionar às existentes (precisaria carregar o imóvel primeiro para pegar as imagens antigas ou esperar que o frontend envie as antigas que devem ser mantidas):
       // Por simplicidade, vamos substituir por enquanto. O frontend precisaria reenviar as imagens que devem ser mantidas.
       dadosAtualizacao.imagens = novasImagens;
+      // Se fotoPrincipal não foi definida, usar a primeira imagem como padrão
+      if (!dadosAtualizacao.fotoPrincipal && dadosAtualizacao.imagens.length > 0) {
+        dadosAtualizacao.fotoPrincipal = dadosAtualizacao.imagens[0];
+      }
     } else if (dadosAtualizacao.imagens === undefined) {
         // Se o campo imagens não for enviado, não alteramos as imagens existentes.
         // Para remover todas as imagens, o frontend deve enviar um array vazio: "imagens": []

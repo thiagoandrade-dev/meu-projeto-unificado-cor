@@ -77,6 +77,10 @@ const ImovelSchema = new mongoose.Schema({
     type: [String],
     default: []
   },
+  fotoPrincipal: {
+    type: String,
+    default: null // Índice da imagem principal no array imagens (0, 1, 2, etc.) ou null se não definida
+  },
   // Campos de controle
   createdAt: {
     type: Date,
