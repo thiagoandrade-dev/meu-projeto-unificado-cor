@@ -157,19 +157,52 @@ const EditarImovel = () => {
 
   const handleImagensChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      const files = Array.from(e.target.files);
-      setImagens(prev => [...prev, ...files]);
+      const filesArray = Array.from(e.target.files);
+      const validFiles: File[] = [];
       
-      // Criar previews
-      files.forEach(file => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          if (e.target?.result) {
-            setImagensPreview(prev => [...prev, e.target!.result as string]);
-          }
-        };
-        reader.readAsDataURL(file);
-      });
+      // Validar cada arquivo
+      for (const file of filesArray) {
+        // Verificar tamanho (5MB máximo)
+        if (file.size > 5 * 1024 * 1024) {
+          toast({
+            title: "Arquivo muito grande",
+            description: `O arquivo "${file.name}" excede o limite de 5MB`,
+            variant: "destructive",
+          });
+          continue;
+        }
+        
+        // Verificar tipo de arquivo
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+        if (!allowedTypes.includes(file.type)) {
+          toast({
+            title: "Formato não suportado",
+            description: `O arquivo "${file.name}" não é um formato de imagem válido. Use: JPEG, JPG, PNG, GIF ou WEBP`,
+            variant: "destructive",
+          });
+          continue;
+        }
+        
+        validFiles.push(file);
+      }
+      
+      if (validFiles.length > 0) {
+        setImagens(prev => [...prev, ...validFiles]);
+        
+        // Criar previews para arquivos válidos
+        validFiles.forEach(file => {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            if (e.target?.result) {
+              setImagensPreview(prev => [...prev, e.target!.result as string]);
+            }
+          };
+          reader.readAsDataURL(file);
+        });
+      }
+      
+      // Limpar o input para permitir selecionar o mesmo arquivo novamente
+      e.target.value = '';
     }
   };
 
@@ -616,6 +649,9 @@ const EditarImovel = () => {
                     onChange={handleImagensChange}
                     className="cursor-pointer"
                   />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    JPEG, JPG, PNG, GIF ou WEBP (máx. 5MB por arquivo)
+                  </p>
                   {errors.imagens && (
                     <p className="text-sm text-destructive mt-1">{errors.imagens}</p>
                   )}

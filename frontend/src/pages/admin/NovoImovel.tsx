@@ -161,12 +161,52 @@ const [imagensPreview, setImagensPreview] = useState<string[]>([]);
   const handleImagensChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const filesArray = Array.from(e.target.files);
+      const validFiles: File[] = [];
+      const validPreviewUrls: string[] = [];
       
-      // Criar URLs para preview
-      const newPreviewUrls = filesArray.map(file => URL.createObjectURL(file));
+      // Validar cada arquivo
+      for (const file of filesArray) {
+        // Verificar tamanho (5MB máximo)
+        if (file.size > 5 * 1024 * 1024) {
+          toast({
+            title: "Arquivo muito grande",
+            description: `O arquivo "${file.name}" excede o limite de 5MB`,
+            variant: "destructive",
+          });
+          continue;
+        }
+        
+        // Verificar tipo de arquivo
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+        if (!allowedTypes.includes(file.type)) {
+          toast({
+            title: "Formato não suportado",
+            description: `O arquivo "${file.name}" não é um formato de imagem válido. Use: JPEG, JPG, PNG, GIF ou WEBP`,
+            variant: "destructive",
+          });
+          continue;
+        }
+        
+        validFiles.push(file);
+        validPreviewUrls.push(URL.createObjectURL(file));
+      }
       
-      setImagens(prev => [...prev, ...filesArray]);
-      setImagensPreview(prev => [...prev, ...newPreviewUrls]);
+      if (validFiles.length > 0) {
+        setImagens(prev => [...prev, ...validFiles]);
+        setImagensPreview(prev => [...prev, ...validPreviewUrls]);
+        
+        // Limpar erro de imagens se houver
+        if (errors.imagens) {
+          setErrors(prev => {
+            const newErrors = { ...prev };
+            delete newErrors.imagens;
+            return newErrors;
+          });
+        }
+      }
+      
+      // Limpar o input para permitir selecionar o mesmo arquivo novamente
+      e.target.value = '';
     }
   };
 
@@ -747,7 +787,7 @@ const [imagensPreview, setImagensPreview] = useState<string[]>([]);
                             <span className="font-semibold">Clique para fazer upload</span> ou arraste e solte
                           </p>
                           <p className="text-xs text-muted">
-                            PNG, JPG ou JPEG (máx. 5MB por arquivo)
+                            JPEG, JPG, PNG, GIF ou WEBP (máx. 5MB por arquivo)
                           </p>
                         </div>
                         <input

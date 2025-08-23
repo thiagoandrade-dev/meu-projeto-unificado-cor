@@ -25,13 +25,33 @@ const uploadImovel = multer({
   storage: imovelStorage,
   limits: { fileSize: 5 * 1024 * 1024 }, // Limite de 5MB por arquivo
   fileFilter: function (req, file, cb) {
-    const filetypes = /jpeg|jpg|png|gif|webp/;
-    const mimetype = filetypes.test(file.mimetype);
-    const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-    if (mimetype && extname) {
+    // Verificar MIME types aceitos
+    const allowedMimeTypes = [
+      'image/jpeg',
+      'image/jpg', 
+      'image/png',
+      'image/gif',
+      'image/webp'
+    ];
+    
+    // Verificar extensões aceitas
+    const allowedExtensions = /\.(jpeg|jpg|png|gif|webp)$/i;
+    
+    const mimetypeValid = allowedMimeTypes.includes(file.mimetype);
+    const extensionValid = allowedExtensions.test(path.extname(file.originalname).toLowerCase());
+    
+    if (mimetypeValid && extensionValid) {
       return cb(null, true);
     }
-    cb(new Error("Erro: Apenas arquivos de imagem (jpeg, jpg, png, gif, webp) são permitidos!"));
+    
+    // Log para debug
+    console.log('Arquivo rejeitado:', {
+      originalname: file.originalname,
+      mimetype: file.mimetype,
+      extension: path.extname(file.originalname).toLowerCase()
+    });
+    
+    cb(new Error(`Erro: Apenas arquivos de imagem são permitidos. Formatos aceitos: JPEG, JPG, PNG, GIF, WEBP. Arquivo enviado: ${file.originalname} (${file.mimetype})`));
   }
 });
 
