@@ -44,6 +44,7 @@ app.use(
         "img-src": ["'self'", "data:", "http://localhost:5000"],
       },
     },
+    crossOriginResourcePolicy: { policy: "cross-origin" }
   })
 );
 
@@ -199,8 +200,22 @@ app.use("/api-docs",
 // =============================================
 // 6. ARQUIVOS ESTÁTICOS (FRONTEND)
 // =============================================
-app.use("/uploads", express.static(path.join(__dirname, "uploads"))); // Arquivos de upload
-app.use("/contratos", express.static(path.join(__dirname, "uploads/contratos"))); // Arquivos de contratos
+// Middleware específico para uploads com headers CORS
+app.use("/uploads", (req, res, next) => {
+  // Adicionar headers CORS para arquivos estáticos
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+  next();
+}, express.static(path.join(__dirname, "uploads"))); // Arquivos de upload
+
+app.use("/contratos", (req, res, next) => {
+  // Adicionar headers CORS para arquivos de contratos
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+  next();
+}, express.static(path.join(__dirname, "uploads/contratos"))); // Arquivos de contratos
 //app.use(express.static(path.join(__dirname, "../frontend/public")));
 //app.use("/admin", express.static(path.join(__dirname, "../frontend/admin")));
 
