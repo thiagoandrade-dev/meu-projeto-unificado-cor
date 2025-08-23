@@ -334,6 +334,156 @@ const dashboardController = {
   },
 
   /**
+   * Obtém lista de imóveis locados ativos com informações do inquilino
+   */
+  async getImoveisLocadosAtivos(req, res) {
+    try {
+      const { page = 1, limit = 10, search = '' } = req.query;
+      const skip = (page - 1) * limit;
+
+      // Buscar imóveis com status 'Locado Ativo'
+      const matchQuery = {
+        statusAnuncio: 'Locado Ativo',
+        contratoId: { $exists: true, $ne: null }
+      };
+
+      // Adicionar filtro de busca se fornecido
+      if (search) {
+        matchQuery.$or = [
+          { 'grupo': { $regex: search, $options: 'i' } },
+          { 'bloco': { $regex: search, $options: 'i' } },
+          { 'apartamento': { $regex: search, $options: 'i' } }
+        ];
+      }
+
+      const imoveisLocados = await Imovel.aggregate([
+        { $match: matchQuery },
+        {
+          $lookup: {
+            from: 'contratos',
+            localField: 'contratoId',
+            foreignField: '_id',
+            as: 'contrato'
+          }
+        },
+        { $unwind: '$contrato' },
+        {
+          $lookup: {
+            from: 'inquilinos',
+            localField: 'contrato.inquilinoId',
+            foreignField: '_id',
+            as: 'inquilino'
+          }
+        },
+        { $unwind: '$inquilino' },
+        {
+          $project: {
+            _id: 1,
+            grupo: 1,
+            bloco: 1,
+            andar: 1,
+            apartamento: 1,
+            areaUtil: 1,
+            preco: 1,
+            statusAnuncio: 1,
+            dataStatusAtual: 1,
+            observacoesStatus: 1,
+            contrato: {
+              _id: '$contrato._id',
+              codigo: '$contrato.codigo',
+              status: '$contrato.status',
+              dataInicio: '$contrato.dataInicio',
+              dataFim: '$contrato.dataFim',
+              valorAluguel: '$contrato.valorAluguel',
+              valorCondominio: '$contrato.valorCondominio',
+              valorIPTU: '$contrato.valorIPTU',
+              diaVencimento: '$contrato.diaVencimento',
+              proximoVencimento: '$contrato.proximoVencimento'
+            },
+            inquilino: {
+              _id: '$inquilino._id',
+              nome: '$inquilino.nome',
+              email: '$inquilino.email',
+              telefone: '$inquilino.telefone',
+              cpf: '$inquilino.cpf',
+              rg: '$inquilino.rg'
+            }
+          }
+        },
+        { $sort: { 'contrato.proximoVencimento': 1, grupo: 1, bloco: 1, apartamento: 1 } },
+        { $skip: skip },
+        { $limit: parseInt(limit) }
+      ]);
+
+      // Contar total para paginação
+      const totalCount = await Imovel.countDocuments(matchQuery);
+      const totalPages = Math.ceil(totalCount / limit);
+
+      // Calcular estatísticas resumidas
+      const estatisticas = await Imovel.aggregate([
+        { $match: { statusAnuncio: 'Locado Ativo', contratoId: { $exists: true, $ne: null } } },
+        {
+          $lookup: {
+            from: 'contratos',
+            localField: 'contratoId',
+            foreignField: '_id',
+            as: 'contrato'
+          }
+        },
+        { $unwind: '$contrato' },
+        {
+          $group: {
+            _id: null,
+            totalImoveisLocados: { $sum: 1 },
+            receitaMensalTotal: { $sum: '$contrato.valorAluguel' },
+            receitaCondominioTotal: { $sum: '$contrato.valorCondominio' },
+            receitaIPTUTotal: { $sum: '$contrato.valorIPTU' },
+            areaUtilTotal: { $sum: '$areaUtil' },
+            areaUtilMedia: { $avg: '$areaUtil' },
+            valorAluguelMedio: { $avg: '$contrato.valorAluguel' }
+          }
+        }
+      ]);
+
+      const stats = estatisticas[0] || {
+        totalImoveisLocados: 0,
+        receitaMensalTotal: 0,
+        receitaCondominioTotal: 0,
+        receitaIPTUTotal: 0,
+        areaUtilTotal: 0,
+        areaUtilMedia: 0,
+        valorAluguelMedio: 0
+      };
+
+      res.status(200).json({
+        imoveis: imoveisLocados,
+        paginacao: {
+          paginaAtual: parseInt(page),
+          totalPaginas: totalPages,
+          totalItens: totalCount,
+          itensPorPagina: parseInt(limit)
+        },
+        estatisticas: {
+          totalImoveisLocados: stats.totalImoveisLocados,
+          receitaMensalTotal: Math.round(stats.receitaMensalTotal * 100) / 100,
+          receitaCondominioTotal: Math.round(stats.receitaCondominioTotal * 100) / 100,
+          receitaIPTUTotal: Math.round(stats.receitaIPTUTotal * 100) / 100,
+          receitaTotalMensal: Math.round((stats.receitaMensalTotal + stats.receitaCondominioTotal + stats.receitaIPTUTotal) * 100) / 100,
+          areaUtilTotal: Math.round(stats.areaUtilTotal * 100) / 100,
+          areaUtilMedia: Math.round(stats.areaUtilMedia * 100) / 100,
+          valorAluguelMedio: Math.round(stats.valorAluguelMedio * 100) / 100
+        }
+      });
+    } catch (error) {
+      console.error('Erro ao buscar imóveis locados ativos:', error);
+      res.status(500).json({
+        erro: 'Erro interno do servidor',
+        detalhes: error.message
+      });
+    }
+  },
+
+  /**
    * Obtém todos os dados para o dashboard completo
    */
   async getDashboardCompleto(req, res) {

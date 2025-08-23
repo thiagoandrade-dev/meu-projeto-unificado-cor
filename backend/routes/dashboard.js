@@ -15,5 +15,6 @@ router.get('/receita-por-tipo', verificarToken, dashboardController.getReceitaPo
 router.get('/receita-por-categoria', verificarToken, dashboardController.getReceitaPorCategoria);
 router.get('/alertas', verificarToken, dashboardController.getAlertas);
 router.get('/proximos-vencimentos', verificarToken, dashboardController.getProximosVencimentos);
+router.get('/imoveis-locados-ativos', verificarToken, dashboardController.getImoveisLocadosAtivos);
 
 module.exports = router;

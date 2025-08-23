@@ -73,8 +73,11 @@ router.patch("/:id/status", contratoController.atualizarStatusContrato);
 // Excluir contrato
 router.delete("/:id", contratoController.excluirContrato);
 
-// Download de arquivo de contrato
+// Download de contrato
 router.get("/:id/download", contratoController.downloadContrato);
+
+// Sincronizar status dos imóveis com base nos contratos
+router.post("/sincronizar-status-imoveis", contratoController.sincronizarStatusImoveis);
 
 // Se não houver contratos no banco de dados, vamos adicionar alguns para teste
 router.get("/seed", verificarToken, async (req, res) => {

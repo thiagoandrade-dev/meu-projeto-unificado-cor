@@ -144,12 +144,93 @@ ContratoSchema.methods.precisaReajuste = function() {
   return diferencaAnos >= 1;
 };
 
-// Middleware para calcular próximo vencimento antes de salvar
-ContratoSchema.pre('save', function(next) {
+// Middleware para calcular próximo vencimento e atualizar status do imóvel
+ContratoSchema.pre('save', async function(next) {
   if (this.isNew || this.isModified('diaVencimento')) {
     this.calcularProximoVencimento();
   }
+  
+  // Se o status do contrato foi modificado, atualizar o status do imóvel
+  if (this.isModified('status') || this.isNew) {
+    try {
+      const Imovel = mongoose.model('Imovel');
+      let novoStatusImovel;
+      let contratoId = null;
+      
+      switch (this.status) {
+        case 'Ativo':
+          if (this.tipo === 'Locação') {
+            novoStatusImovel = 'Locado Ativo';
+            contratoId = this._id;
+          } else if (this.tipo === 'Venda') {
+            novoStatusImovel = 'Vendido';
+            contratoId = this._id;
+          }
+          break;
+        case 'Pendente':
+          novoStatusImovel = 'Reservado';
+          contratoId = this._id;
+          break;
+        case 'Rescindido':
+        case 'Finalizado':
+        case 'Vencido':
+          // Verificar se há outros contratos ativos para este imóvel
+          const outrosContratosAtivos = await mongoose.model('Contrato').findOne({
+            imovelId: this.imovelId,
+            _id: { $ne: this._id },
+            status: 'Ativo'
+          });
+          
+          if (!outrosContratosAtivos) {
+            // Se não há outros contratos ativos, tornar disponível
+            novoStatusImovel = this.tipo === 'Locação' ? 'Disponível para Locação' : 'Disponível para Venda';
+            contratoId = null;
+          }
+          break;
+      }
+      
+      if (novoStatusImovel) {
+        await Imovel.findByIdAndUpdate(this.imovelId, {
+          statusAnuncio: novoStatusImovel,
+          contratoId: contratoId,
+          dataStatusAtual: new Date()
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar status do imóvel:', error);
+      // Não bloquear a operação do contrato por erro na atualização do imóvel
+    }
+  }
+  
   next();
+});
+
+// Middleware para atualizar status do imóvel quando contrato for removido
+ContratoSchema.post('findOneAndDelete', async function(doc) {
+  if (doc && doc.imovelId) {
+    try {
+      const Imovel = mongoose.model('Imovel');
+      
+      // Verificar se há outros contratos ativos para este imóvel
+      const outrosContratosAtivos = await mongoose.model('Contrato').findOne({
+        imovelId: doc.imovelId,
+        status: 'Ativo'
+      });
+      
+      if (!outrosContratosAtivos) {
+        // Se não há outros contratos ativos, tornar disponível
+        const novoStatus = doc.tipo === 'Locação' ? 'Disponível para Locação' : 'Disponível para Venda';
+        await Imovel.findByIdAndUpdate(doc.imovelId, {
+          statusAnuncio: novoStatus,
+          contratoId: null,
+          dataStatusAtual: new Date(),
+          observacoesStatus: 'Contrato removido - imóvel disponibilizado automaticamente'
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar status do imóvel após remoção do contrato:', error);
+    }
+  }
 });
 
 module.exports = mongoose.models?.Contrato || mongoose.model('Contrato', ContratoSchema);

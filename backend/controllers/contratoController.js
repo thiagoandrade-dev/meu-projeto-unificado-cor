@@ -322,6 +322,99 @@ const downloadContrato = async (req, res) => {
   }
 };
 
+// Sincronizar status dos imóveis com base nos contratos
+const sincronizarStatusImoveis = async (req, res) => {
+  try {
+    const contratos = await Contrato.find({}).populate('imovelId');
+    const imoveis = await Imovel.find({});
+    let atualizacoes = 0;
+    let erros = [];
+
+    for (const imovel of imoveis) {
+      try {
+        // Buscar contrato ativo para este imóvel
+        const contratoAtivo = contratos.find(c => 
+          c.imovelId && 
+          c.imovelId._id.toString() === imovel._id.toString() && 
+          c.status === 'Ativo'
+        );
+
+        // Buscar contrato pendente se não houver ativo
+        const contratoPendente = contratos.find(c => 
+          c.imovelId && 
+          c.imovelId._id.toString() === imovel._id.toString() && 
+          c.status === 'Pendente'
+        );
+
+        let novoStatus = null;
+        let contratoId = null;
+        let observacoes = '';
+
+        if (contratoAtivo) {
+          if (contratoAtivo.tipo === 'Locação') {
+            novoStatus = 'Locado Ativo';
+          } else if (contratoAtivo.tipo === 'Venda') {
+            novoStatus = 'Vendido';
+          }
+          contratoId = contratoAtivo._id;
+          observacoes = `Sincronizado com contrato ${contratoAtivo.codigo}`;
+        } else if (contratoPendente) {
+          novoStatus = 'Reservado';
+          contratoId = contratoPendente._id;
+          observacoes = `Reservado - contrato ${contratoPendente.codigo} pendente`;
+        } else {
+          // Sem contratos ativos ou pendentes
+          if (imovel.statusAnuncio === 'Locado Ativo' || 
+              imovel.statusAnuncio === 'Vendido' || 
+              imovel.statusAnuncio === 'Reservado') {
+            // Determinar status baseado no último tipo de contrato ou padrão
+            const ultimoContrato = contratos
+              .filter(c => c.imovelId && c.imovelId._id.toString() === imovel._id.toString())
+              .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
+            
+            if (ultimoContrato) {
+              novoStatus = ultimoContrato.tipo === 'Locação' ? 'Disponível para Locação' : 'Disponível para Venda';
+            } else {
+              novoStatus = 'Disponível para Locação'; // Padrão
+            }
+            contratoId = null;
+            observacoes = 'Disponibilizado automaticamente - sem contratos ativos';
+          }
+        }
+
+        // Atualizar apenas se necessário
+        if (novoStatus && (imovel.statusAnuncio !== novoStatus || imovel.contratoId?.toString() !== contratoId?.toString())) {
+          await Imovel.findByIdAndUpdate(imovel._id, {
+            statusAnuncio: novoStatus,
+            contratoId: contratoId,
+            dataStatusAtual: new Date(),
+            observacoesStatus: observacoes
+          });
+          atualizacoes++;
+        }
+      } catch (error) {
+        erros.push({
+          imovelId: imovel._id,
+          erro: error.message
+        });
+      }
+    }
+
+    res.json({
+      mensagem: 'Sincronização concluída',
+      atualizacoes,
+      totalImoveis: imoveis.length,
+      erros: erros.length > 0 ? erros : undefined
+    });
+  } catch (error) {
+    console.error('Erro na sincronização:', error);
+    res.status(500).json({
+      erro: 'Erro interno na sincronização',
+      detalhes: error.message
+    });
+  }
+};
+
 module.exports = {
   listarContratos,
   buscarContratoPorId,
@@ -329,5 +422,6 @@ module.exports = {
   atualizarContrato,
   excluirContrato,
   atualizarStatusContrato,
-  downloadContrato
+  downloadContrato,
+  sincronizarStatusImoveis
 };

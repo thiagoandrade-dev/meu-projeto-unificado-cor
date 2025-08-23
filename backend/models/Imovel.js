@@ -69,7 +69,15 @@ const ImovelSchema = new mongoose.Schema({
     type: String,
     required: [true, 'O campo STATUS_ANUNCIO é obrigatório.'],
     enum: {
-      values: ['Disponível para Venda', 'Disponível para Locação'],
+      values: [
+        'Disponível para Venda',
+        'Disponível para Locação', 
+        'Locado Ativo',
+        'Vendido',
+        'Reservado',
+        'Indisponível',
+        'Em Reforma'
+      ],
       message: 'STATUS_ANUNCIO inválido.'
     },
   },
@@ -80,6 +88,52 @@ const ImovelSchema = new mongoose.Schema({
   fotoPrincipal: {
     type: String,
     default: null // Índice da imagem principal no array imagens (0, 1, 2, etc.) ou null se não definida
+  },
+  dataStatusAtual: {
+    type: Date,
+    default: Date.now // Data em que o status atual foi definido
+  },
+  observacoesStatus: {
+    type: String,
+    default: '' // Observações sobre o status atual (motivo da indisponibilidade, detalhes da reforma, etc.)
+  },
+  contratoId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Contrato',
+    default: null // Referência ao contrato ativo (se houver)
+  },
+  historico: {
+    type: [{
+      tipo: {
+        type: String,
+        required: true,
+        enum: ['venda', 'reversao_venda', 'locacao_iniciada', 'locacao_finalizada', 'reforma', 'manutencao', 'status_alterado']
+      },
+      data: {
+        type: Date,
+        required: true
+      },
+      // Campos específicos para vendas
+      comprador: {
+        nome: String,
+        cpf: String,
+        email: String,
+        telefone: String
+      },
+      valorVenda: Number,
+      documentosEntregues: [String],
+      // Campos gerais
+      motivo: String,
+      observacoes: String,
+      statusAnterior: String,
+      novoStatus: String,
+      dataRegistro: {
+        type: Date,
+        default: Date.now
+      },
+      usuarioResponsavel: String
+    }],
+    default: []
   },
   // Campos de controle
   createdAt: {
@@ -97,6 +151,14 @@ const ImovelSchema = new mongoose.Schema({
 
 // Middleware para validar Bloco vs Grupo (exemplo, idealmente na rota)
 ImovelSchema.pre('save', function(next) {
+  // Atualiza updatedAt
+  this.updatedAt = Date.now();
+  
+  // Se o status foi modificado, atualiza a dataStatusAtual
+  if (this.isModified('statusAnuncio')) {
+    this.dataStatusAtual = Date.now();
+  }
+  
   const grupoPar = this.grupo % 2 === 0;
   if (grupoPar && ['G'].includes(this.bloco)) {
     return next(new Error('Bloco G não é permitido para grupos pares.'));

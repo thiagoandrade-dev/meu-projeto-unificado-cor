@@ -2,6 +2,7 @@ const verificarToken = require("../middlewares/verificarToken");
 const router = require("express").Router();
 const { body, validationResult } = require("express-validator");
 const Imovel = require("../models/Imovel");
+const imovelController = require('../controllers/imovelController');
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
@@ -118,7 +119,15 @@ const imovelValidationRules = () => {
         return true;
       }),
     body("preco").isNumeric().custom((value) => parseFloat(value) > 0).withMessage("PRECO deve ser um número maior que zero."),
-    body("statusAnuncio").isString().isIn(["Disponível para Venda", "Disponível para Locação"]).withMessage("STATUS_ANUNCIO inválido."),
+    body("statusAnuncio").isString().isIn([
+      "Disponível para Venda", 
+      "Disponível para Locação", 
+      "Locado Ativo", 
+      "Vendido", 
+      "Reservado", 
+      "Indisponível", 
+      "Em Reforma"
+    ]).withMessage("STATUS_ANUNCIO inválido."),
   ];
 };
 
@@ -394,5 +403,35 @@ router.post("/migrate-images", verificarToken, async (req, res) => {
     res.status(500).json({ erro: "Erro na migração: " + err.message });
   }
 });
+
+// Rotas para gestão de vendas
+// Finalizar venda de um imóvel
+router.post('/:id/finalizar-venda', [
+  body('comprador.nome').notEmpty().withMessage('Nome do comprador é obrigatório'),
+  body('comprador.cpf').notEmpty().withMessage('CPF do comprador é obrigatório'),
+  body('comprador.email').isEmail().withMessage('Email do comprador deve ser válido'),
+  body('comprador.telefone').notEmpty().withMessage('Telefone do comprador é obrigatório'),
+  body('valorVenda').isNumeric().withMessage('Valor da venda deve ser numérico'),
+  body('documentosEntregues').optional().isArray().withMessage('Documentos entregues deve ser um array'),
+  body('observacoes').optional().isString().withMessage('Observações deve ser uma string')
+], validate, imovelController.finalizarVenda);
+
+// Reverter venda de um imóvel
+router.post('/:id/reverter-venda', [
+  body('motivo').notEmpty().withMessage('Motivo da reversão é obrigatório'),
+  body('novoStatus').isIn([
+    'Disponível para Venda',
+    'Disponível para Locação',
+    'Indisponível',
+    'Em Reforma'
+  ]).withMessage('Novo status inválido'),
+  body('observacoes').optional().isString().withMessage('Observações deve ser uma string')
+], validate, imovelController.reverterVenda);
+
+// Obter histórico de um imóvel
+router.get('/:id/historico', imovelController.obterHistorico);
+
+// Listar imóveis vendidos
+router.get('/vendidos/listar', imovelController.listarImoveisVendidos);
 
 module.exports = router;
