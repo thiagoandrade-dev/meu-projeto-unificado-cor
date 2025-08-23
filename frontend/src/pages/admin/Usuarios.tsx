@@ -55,7 +55,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { api } from "@/services/apiService";
 import { userService } from "@/services/userService";
-import axios, { AxiosError } from "axios";
+import axios from "axios";
 import { exportToCsv } from "@/utils/csvUtils";
 
 // Definição do tipo de usuário

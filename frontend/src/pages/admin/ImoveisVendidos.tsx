@@ -10,7 +10,6 @@ import {
   X,
   RefreshCw,
   Download,
-  Eye,
   History,
   Calendar,
   DollarSign,

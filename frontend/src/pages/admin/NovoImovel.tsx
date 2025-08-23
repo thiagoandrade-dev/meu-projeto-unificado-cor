@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+
 import {
   Select,
   SelectContent,
@@ -27,7 +27,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { api } from "@/services/apiService";
-import axios, { AxiosError } from "axios";
+import axios from "axios";
 
 // Definindo tipos literais para o formulário baseados no modelo backend
 type ConfiguracaoPlantaType = "Padrão (2 dorms)" | "2 dorms + Despensa" | "2 dorms + Dependência" | "Padrão (3 dorms)" | "3 dorms + Dependência";
