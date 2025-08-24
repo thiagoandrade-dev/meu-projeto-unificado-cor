@@ -82,7 +82,22 @@ const ImovelSchema = new mongoose.Schema({
     },
   },
   imagens: {
-    type: [String],
+    type: [{
+      original: { type: String, required: true },
+      thumbnail: { type: String },
+      medium: { type: String },
+      large: { type: String },
+      webp: { type: String },
+      orientation: {
+        type: String,
+        enum: ['landscape', 'portrait', 'square', 'unknown'],
+        default: 'unknown'
+      },
+      dimensions: {
+        width: { type: Number },
+        height: { type: Number }
+      }
+    }],
     default: []
   },
   fotoPrincipal: {

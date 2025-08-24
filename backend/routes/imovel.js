@@ -3,6 +3,7 @@ const router = require("express").Router();
 const { body, validationResult } = require("express-validator");
 const Imovel = require("../models/Imovel");
 const imovelController = require('../controllers/imovelController');
+const imageProcessor = require('../utils/imageProcessor');
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
@@ -36,7 +37,7 @@ const uploadImovel = multer({
     ];
     
     // Verificar extensões aceitas
-    const allowedExtensions = /\.(jpeg|jpg|png|gif|webp)$/i;
+    const allowedExtensions = /\.(jpeg|jpg|jfif|png|gif|webp)$/i;
     
     const mimetypeValid = allowedMimeTypes.includes(file.mimetype);
     const extensionValid = allowedExtensions.test(path.extname(file.originalname).toLowerCase());
@@ -52,7 +53,7 @@ const uploadImovel = multer({
       extension: path.extname(file.originalname).toLowerCase()
     });
     
-    cb(new Error(`Erro: Apenas arquivos de imagem são permitidos. Formatos aceitos: JPEG, JPG, PNG, GIF, WEBP. Arquivo enviado: ${file.originalname} (${file.mimetype})`));
+    cb(new Error(`Erro: Apenas arquivos de imagem são permitidos. Formatos aceitos: JPEG, JPG, JFIF, PNG, GIF, WEBP. Arquivo enviado: ${file.originalname} (${file.mimetype})`));
   }
 });
 
@@ -156,15 +157,56 @@ router.get("/", async (req, res) => {
 router.post("/", uploadImovel.array("imagens", 10), imovelValidationRules(), validate, async (req, res) => {
   try {
     const dadosImovel = { ...req.body };
+    
     if (req.files && req.files.length > 0) {
-      dadosImovel.imagens = req.files.map(file => file.path.replace(/\\/g, "/")); // Salva o caminho do arquivo
+      console.log(`Processando ${req.files.length} imagens para o imóvel...`);
+      
+      // Processar cada imagem carregada
+      const imagensProcessadas = [];
+      
+      for (const file of req.files) {
+        try {
+          // Processar a imagem original
+          const resultadoProcessamento = await imageProcessor.processImage(file.path, {
+            sizes: ['thumbnail', 'medium', 'large'],
+            generateWebP: true,
+            quality: 85
+          });
+          
+          // Adicionar informações da imagem processada
+          imagensProcessadas.push({
+            original: file.path.replace(/\\/g, "/"),
+            thumbnail: resultadoProcessamento.thumbnail?.replace(/\\/g, "/"),
+            medium: resultadoProcessamento.medium?.replace(/\\/g, "/"),
+            large: resultadoProcessamento.large?.replace(/\\/g, "/"),
+            webp: resultadoProcessamento.webp?.replace(/\\/g, "/"),
+            orientation: resultadoProcessamento.orientation,
+            dimensions: resultadoProcessamento.dimensions
+          });
+          
+          console.log(`Imagem processada: ${file.originalname} (${resultadoProcessamento.orientation})`);
+        } catch (processError) {
+          console.error(`Erro ao processar imagem ${file.originalname}:`, processError);
+          // Em caso de erro no processamento, manter a imagem original
+          imagensProcessadas.push({
+            original: file.path.replace(/\\/g, "/"),
+            orientation: 'unknown'
+          });
+        }
+      }
+      
+      dadosImovel.imagens = imagensProcessadas;
+      
       // Se fotoPrincipal não foi definida, usar a primeira imagem como padrão
-      if (!dadosImovel.fotoPrincipal && dadosImovel.imagens.length > 0) {
-        dadosImovel.fotoPrincipal = dadosImovel.imagens[0];
+      if (!dadosImovel.fotoPrincipal && imagensProcessadas.length > 0) {
+        dadosImovel.fotoPrincipal = imagensProcessadas[0].large || imagensProcessadas[0].original;
       }
     }
+    
     const novoImovel = new Imovel(dadosImovel);
     const imovelSalvo = await novoImovel.save();
+    
+    console.log(`Imóvel criado com sucesso: ${imovelSalvo._id}`);
     res.status(201).json(imovelSalvo);
   } catch (err) {
     console.error("Erro ao criar imóvel:", err);
@@ -364,16 +406,21 @@ router.delete("/:id", async (req, res) => {
 
     // Opcional: Deletar as imagens do sistema de arquivos
     if (imovel.imagens && imovel.imagens.length > 0) {
-      imovel.imagens.forEach(imgPath => {
-        const fullPath = path.join(__dirname, "..", imgPath); // __dirname aponta para a pasta 'routes'
-        if (fs.existsSync(fullPath)) {
-          try {
-            fs.unlinkSync(fullPath);
-            console.log(`Imagem deletada: ${fullPath}`);
-          } catch (unlinkErr) {
-            console.error(`Erro ao deletar imagem ${fullPath}:`, unlinkErr);
+      imovel.imagens.forEach(imgObj => {
+        // Deletar todas as versões da imagem (original, thumbnail, medium, large, webp)
+        const imagePaths = [imgObj.original, imgObj.thumbnail, imgObj.medium, imgObj.large, imgObj.webp].filter(Boolean);
+        
+        imagePaths.forEach(imgPath => {
+          const fullPath = path.join(__dirname, "..", imgPath);
+          if (fs.existsSync(fullPath)) {
+            try {
+              fs.unlinkSync(fullPath);
+              console.log(`Imagem deletada: ${fullPath}`);
+            } catch (unlinkErr) {
+              console.error(`Erro ao deletar imagem ${fullPath}:`, unlinkErr);
+            }
           }
-        }
+        });
       });
     }
 
