@@ -228,8 +228,8 @@ const Contato = () => {
                     <Phone size={20} className="text-imobiliaria-azul mr-3 mt-1" />
                     <div>
                       <p className="font-medium">Telefone</p>
-                      <p className="text-gray-600">(11) 3000-0000</p>
-                      <p className="text-gray-600">(11) 99999-9999 (WhatsApp)</p>
+                      <p className="text-gray-600">(11) 95675-1094</p>
+                      <p className="text-gray-600">(11) 95675-1094 (WhatsApp)</p>
                     </div>
                   </div>
                   

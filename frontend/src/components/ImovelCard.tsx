@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
 import { Imovel } from "@/services/apiService";
 import { buildImageUrl } from "@/utils/imageUtils";
+import SmartImage from "@/components/SmartImage";
 
 interface ImovelCardProps {
   imovel: Imovel;
@@ -28,11 +29,13 @@ const ImovelCard = ({ imovel, featured = false }: ImovelCardProps) => {
     <Link to={`/imovel/${imovel._id}`}>
       <div className={`card firenze-card group ${featured ? 'lg:flex' : ''} transition-all duration-300 hover:shadow-lg`}>
         {/* Imagem */}
-        <div className={`relative ${featured ? 'lg:w-2/5' : 'h-48'} overflow-hidden`}>
-          <img
-            src={buildImageUrl(imovel.imagens?.[imovel.fotoPrincipal || 0] || imovel.imagens?.[0])}
+        <div className={`relative ${featured ? 'lg:w-2/5' : ''} overflow-hidden`}>
+          <SmartImage
+            src={buildImageUrl(imovel.imagens?.[imovel.fotoPrincipal || 0] || imovel.imagens?.[0] || '')}
             alt={`${imovel.configuracaoPlanta} - Grupo ${imovel.grupo}, Bloco ${imovel.bloco}`}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            aspectRatio={featured ? 'landscape' : 'square'}
+            className="transition-transform duration-500 group-hover:scale-105"
+            containerClassName={featured ? '' : 'h-48'}
           />
           <Badge 
             className={`absolute top-3 left-3 ${

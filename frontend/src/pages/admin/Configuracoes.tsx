@@ -15,12 +15,8 @@ import {
   Mail, 
   Bell, 
   Shield, 
-  Database,
-  Palette,
   Globe,
   CreditCard,
-  Users,
-  FileText,
   Save,
   RefreshCw,
   Loader2
@@ -35,7 +31,7 @@ const Configuracoes = () => {
   const [companySettings, setCompanySettings] = useState({
     name: "Imobiliária Firenze",
     email: "contato@imobiliariafirenze.com.br",
-    phone: "(11) 99999-9999",
+    phone: "(11) 95675-1094",
     address: "Rua das Flores, 123 - São Paulo, SP",
     cnpj: "12.345.678/0001-90",
     logo: ""

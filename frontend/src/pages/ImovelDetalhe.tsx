@@ -5,32 +5,46 @@ import { useParams } from 'react-router-dom';
 import { imoveisService, Imovel } from '@/services/apiService';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { Car, Ruler, Building, Calendar, Tag, MapPin, Phone, MessageSquare, Building2, CheckCircle } from 'lucide-react';
+import { Car, Ruler, Building, Calendar, Tag, MapPin, Phone, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { AxiosError } from 'axios';
 import { buildImageUrls } from '@/utils/imageUtils';
+import SmartImage from '@/components/SmartImage';
 
 // Componente para a galeria de imagens
-const ImovelGaleria = ({ imagens, fotoPrincipal }: { imagens: string[]; fotoPrincipal?: number }) => {
+const ImovelGaleria = ({ imagens, fotoPrincipal }: { imagens: string[]; fotoPrincipal?: number | undefined }) => {
   // Construir URLs completas das imagens
   const imagensComUrls = buildImageUrls(imagens);
   // Usar a foto principal se definida, senão usar a primeira imagem
-  const imagemPrincipalInicial = imagensComUrls[fotoPrincipal || 0] || imagensComUrls[0];
+  const indiceFotoPrincipal = fotoPrincipal ?? 0;
+  const imagemPrincipalInicial = imagensComUrls[indiceFotoPrincipal] || imagensComUrls[0];
   const [imagemPrincipal, setImagemPrincipal] = useState(imagemPrincipalInicial);
 
   return (
     <div>
-      <img src={imagemPrincipal} alt="Foto principal do imóvel" className="w-full h-96 object-cover rounded-lg mb-4" />
+      <SmartImage
+        src={imagemPrincipal}
+        alt="Foto principal do imóvel"
+        aspectRatio="landscape"
+        containerClassName="h-96 rounded-lg mb-4"
+        className="rounded-lg"
+      />
       <div className="grid grid-cols-5 gap-2">
         {imagensComUrls.slice(0, 5).map((imagem, index) => (
-          <img
+          <div
             key={index}
-            src={imagem}
-            alt={`Foto ${index + 1} do imóvel`}
-            className={`w-full h-24 object-cover rounded-md cursor-pointer transition-transform duration-200 hover:scale-105 ${imagem === imagemPrincipal ? 'ring-2 ring-imobiliaria-azul' : ''}`}
+            className={`cursor-pointer transition-transform duration-200 hover:scale-105 ${imagem === imagemPrincipal ? 'ring-2 ring-imobiliaria-azul rounded-md' : ''}`}
             onClick={() => setImagemPrincipal(imagem)}
-          />
+          >
+            <SmartImage
+              src={imagem}
+              alt={`Foto ${index + 1} do imóvel`}
+              aspectRatio="square"
+              containerClassName="h-24 rounded-md"
+              className="rounded-md"
+            />
+          </div>
         ))}
       </div>
     </div>
@@ -225,11 +239,25 @@ const ImovelDetalhe = () => {
 
                  <div className="mt-8">
                     <h3 className="font-bold text-lg mb-4">Fale com um corretor</h3>
-                    <Button className="w-full mb-3 bg-green-500 hover:bg-green-600 flex items-center gap-2">
+                    <Button 
+                        className="w-full mb-3 bg-green-500 hover:bg-green-600 flex items-center gap-2"
+                        onClick={() => {
+                            const phoneNumber = '5511956751094';
+                            const message = `Olá! Tenho interesse no imóvel: ${imovel?.endereco || 'Imóvel'} - ${imovel?.grupo || ''} ${imovel?.bloco || ''} Apto ${imovel?.apartamento || ''}. Gostaria de mais informações.`;
+                            const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+                            window.open(whatsappUrl, '_blank');
+                        }}
+                    >
                         <MessageSquare size={18} /> Iniciar chat via WhatsApp
                     </Button>
-                    <Button variant="outline" className="w-full flex items-center gap-2">
-                        <Phone size={18} /> Ligar para (11) 99999-9999
+                    <Button 
+                        variant="outline" 
+                        className="w-full flex items-center gap-2"
+                        onClick={() => {
+                            window.open('tel:+5511956751094', '_self');
+                        }}
+                    >
+                        <Phone size={18} /> Ligar para (11) 95675-1094
                     </Button>
                  </div>
               </div>

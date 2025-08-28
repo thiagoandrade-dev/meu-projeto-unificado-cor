@@ -305,82 +305,10 @@ const Imoveis = () => {
       setDeleteDialogOpen(false);
       setImovelToDelete(null);
       
-      // Forçar limpeza imediata de overlays
+      // Aguardar um pouco para garantir que o diálogo seja fechado corretamente
       setTimeout(() => {
-        console.log('🧹 Limpeza imediata de overlays após exclusão...');
-        
-        // CORREÇÃO PRINCIPAL: Forçar remoção de pointer-events: none do body
-        document.body.style.pointerEvents = 'auto';
-        document.body.style.removeProperty('pointer-events');
-        console.log('✅ Pointer-events do body resetado para auto');
-        
-        // Buscar e remover TODOS os overlays de diálogo
-        const overlaySelectors = [
-          '[data-radix-dialog-overlay]',
-          '[data-radix-alert-dialog-overlay]',
-          '[data-state="open"][data-radix-dialog-overlay]',
-          '.fixed.inset-0.z-[45]',
-          '[role="dialog"] + div'
-        ];
-        
-        overlaySelectors.forEach(selector => {
-          const overlays = document.querySelectorAll(selector);
-          overlays.forEach(overlay => {
-            if (document.contains(overlay) && overlay.parentNode) {
-              console.log('🗑️ Removendo overlay:', { selector, element: overlay });
-              overlay.parentNode.removeChild(overlay);
-            }
-          });
-        });
-        
-        // Remover qualquer elemento com pointer-events que possa estar bloqueando
-        const blockingElements = document.querySelectorAll('*');
-        blockingElements.forEach(el => {
-          const styles = getComputedStyle(el);
-          if (styles.position === 'fixed' && 
-              styles.zIndex && parseInt(styles.zIndex) > 40 &&
-              (styles.pointerEvents === 'auto' || styles.pointerEvents === 'all') &&
-              el.getAttribute('data-radix-dialog-overlay') !== null) {
-            console.log('🚫 Removendo elemento bloqueador:', el);
-            if (el.parentNode) {
-              el.parentNode.removeChild(el);
-            }
-          }
-        });
-        
-        // Chamar função global de limpeza se disponível
-        const cleanupFn = (window as Window & { emergencyCleanupAllOverlays?: () => void }).emergencyCleanupAllOverlays;
-        if (typeof cleanupFn === 'function') {
-          console.log('🧹 Chamando limpeza de emergência global');
-          cleanupFn();
-        }
-        
-        // Forçar reflow do DOM
-        // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-        document.body.offsetHeight;
-        
-        console.log('✅ Limpeza completa de overlays concluída');
+        console.log('✅ Limpeza de diálogo concluída');
       }, 100);
-      
-      // Segunda limpeza após um tempo maior para garantir
-      setTimeout(() => {
-        console.log('🧹 Segunda limpeza de segurança...');
-        
-        // Forçar novamente a remoção de pointer-events do body
-        document.body.style.pointerEvents = 'auto';
-        document.body.style.removeProperty('pointer-events');
-        console.log('✅ Pointer-events do body resetado novamente para auto');
-        
-        const remainingOverlays = document.querySelectorAll('[data-radix-dialog-overlay], [data-radix-alert-dialog-overlay]');
-        if (remainingOverlays.length > 0) {
-          console.log(`⚠️ Ainda existem ${remainingOverlays.length} overlays. Removendo...`);
-          remainingOverlays.forEach(overlay => {
-            if (overlay.parentNode) {
-              overlay.parentNode.removeChild(overlay);
-            }
-          });
-        }
-      }, 1000);
       
       console.log('✅ Estados limpos com sucesso');
     }

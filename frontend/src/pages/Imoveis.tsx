@@ -42,10 +42,18 @@ const convertApiToDisplay = (apiImovel: ApiImovel): Imovel => {
     statusAnuncio: apiImovel.statusAnuncio,
     endereco: apiImovel.endereco,
     caracteristicas: getCaracteristicas(apiImovel),
-    imagens: apiImovel.imagens || [
-      "/placeholder-imovel.svg",
-      "/placeholder-apartamento.svg"
-    ],
+    imagens: apiImovel.imagens ? 
+      apiImovel.imagens.map((img: string | { original?: string; thumbnail?: string; medium?: string; large?: string; webp?: string }) => {
+        // Se a imagem é um objeto com propriedades (novo formato)
+        if (typeof img === 'object' && img !== null) {
+          return img.medium || img.large || img.original || img.thumbnail || '';
+        }
+        // Se a imagem é uma string (formato antigo)
+        return img;
+      }).filter(Boolean) : [
+        "/placeholder-imovel.svg",
+        "/placeholder-apartamento.svg"
+      ],
     descricao: `${apiImovel.configuracaoPlanta} com ${apiImovel.areaUtil}m² de área útil. ${apiImovel.numVagasGaragem || 0} vaga${(apiImovel.numVagasGaragem || 0) > 1 ? 's' : ''} de garagem ${apiImovel.tipoVagaGaragem?.toLowerCase() || 'não informada'}.`,
     destaque: apiImovel.destaque || Math.random() > 0.7
   };

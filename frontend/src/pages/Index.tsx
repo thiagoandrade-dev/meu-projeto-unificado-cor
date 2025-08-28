@@ -1,19 +1,19 @@
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ImovelCard from "@/components/ImovelCard";
 import { ArrowRight, Home as HomeIcon, FileText, Gavel, Building2 } from "lucide-react";
-import { imoveisService, Imovel, Imovel as ApiImovel } from "@/services/apiService";
+import { imoveisService, Imovel as ApiImovel } from "@/services/apiService";
 
 const Index = () => {
-  const [imoveisDestaque, setImoveisDestaque] = useState<Imovel[]>([]);
+  const [imoveisDestaque, setImoveisDestaque] = useState<ApiImovel[]>([]);
   const [loadingImoveis, setLoadingImoveis] = useState(true);
 
   // Função para converter dados da API para o formato do componente
-  const convertApiToDisplay = (apiImovel: ApiImovel): Imovel => {
+  const convertApiToDisplay = (apiImovel: ApiImovel): ApiImovel => {
     const getQuartosFromConfig = (config: string): number => {
       if (config.includes('3 dorms')) return 3;
       if (config.includes('2 dorms')) return 2;
@@ -44,12 +44,20 @@ const Index = () => {
       statusAnuncio: apiImovel.statusAnuncio,
       endereco: apiImovel.endereco,
       caracteristicas: getCaracteristicas(apiImovel),
-      imagens: apiImovel.imagens || [
-        "/placeholder-imovel.svg",
-        "/placeholder-apartamento.svg",
-        "/placeholder-sala.svg"
-      ],
-      descricao: `${apiImovel.configuracaoPlanta} com ${apiImovel.areaUtil}m² de área útil no Grupo ${apiImovel.grupo}. ${apiImovel.numVagasGaragem || 0} vaga${(apiImovel.numVagasGaragem || 0) > 1 ? 's' : ''} de garagem ${apiImovel.tipoVagaGaragem?.toLowerCase() || 'não informada'}.`,
+      imagens: apiImovel.imagens ? 
+         apiImovel.imagens.map((img: string | { original?: string; thumbnail?: string; medium?: string; large?: string; webp?: string }) => {
+           // Se a imagem é um objeto com propriedades (novo formato)
+           if (typeof img === 'object' && img !== null) {
+             return img.medium || img.large || img.original || img.thumbnail || '';
+           }
+           // Se a imagem é uma string (formato antigo)
+           return img;
+         }).filter(Boolean) : [
+           "/placeholder-imovel.svg",
+           "/placeholder-apartamento.svg",
+           "/placeholder-sala.svg"
+         ],
+      descricao: `${apiImovel.configuracaoPlanta} com ${getQuartosFromConfig(apiImovel.configuracaoPlanta)} quartos e ${apiImovel.areaUtil}m² de área útil no Grupo ${apiImovel.grupo}. ${apiImovel.numVagasGaragem} vaga${apiImovel.numVagasGaragem > 1 ? 's' : ''} de garagem ${apiImovel.tipoVagaGaragem?.toLowerCase() || 'não informada'}.`,
       destaque: apiImovel.destaque || true
     };
   };
@@ -294,9 +302,9 @@ const Index = () => {
               </div>
               <div className="text-center md:text-right">
                 <img 
-                  src="/placeholder-apartamento.svg" 
+                  src="/area-cliente.svg" 
                   alt="Área do Cliente - Acesso digital" 
-                  className="inline-block w-64 h-64 object-cover rounded-lg shadow-lg"
+                  className="inline-block w-64 h-64 object-contain rounded-lg shadow-lg"
                 />
               </div>
             </div>

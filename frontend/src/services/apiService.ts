@@ -47,11 +47,11 @@ export interface Imovel {
   apartamento: number;
   configuracaoPlanta: "1Q" | "2Q" | "3Q" | "4Q" | "Cobertura" | "Studio";
   areaUtil: number;
-  numVagasGaragem?: number;
-  tipoVagaGaragem?: "Coberta" | "Descoberta";
+  numVagasGaragem: number;
+  tipoVagaGaragem: "Coberta" | "Descoberta";
   preco: number;
   statusAnuncio: "Disponível para Venda" | "Disponível para Locação";
-  endereco?: {
+  endereco: {
     rua?: string;
     numero?: string;
     complemento?: string;

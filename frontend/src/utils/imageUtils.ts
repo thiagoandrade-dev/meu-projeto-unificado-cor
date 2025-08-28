@@ -13,7 +13,7 @@ const getBaseURL = (): string => {
  * @returns URL completa da imagem
  */
 export const buildImageUrl = (imagePath: string | undefined): string => {
-  if (!imagePath) {
+  if (!imagePath || typeof imagePath !== 'string') {
     return '/placeholder-imovel.svg';
   }
   

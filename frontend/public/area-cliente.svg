@@ -1,0 +1,71 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="256" height="256" rx="20" fill="#f8fafc"/>
+  
+  <!-- Main container -->
+  <rect x="32" y="48" width="192" height="160" rx="12" fill="#ffffff" stroke="#e2e8f0" stroke-width="2"/>
+  
+  <!-- Header bar -->
+  <rect x="32" y="48" width="192" height="40" rx="12" fill="#1e40af"/>
+  <rect x="32" y="76" width="192" height="12" fill="#1e40af"/>
+  
+  <!-- User icon -->
+  <circle cx="60" cy="68" r="12" fill="#ffffff" opacity="0.9"/>
+  <circle cx="60" cy="64" r="4" fill="#1e40af"/>
+  <path d="M52 72c0-4 3.6-6 8-6s8 2 8 6" stroke="#1e40af" stroke-width="1.5" fill="none"/>
+  
+  <!-- Welcome text area -->
+  <rect x="80" y="60" width="80" height="6" rx="3" fill="#ffffff" opacity="0.8"/>
+  <rect x="80" y="70" width="60" height="4" rx="2" fill="#ffffff" opacity="0.6"/>
+  
+  <!-- Menu dots -->
+  <circle cx="200" cy="68" r="2" fill="#ffffff" opacity="0.8"/>
+  <circle cx="208" cy="68" r="2" fill="#ffffff" opacity="0.8"/>
+  <circle cx="216" cy="68" r="2" fill="#ffffff" opacity="0.8"/>
+  
+  <!-- Dashboard content -->
+  <!-- Cards row 1 -->
+  <rect x="48" y="104" width="80" height="32" rx="6" fill="#f1f5f9" stroke="#e2e8f0"/>
+  <rect x="144" y="104" width="64" height="32" rx="6" fill="#f1f5f9" stroke="#e2e8f0"/>
+  
+  <!-- Card icons and content -->
+  <rect x="56" y="112" width="16" height="16" rx="2" fill="#10b981"/>
+  <rect x="76" y="114" width="32" height="3" rx="1.5" fill="#64748b"/>
+  <rect x="76" y="120" width="24" height="2" rx="1" fill="#94a3b8"/>
+  
+  <rect x="152" y="112" width="16" height="16" rx="2" fill="#f59e0b"/>
+  <rect x="172" y="114" width="24" height="3" rx="1.5" fill="#64748b"/>
+  <rect x="172" y="120" width="20" height="2" rx="1" fill="#94a3b8"/>
+  
+  <!-- Cards row 2 -->
+  <rect x="48" y="148" width="80" height="32" rx="6" fill="#f1f5f9" stroke="#e2e8f0"/>
+  <rect x="144" y="148" width="64" height="32" rx="6" fill="#f1f5f9" stroke="#e2e8f0"/>
+  
+  <rect x="56" y="156" width="16" height="16" rx="2" fill="#8b5cf6"/>
+  <rect x="76" y="158" width="32" height="3" rx="1.5" fill="#64748b"/>
+  <rect x="76" y="164" width="24" height="2" rx="1" fill="#94a3b8"/>
+  
+  <rect x="152" y="156" width="16" height="16" rx="2" fill="#ef4444"/>
+  <rect x="172" y="158" width="24" height="3" rx="1.5" fill="#64748b"/>
+  <rect x="172" y="164" width="20" height="2" rx="1" fill="#94a3b8"/>
+  
+  <!-- Bottom section -->
+  <rect x="48" y="192" width="160" height="8" rx="4" fill="#e2e8f0"/>
+  
+  <!-- Security lock icon -->
+  <rect x="200" y="220" width="24" height="16" rx="2" fill="#10b981" opacity="0.1"/>
+  <rect x="208" y="224" width="8" height="8" rx="1" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <rect x="210" y="227" width="4" height="5" rx="0.5" fill="#10b981"/>
+  <path d="M210 227v-2c0-1.1 0.9-2 2-2s2 0.9 2 2v2" stroke="#10b981" stroke-width="1.5" fill="none"/>
+  
+  <!-- Decorative elements -->
+  <circle cx="40" cy="40" r="3" fill="#1e40af" opacity="0.3"/>
+  <circle cx="216" cy="40" r="2" fill="#10b981" opacity="0.4"/>
+  <circle cx="40" cy="216" r="2" fill="#f59e0b" opacity="0.4"/>
+  
+  <!-- Document icons -->
+  <rect x="20" y="180" width="8" height="10" rx="1" fill="#64748b" opacity="0.3"/>
+  <rect x="22" y="182" width="4" height="1" rx="0.5" fill="#ffffff"/>
+  <rect x="22" y="184" width="4" height="1" rx="0.5" fill="#ffffff"/>
+  <rect x="22" y="186" width="3" height="1" rx="0.5" fill="#ffffff"/>
+</svg>

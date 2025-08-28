@@ -49,8 +49,25 @@
     --sidebar-border: 219 49% 30%;
     --sidebar-ring: 37 44% 60%;
   }
+}
 
-  .dark {
+/* Estilos personalizados para adaptação de imagens */
+.image-adaptive {
+  object-fit: cover;
+  object-position: center;
+  transition: transform 0.3s ease;
+}
+
+.image-adaptive:hover {
+  transform: scale(1.05);
+}
+
+.image-container {
+  overflow: hidden;
+  border-radius: var(--radius);
+}
+
+.dark {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
 
@@ -88,7 +105,6 @@
     --sidebar-border: 222.2 84% 14.9%;
     --sidebar-ring: 37 44% 60%;
   }
-}
 
 @layer base {
   * {
