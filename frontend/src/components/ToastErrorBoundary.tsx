@@ -1,4 +1,4 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import { Component, ErrorInfo, ReactNode } from 'react';
 
 interface Props {
   children: ReactNode;
@@ -17,7 +17,7 @@ class ToastErrorBoundary extends Component<Props, State> {
 
   static getDerivedStateFromError(error: Error): State {
     console.error('🚨 Toast Error Boundary capturou erro:', error);
-    return { hasError: true, error };
+    return { hasError: true };
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
@@ -60,7 +60,7 @@ class ToastErrorBoundary extends Component<Props, State> {
       
       // Tentar resetar o erro após um tempo
       setTimeout(() => {
-        this.setState({ hasError: false, error: undefined });
+        this.setState({ hasError: false });
       }, 2000);
       
       // Renderizar um fallback mínimo ou nada

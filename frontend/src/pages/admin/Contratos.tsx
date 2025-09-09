@@ -6,11 +6,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import AdminSidebar from "@/components/AdminSidebar";
-import { Plus, Search, FileText, Eye, Download, Trash2, Calendar, DollarSign, Mail, Loader2, Upload } from "lucide-react";
+import { Plus, Search, FileText, Eye, Download, Trash2, DollarSign, Mail, Loader2, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
-import contratoService, { Contrato } from "@/services/contratoService";
-import { imoveisService, Usuario, Imovel } from "@/services/apiService";
+import { contratoService, Contrato } from "@/services/contratoService";
+import { imoveisService, Imovel, Inquilino } from "@/services/apiService";
 
 // Tipo para o formulário, omitindo algumas propriedades, e ajustando imovel e inquilino para aceitar só os campos usados
 type FormDataType = Omit<
@@ -29,8 +29,8 @@ type FormDataType = Omit<
   indiceReajuste?: string;
   arquivoContrato?: string;
 
-  imovel: Pick<Imovel, "_id" | "grupo" | "bloco" | "apartamento">;
-  inquilino: Pick<Usuario, "_id" | "nome" | "email" | "telefone" | "cpf" | "rg" | "perfil" | "status">;
+  imovel: Pick<Imovel, "grupo" | "bloco" | "apartamento"> & { _id: string; };
+  inquilino: Pick<Inquilino, "_id" | "nome" | "email" | "telefone" | "cpf" | "rg" | "perfil" | "status">;
 };
 
 const INITIAL_FORM_DATA: FormDataType = {
@@ -42,13 +42,13 @@ const INITIAL_FORM_DATA: FormDataType = {
     telefone: "",
     cpf: "",
     rg: "",
-    perfil: "inquilino", // certo
-    status: "Ativo"
+    perfil: "inquilino" as const,
+    status: "ativo" as const
   },
   imovel: {
     _id: "",
     grupo: 0,
-    bloco: "",
+    bloco: "A" as const,
     apartamento: 0
   },
   dataInicio: "",
@@ -188,7 +188,7 @@ const AdminContratos = () => {
         // Dados do inquilino
         formDataToSend.append('inquilino[nome]', formData.inquilino.nome);
         formDataToSend.append('inquilino[email]', formData.inquilino.email);
-        formDataToSend.append('inquilino[telefone]', formData.inquilino.telefone);
+        formDataToSend.append('inquilino[telefone]', formData.inquilino.telefone || '');
         formDataToSend.append('inquilino[cpf]', formData.inquilino.cpf);
         formDataToSend.append('inquilino[rg]', formData.inquilino.rg);
         formDataToSend.append('inquilino[perfil]', formData.inquilino.perfil);
@@ -224,21 +224,21 @@ const AdminContratos = () => {
         }
       } else {
         // Sem arquivo, usar método tradicional
-        const dataToSend: Contrato = {
+        const dataToSend = {
             ...formData,
             valorAluguel: Number(formData.valorAluguel) || 0,
             valorCondominio: Number(formData.valorCondominio) || 0,
             valorIPTU: Number(formData.valorIPTU) || 0,
             diaVencimento: Number(formData.diaVencimento) || 5,
-            proximoVencimento: formData.proximoVencimento || undefined,
-            dataUltimoReajuste: formData.dataUltimoReajuste || undefined,
-            percentualReajusteAnual: Number(formData.percentualReajusteAnual) || undefined,
-            indiceReajuste: formData.indiceReajuste || undefined,
-            arquivoContrato: formData.arquivoContrato || undefined,
+            proximoVencimento: formData.proximoVencimento || "",
+            dataUltimoReajuste: formData.dataUltimoReajuste || "",
+            ...(formData.percentualReajusteAnual && { percentualReajusteAnual: Number(formData.percentualReajusteAnual) }),
+            ...(formData.indiceReajuste && { indiceReajuste: formData.indiceReajuste }),
+            ...(formData.arquivoContrato && { arquivoContrato: formData.arquivoContrato }),
             imovel: {
               _id: formData.imovel._id || "",
               grupo: Number(formData.imovel.grupo) || 0,
-              bloco: formData.imovel.bloco,
+              bloco: (formData.imovel.bloco || "A") as "A" | "B" | "C" | "D" | "E" | "F" | "G",
               apartamento: Number(formData.imovel.apartamento) || 0
             },
             inquilino: {
@@ -254,13 +254,13 @@ const AdminContratos = () => {
         };
 
         if (editingContratoId) {
-          await contratoService.update(editingContratoId, dataToSend);
+          await contratoService.update(editingContratoId, dataToSend as Partial<Contrato>);
           toast({
             title: "Contrato atualizado",
             description: "Contrato atualizado com sucesso",
           });
         } else {
-          await contratoService.create(dataToSend);
+          await contratoService.create(dataToSend as Omit<Contrato, "_id" | "dataCriacao">);
           toast({
             title: "Contrato criado",
             description: "Contrato criado com sucesso",
@@ -292,8 +292,22 @@ const AdminContratos = () => {
   const handleEdit = (contrato: Contrato) => {
     setFormData({
       numero: contrato.numero,
-      inquilino: contrato.inquilino,
-      imovel: contrato.imovel,
+      inquilino: {
+        _id: contrato.inquilino._id,
+        nome: contrato.inquilino.nome,
+        email: contrato.inquilino.email,
+        telefone: contrato.inquilino.telefone || "",
+        cpf: contrato.inquilino.cpf,
+        rg: contrato.inquilino.rg,
+        perfil: contrato.inquilino.perfil,
+        status: contrato.inquilino.status
+      },
+      imovel: {
+        _id: contrato.imovel._id,
+        grupo: contrato.imovel.grupo,
+        bloco: contrato.imovel.bloco,
+        apartamento: contrato.imovel.apartamento
+      },
       dataInicio: contrato.dataInicio.split("T")[0],
       dataFim: contrato.dataFim.split("T")[0],
       valorAluguel: contrato.valorAluguel,
@@ -624,7 +638,7 @@ const AdminContratos = () => {
                     <div className="space-y-1">
                       <Label htmlFor="indiceReajuste">Índice de Reajuste</Label>
                       <Select 
-                        value={formData.indiceReajuste} 
+                        value={formData.indiceReajuste || ""} 
                         onValueChange={(value: string) => handleChange(value, "indiceReajuste")}
                       >
                         <SelectTrigger id="indiceReajuste">

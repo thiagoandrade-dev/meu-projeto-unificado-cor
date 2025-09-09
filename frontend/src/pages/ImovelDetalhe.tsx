@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { imoveisService, Imovel } from '@/services/apiService';
+import { imoveisService, Imovel, ImageData } from '@/services/apiService';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Car, Ruler, Building, Calendar, Tag, MapPin, Phone, MessageSquare } from 'lucide-react';
@@ -13,9 +13,11 @@ import { buildImageUrls } from '@/utils/imageUtils';
 import SmartImage from '@/components/SmartImage';
 
 // Componente para a galeria de imagens
-const ImovelGaleria = ({ imagens, fotoPrincipal }: { imagens: string[]; fotoPrincipal?: number | undefined }) => {
+const ImovelGaleria = ({ imagens, fotoPrincipal }: { imagens: ImageData[]; fotoPrincipal?: number | undefined }) => {
+  // Extrair URLs das imagens (podem ser strings ou objetos)
+  const imagensUrls = imagens.map(img => typeof img === 'string' ? img : img.original || '');
   // Construir URLs completas das imagens
-  const imagensComUrls = buildImageUrls(imagens);
+  const imagensComUrls = buildImageUrls(imagensUrls);
   // Usar a foto principal se definida, senão usar a primeira imagem
   const indiceFotoPrincipal = fotoPrincipal ?? 0;
   const imagemPrincipalInicial = imagensComUrls[indiceFotoPrincipal] || imagensComUrls[0];
@@ -201,7 +203,7 @@ const ImovelDetalhe = () => {
     return <div className="flex h-screen items-center justify-center"><p>Imóvel não encontrado.</p></div>;
   }
 
-  const imagensImovel: string[] = imovel.imagens || [];
+  const imagensImovel = imovel.imagens || [];
 
   return (
     <div className="bg-gray-50">
@@ -218,7 +220,7 @@ const ImovelDetalhe = () => {
                 <MapPin size={16} className="mr-2" />
                 {imovel.andar}º andar - {imovel.configuracaoPlanta}
               </p>
-              <ImovelGaleria imagens={imagensImovel} fotoPrincipal={imovel.fotoPrincipal} />
+              <ImovelGaleria imagens={imagensImovel} fotoPrincipal={imovel.fotoPrincipal ? parseInt(imovel.fotoPrincipal) : undefined} />
             </div>
 
             {/* Coluna de Informações e Contato */}
@@ -243,7 +245,7 @@ const ImovelDetalhe = () => {
                         className="w-full mb-3 bg-green-500 hover:bg-green-600 flex items-center gap-2"
                         onClick={() => {
                             const phoneNumber = '5511956751094';
-                            const message = `Olá! Tenho interesse no imóvel: ${imovel?.endereco || 'Imóvel'} - ${imovel?.grupo || ''} ${imovel?.bloco || ''} Apto ${imovel?.apartamento || ''}. Gostaria de mais informações.`;
+                            const message = `Olá! Tenho interesse no imóvel: Grupo ${imovel?.grupo || ''} Bloco ${imovel?.bloco || ''} Apto ${imovel?.apartamento || ''}. Gostaria de mais informações.`;
                             const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
                             window.open(whatsappUrl, '_blank');
                         }}

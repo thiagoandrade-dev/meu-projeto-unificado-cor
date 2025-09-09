@@ -8,27 +8,34 @@ import ImovelCard from "@/components/ImovelCard";
 import { ArrowRight, Home as HomeIcon, FileText, Gavel, Building2 } from "lucide-react";
 import { imoveisService, Imovel as ApiImovel } from "@/services/apiService";
 
+// Tipos para as imagens da API
+type ApiImageString = string;
+type ApiImageObject = {
+  original?: string;
+  thumbnail?: string;
+  medium?: string;
+  large?: string;
+  webp?: string;
+  orientation?: "landscape" | "portrait" | "square" | "unknown";
+  dimensions?: {
+    width?: number;
+    height?: number;
+  };
+};
+type ApiImage = ApiImageString | ApiImageObject;
+
+// Type guard para verificar se é um objeto de imagem
+function isImageObject(img: ApiImage): img is ApiImageObject {
+  return typeof img === 'object' && img !== null;
+}
+
 const Index = () => {
   const [imoveisDestaque, setImoveisDestaque] = useState<ApiImovel[]>([]);
   const [loadingImoveis, setLoadingImoveis] = useState(true);
 
   // Função para converter dados da API para o formato do componente
   const convertApiToDisplay = (apiImovel: ApiImovel): ApiImovel => {
-    const getQuartosFromConfig = (config: string): number => {
-      if (config.includes('3 dorms')) return 3;
-      if (config.includes('2 dorms')) return 2;
-      return 2; // padrão
-    };
-
-    const getCaracteristicas = (imovel: ApiImovel): string[] => {
-      const caracteristicas = [];
-      if (imovel.configuracaoPlanta.includes('Despensa')) caracteristicas.push('Despensa');
-      if (imovel.configuracaoPlanta.includes('Dependência')) caracteristicas.push('Dependência de Empregada');
-      if (imovel.tipoVagaGaragem === 'Coberta') caracteristicas.push('Garagem Coberta');
-      if (imovel.numVagasGaragem && imovel.numVagasGaragem > 1) caracteristicas.push(`${imovel.numVagasGaragem} Vagas`);
-      caracteristicas.push('Sacada', 'Área de Serviço', 'Portaria 24h');
-      return caracteristicas;
-    };
+    // Funções auxiliares removidas pois não estão sendo utilizadas
 
     return {
       _id: apiImovel._id,
@@ -42,22 +49,45 @@ const Index = () => {
       tipoVagaGaragem: apiImovel.tipoVagaGaragem,
       preco: apiImovel.preco,
       statusAnuncio: apiImovel.statusAnuncio,
-      endereco: apiImovel.endereco,
-      caracteristicas: getCaracteristicas(apiImovel),
-      imagens: apiImovel.imagens ? 
-         apiImovel.imagens.map((img: string | { original?: string; thumbnail?: string; medium?: string; large?: string; webp?: string }) => {
-           // Se a imagem é um objeto com propriedades (novo formato)
-           if (typeof img === 'object' && img !== null) {
-             return img.medium || img.large || img.original || img.thumbnail || '';
-           }
-           // Se a imagem é uma string (formato antigo)
-           return img;
-         }).filter(Boolean) : [
-           "/placeholder-imovel.svg",
-           "/placeholder-apartamento.svg",
-           "/placeholder-sala.svg"
-         ],
-      descricao: `${apiImovel.configuracaoPlanta} com ${getQuartosFromConfig(apiImovel.configuracaoPlanta)} quartos e ${apiImovel.areaUtil}m² de área útil no Grupo ${apiImovel.grupo}. ${apiImovel.numVagasGaragem} vaga${apiImovel.numVagasGaragem > 1 ? 's' : ''} de garagem ${apiImovel.tipoVagaGaragem?.toLowerCase() || 'não informada'}.`,
+      // endereco e caracteristicas não estão disponíveis na interface Imovel
+      // endereco: apiImovel.endereco,
+      // caracteristicas: getCaracteristicas(apiImovel),
+      imagens: apiImovel.imagens ?
+          (apiImovel.imagens as ApiImage[]).map((img) => {
+            if (isImageObject(img)) {
+              const result: {
+                original: string;
+                thumbnail?: string;
+                medium?: string;
+                large?: string;
+                webp?: string;
+                orientation?: "landscape" | "portrait" | "square" | "unknown";
+                dimensions?: { width?: number; height?: number; };
+              } = {
+                original: img.original || img.medium || img.large || '/placeholder-image.jpg'
+              };
+              
+              if (img.thumbnail) result.thumbnail = img.thumbnail;
+              if (img.medium) result.medium = img.medium;
+              if (img.large) result.large = img.large;
+              if (img.webp) result.webp = img.webp;
+              if (img.orientation) result.orientation = img.orientation;
+              if (img.dimensions) result.dimensions = img.dimensions;
+              
+              return result;
+            } else {
+              return {
+                original: img,
+                thumbnail: img
+              };
+            }
+          }) : [
+            {
+              original: '/placeholder-image.jpg',
+              thumbnail: '/placeholder-image.jpg'
+            }
+          ],
+      // descricao: `${apiImovel.configuracaoPlanta} com ${getQuartosFromConfig(apiImovel.configuracaoPlanta)} quartos e ${apiImovel.areaUtil}m² de área útil no Grupo ${apiImovel.grupo}. ${apiImovel.numVagasGaragem} vaga${apiImovel.numVagasGaragem > 1 ? 's' : ''} de garagem ${apiImovel.tipoVagaGaragem?.toLowerCase() || 'não informada'}.`,
       destaque: apiImovel.destaque || true
     };
   };
@@ -67,11 +97,9 @@ const Index = () => {
     const loadImoveisDestaque = async () => {
       try {
         setLoadingImoveis(true);
-        const apiImoveis = await imoveisService.getAll();
-        // Pegar apenas os primeiros 3 imóveis para destaque
-        const displayImoveis = apiImoveis
-          .slice(0, 3)
-          .map(convertApiToDisplay);
+        const apiImoveis = await imoveisService.getDestaque();
+        // Usar todos os imóveis em destaque retornados pela API
+        const displayImoveis = apiImoveis.map(convertApiToDisplay);
         setImoveisDestaque(displayImoveis);
       } catch (err) {
         console.error('Erro ao carregar imóveis em destaque:', err);

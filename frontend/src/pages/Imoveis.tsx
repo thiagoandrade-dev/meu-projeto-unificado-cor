@@ -8,16 +8,30 @@ import { Button } from "@/components/ui/button";
 import { Filter, Grid3X3, LayoutList } from "lucide-react";
 import { imoveisService, Imovel, Imovel as ApiImovel } from "@/services/apiService";
 
+// Tipos para as imagens da API
+type ApiImageString = string;
+type ApiImageObject = {
+  original?: string;
+  thumbnail?: string;
+  medium?: string;
+  large?: string;
+  webp?: string;
+  orientation?: "landscape" | "portrait" | "square" | "unknown";
+  dimensions?: {
+    width?: number;
+    height?: number;
+  };
+};
+type ApiImage = ApiImageString | ApiImageObject;
+
+// Type guard para verificar se é um objeto de imagem
+function isImageObject(img: ApiImage): img is ApiImageObject {
+  return typeof img === 'object' && img !== null;
+}
+
 // Função para converter dados da API para o formato do componente
 const convertApiToDisplay = (apiImovel: ApiImovel): Imovel => {
-  // Determinar o número de quartos baseado na configuração da planta
-  const getQuartosFromConfig = (config: string): number => {
-    if (config.includes('2 dorms')) return 2;
-    if (config.includes('3 dorms')) return 3;
-    return 2; // padrão
-  };
-
-  // Gerar características baseadas na configuração
+  // Função para gerar características baseadas na configuração
   const getCaracteristicas = (imovel: ApiImovel): string[] => {
     const caracteristicas = [];
     if (imovel.configuracaoPlanta.includes('Despensa')) caracteristicas.push('Despensa');
@@ -40,21 +54,44 @@ const convertApiToDisplay = (apiImovel: ApiImovel): Imovel => {
     tipoVagaGaragem: apiImovel.tipoVagaGaragem,
     preco: apiImovel.preco,
     statusAnuncio: apiImovel.statusAnuncio,
-    endereco: apiImovel.endereco,
-    caracteristicas: getCaracteristicas(apiImovel),
-    imagens: apiImovel.imagens ? 
-      apiImovel.imagens.map((img: string | { original?: string; thumbnail?: string; medium?: string; large?: string; webp?: string }) => {
-        // Se a imagem é um objeto com propriedades (novo formato)
-        if (typeof img === 'object' && img !== null) {
-          return img.medium || img.large || img.original || img.thumbnail || '';
-        }
-        // Se a imagem é uma string (formato antigo)
-        return img;
-      }).filter(Boolean) : [
-        "/placeholder-imovel.svg",
-        "/placeholder-apartamento.svg"
-      ],
-    descricao: `${apiImovel.configuracaoPlanta} com ${apiImovel.areaUtil}m² de área útil. ${apiImovel.numVagasGaragem || 0} vaga${(apiImovel.numVagasGaragem || 0) > 1 ? 's' : ''} de garagem ${apiImovel.tipoVagaGaragem?.toLowerCase() || 'não informada'}.`,
+    // endereco: apiImovel.endereco, // Propriedade não existe na interface Imovel
+    caracteristicas: getCaracteristicas(apiImovel), // Gera características baseadas na configuração
+    imagens: apiImovel.imagens ?
+          (apiImovel.imagens as ApiImage[]).map((img) => {
+            if (isImageObject(img)) {
+              const result: {
+                original: string;
+                thumbnail?: string;
+                medium?: string;
+                large?: string;
+                webp?: string;
+                orientation?: "landscape" | "portrait" | "square" | "unknown";
+                dimensions?: { width?: number; height?: number; };
+              } = {
+                original: img.original || img.medium || img.large || '/placeholder-image.jpg'
+              };
+              
+              if (img.thumbnail) result.thumbnail = img.thumbnail;
+              if (img.medium) result.medium = img.medium;
+              if (img.large) result.large = img.large;
+              if (img.webp) result.webp = img.webp;
+              if (img.orientation) result.orientation = img.orientation;
+              if (img.dimensions) result.dimensions = img.dimensions;
+              
+              return result;
+            } else {
+              return {
+                original: img,
+                thumbnail: img
+              };
+            }
+          }) : [
+            {
+              original: '/placeholder-image.jpg',
+              thumbnail: '/placeholder-image.jpg'
+            }
+          ],
+    // descricao: `${apiImovel.configuracaoPlanta} com ${apiImovel.areaUtil}m² de área útil. ${apiImovel.numVagasGaragem || 0} vaga${(apiImovel.numVagasGaragem || 0) > 1 ? 's' : ''} de garagem ${apiImovel.tipoVagaGaragem?.toLowerCase() || 'não informada'}.`,
     destaque: apiImovel.destaque || Math.random() > 0.7
   };
 };
@@ -86,27 +123,19 @@ const Imoveis = () => {
             bloco: "A",
             andar: 10,
             apartamento: 101,
-            configuracaoPlanta: "2Q",
+            configuracaoPlanta: "Padrão (2 dorms)",
             areaUtil: 82,
             numVagasGaragem: 1,
             tipoVagaGaragem: "Coberta",
             preco: 320000,
             statusAnuncio: "Disponível para Venda",
-            endereco: {
-              rua: "Rua das Flores",
-              numero: "123",
-              complemento: "Bloco A, Apt 101",
-              bairro: "Residencial Firenze",
-              cidade: "São Paulo",
-              estado: "SP",
-              cep: "01234-567"
-            },
+            // endereco removido pois não existe na interface Imovel
             caracteristicas: ["Garagem Coberta", "Sacada", "Área de Serviço"],
             imagens: [
-              "/placeholder-imovel.svg",
-              "/placeholder-apartamento.svg"
+              { original: "/placeholder-imovel.svg" },
+              { original: "/placeholder-apartamento.svg" }
             ],
-            descricao: "Apartamento padrão com 2 dormitórios e 82m² de área útil. 1 vaga de garagem coberta.",
+            // descricao removida pois não existe na interface Imovel
             destaque: true
           }
         ]);

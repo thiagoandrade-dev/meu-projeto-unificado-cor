@@ -13,8 +13,8 @@ import { Plus, Search, Download, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 // ✅ CORREÇÃO: Importação corrigida para usar chaves e trazer todos os tipos necessários.
-import { juridicoService, DocumentoJuridico, ProcessoJuridico, NotificacaoJuridica } from "@/services/juridicoService";
-import axios, { AxiosError } from "axios"; // Adicionado para correção
+import { juridicoService, DocumentoJuridico, ProcessoJuridico } from "@/services/juridicoService";
+import axios from "axios"; // Adicionado para correção
 
 // Tipos explícitos para os valores dos selects, removendo o uso de 'any'
 type TipoDocumento = "Contrato" | "Adendo" | "Notificação" | "Procuração" | "Distrato" | "Vistoria" | "Outros";
@@ -361,40 +361,7 @@ const AdminJuridico = () => {
     link.click();
   };
 
-  const enviarNotificacao = async (tipo: string, email: string) => {
-    try {
-      // ✅ CORREÇÃO: Chamada correta da função `send` e montagem do objeto.
-      const notificacaoData: NotificacaoJuridica = {
-        tipo,
-        destinatario: email,
-        assunto: `Notificação Jurídica sobre ${tipo}`,
-        corpo: `Este é um aviso sobre o documento/processo ${tipo}.`,
-        remetente: 'doc@imobiliariafirenze.com.br',
-        timestamp: new Date().toISOString()
-      };
-      await juridicoService.notificacoes.send(notificacaoData);
-      
-      toast({
-        title: "Notificação enviada",
-        description: `Email enviado para ${email}`,
-      });
-    } catch (error: unknown) { // Tipagem corrigida para unknown
-      if (axios.isAxiosError(error)) { 
-        toast({
-          title: "Erro ao enviar notificação",
-          description: error.message || "Não foi possível enviar a notificação",
-          variant: "destructive",
-        });
-      } else { 
-        console.error("Erro inesperado ao enviar notificação:", error);
-        toast({
-          title: "Erro inesperado",
-          description: "Ocorreu um erro inesperado ao enviar a notificação.",
-          variant: "destructive",
-        });
-      }
-    }
-  };
+
 
   const getPrioridadeColor = (prioridade: string) => {
     switch (prioridade) {

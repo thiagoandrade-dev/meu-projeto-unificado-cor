@@ -1,9 +1,9 @@
-import { api, handleApiError, Usuario, Imovel } from "./apiService";
+import { api, handleApiError, Inquilino, Imovel } from "./apiService";
 
 export interface Contrato {
   _id?: string;
   numero: string;
-  inquilino: Usuario & { cpf: string; rg: string };
+  inquilino: Inquilino & { cpf: string; rg: string };
   imovel: Pick<Imovel, "grupo" | "bloco" | "apartamento"> & { _id: string };
   dataInicio: string;
   dataFim: string;

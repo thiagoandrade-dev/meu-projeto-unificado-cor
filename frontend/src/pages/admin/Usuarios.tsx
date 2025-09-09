@@ -53,35 +53,12 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { api } from "@/services/apiService";
+import { api, Inquilino } from "@/services/apiService";
 import { userService } from "@/services/userService";
 import axios from "axios";
 import { exportToCsv } from "@/utils/csvUtils";
 
-// Definição do tipo de usuário
-interface Usuario {
-  id: string;
-  nome: string;
-  email: string;
-  telefone: string;
-  perfil: 'admin' | 'inquilino' | 'proprietario' | 'corretor';
-  status: 'ativo' | 'inativo' | 'pendente';
-  dataCadastro: string;
-  ultimoAcesso?: string;
-  // Campos específicos para inquilinos
-  cpf?: string;
-  rg?: string;
-  dataNascimento?: string;
-  endereco?: {
-    rua: string;
-    numero: string;
-    complemento?: string;
-    bairro: string;
-    cidade: string;
-    estado: string;
-    cep: string;
-  };
-}
+// Usando a interface Inquilino do apiService para consistência com o backend
 
 // Componente principal
 const Usuarios = () => {
@@ -89,21 +66,21 @@ const Usuarios = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
-  const [filteredUsuarios, setFilteredUsuarios] = useState<Usuario[]>([]);
+  const [usuarios, setUsuarios] = useState<Inquilino[]>([]);
+  const [filteredUsuarios, setFilteredUsuarios] = useState<Inquilino[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [perfilFilter, setPerfilFilter] = useState<string>("todos");
   const [statusFilter, setStatusFilter] = useState<string>("todos");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [usuarioToDelete, setUsuarioToDelete] = useState<Usuario | null>(null);
+  const [usuarioToDelete, setUsuarioToDelete] = useState<Inquilino | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [usuarioToEdit, setUsuarioToEdit] = useState<Usuario | null>(null);
+  const [usuarioToEdit, setUsuarioToEdit] = useState<Inquilino | null>(null);
   const [formData, setFormData] = useState({
     nome: "",
     email: "",
     telefone: "",
-    perfil: "" as Usuario['perfil'] | "", // Tipagem mais específica
-    status: "" as Usuario['status'] | "", // Tipagem mais específica
+    perfil: "" as Inquilino['perfil'] | "", // Tipagem mais específica
+    status: "" as Inquilino['status'] | "", // Tipagem mais específica
     cpf: "",
     rg: "",
     dataNascimento: "",
@@ -172,7 +149,7 @@ const Usuarios = () => {
         usuario =>
           usuario.nome.toLowerCase().includes(term) ||
           usuario.email.toLowerCase().includes(term) ||
-          usuario.telefone.includes(term)
+          (usuario.telefone || "").includes(term)
       );
     }
     
@@ -210,7 +187,7 @@ const Usuarios = () => {
   };
 
   // Abrir diálogo de exclusão
-  const handleDeleteClick = (usuario: Usuario) => {
+  const handleDeleteClick = (usuario: Inquilino) => {
     console.log('🗑️ Abrindo diálogo de exclusão para:', usuario.nome);
     setUsuarioToDelete(usuario);
     setDeleteDialogOpen(true);
@@ -221,8 +198,8 @@ const Usuarios = () => {
     if (!usuarioToDelete) return;
     
     try {
-      await api.delete(`/usuarios/${usuarioToDelete.id}`);
-      setUsuarios(usuarios.filter(u => u.id !== usuarioToDelete.id));
+      await api.delete(`/usuarios/${usuarioToDelete._id}`);
+      setUsuarios(usuarios.filter(u => u._id !== usuarioToDelete._id));
       toast({
         title: "Usuário excluído",
         description: `O usuário ${usuarioToDelete.nome} foi excluído com sucesso`,
@@ -258,13 +235,13 @@ const Usuarios = () => {
   };
 
   // Abrir diálogo de edição
-  const handleEditClick = (usuario: Usuario) => {
+  const handleEditClick = (usuario: Inquilino) => {
     console.log('✏️ Abrindo diálogo de edição para:', usuario.nome);
     setUsuarioToEdit(usuario);
     setFormData({
       nome: usuario.nome,
       email: usuario.email,
-      telefone: usuario.telefone,
+      telefone: usuario.telefone || "",
       perfil: usuario.perfil,
       status: usuario.status,
       cpf: usuario.cpf || "",
@@ -305,9 +282,9 @@ const Usuarios = () => {
   // Atualizar campo select do formulário
   const handleSelectChange = (name: string, value: string) => {
     if (name === "perfil") {
-        setFormData(prev => ({ ...prev, [name]: value as Usuario['perfil'] }));
+        setFormData(prev => ({ ...prev, [name]: value as Inquilino['perfil'] }));
     } else if (name === "status") {
-        setFormData(prev => ({ ...prev, [name]: value as Usuario['status'] }));
+        setFormData(prev => ({ ...prev, [name]: value as Inquilino['status'] }));
     } else {
         // Isso não deve acontecer com os campos que estamos tratando.
         // Se houver outros selects, eles precisariam de tratamento específico.
@@ -321,11 +298,11 @@ const Usuarios = () => {
     if (!usuarioToEdit) return;
     
     try {
-      await api.put(`/usuarios/${usuarioToEdit.id}`, formData);
+      await api.put(`/usuarios/${usuarioToEdit._id}`, formData);
       
       // Atualizar a lista de usuários, garantindo a tipagem correta
       setUsuarios(usuarios.map(u => 
-        u.id === usuarioToEdit.id 
+        u._id === usuarioToEdit._id 
           ? { 
               ...u, 
               nome: formData.nome,
@@ -333,7 +310,7 @@ const Usuarios = () => {
               telefone: formData.telefone,
               perfil: formData.perfil, 
               status: formData.status 
-            } as Usuario // Casting final para garantir que o objeto resultante é um Usuario válido
+            } as Inquilino // Casting final para garantir que o objeto resultante é um Inquilino válido
           : u
       ));
       
@@ -365,9 +342,9 @@ const Usuarios = () => {
   };
 
   // Solicitar reset de senha
-  const handleResetPassword = async (usuario: Usuario) => {
+  const handleResetPassword = async (usuario: Inquilino) => {
     try {
-      await userService.requestUserPasswordReset(usuario.id);
+      await userService.requestUserPasswordReset(usuario._id);
       toast({
         title: "Reset de senha solicitado",
         description: `Um e-mail com instruções para redefinir a senha foi enviado para ${usuario.email}`,
@@ -401,7 +378,7 @@ const Usuarios = () => {
       usuario.telefone || '',
       usuario.perfil,
       usuario.status,
-      new Date(usuario.dataCadastro).toLocaleDateString('pt-BR'),
+      usuario.dataCadastro ? new Date(usuario.dataCadastro).toLocaleDateString('pt-BR') : 'N/A',
       usuario.ultimoAcesso ? new Date(usuario.ultimoAcesso).toLocaleDateString('pt-BR') : 'N/A'
     ]);
     
@@ -588,7 +565,7 @@ const Usuarios = () => {
                       </TableRow>
                     ) : (
                       filteredUsuarios.map((usuario, index) => (
-                        <TableRow key={usuario.id || `usuario-${index}`}>
+                        <TableRow key={usuario._id || `usuario-${index}`}>
                           <TableCell className="font-medium">{usuario.nome}</TableCell>
                           <TableCell>{usuario.email}</TableCell>
                           <TableCell>{usuario.telefone}</TableCell>
@@ -631,7 +608,7 @@ const Usuarios = () => {
                             </div>
                           </TableCell>
                           <TableCell>
-                            {new Date(usuario.dataCadastro).toLocaleDateString('pt-BR')}
+                            {usuario.dataCadastro ? new Date(usuario.dataCadastro).toLocaleDateString('pt-BR') : 'N/A'}
                           </TableCell>
                           <TableCell>
                             {usuario.ultimoAcesso

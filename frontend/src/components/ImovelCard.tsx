@@ -31,7 +31,7 @@ const ImovelCard = ({ imovel, featured = false }: ImovelCardProps) => {
         {/* Imagem */}
         <div className={`relative ${featured ? 'lg:w-2/5' : ''} overflow-hidden`}>
           <SmartImage
-            src={buildImageUrl(imovel.imagens?.[imovel.fotoPrincipal || 0] || imovel.imagens?.[0] || '')}
+            src={buildImageUrl(imovel.imagens?.[0]?.original || '')}
             alt={`${imovel.configuracaoPlanta} - Grupo ${imovel.grupo}, Bloco ${imovel.bloco}`}
             aspectRatio={featured ? 'landscape' : 'square'}
             className="transition-transform duration-500 group-hover:scale-105"
@@ -77,7 +77,7 @@ const ImovelCard = ({ imovel, featured = false }: ImovelCardProps) => {
           <div className="flex items-center text-muted text-sm mb-3">
             <MapPin size={16} className="mr-1" />
             <span className="line-clamp-1">
-              {imovel.endereco?.bairro || 'Bairro não informado'}, {imovel.endereco?.cidade || 'Cidade não informada'}
+              Grupo {imovel.grupo}, Bloco {imovel.bloco}
             </span>
           </div>
           
@@ -93,7 +93,7 @@ const ImovelCard = ({ imovel, featured = false }: ImovelCardProps) => {
             <div className="flex items-center">
               <Bed size={16} className="mr-1 text-primary" />
               <span>
-                {imovel.configuracaoPlanta.includes('2 dorms') ? '2' : '3'} quartos
+                {imovel.configuracaoPlanta.includes('2 dorms') ? '2' : imovel.configuracaoPlanta.includes('Padrão') ? '2' : '3'} quartos
               </span>
             </div>
             {imovel.numVagasGaragem && (
@@ -104,23 +104,23 @@ const ImovelCard = ({ imovel, featured = false }: ImovelCardProps) => {
             )}
           </div>
           
-          {featured && imovel.descricao && (
-            <p className="mt-3 text-muted line-clamp-2">{imovel.descricao}</p>
+          {featured && (
+            <p className="mt-3 text-muted line-clamp-2">
+              {imovel.configuracaoPlanta} - {imovel.areaUtil}m² úteis
+            </p>
           )}
           
-          {imovel.caracteristicas && imovel.caracteristicas.length > 0 && (
+          {featured && (
             <div className="mt-3 flex flex-wrap gap-1">
-              {imovel.caracteristicas.slice(0, 3).map((caracteristica, index) => (
-                <span 
-                  key={index} 
-                  className="text-xs bg-muted text-muted-foreground px-2 py-1 rounded"
-                >
-                  {caracteristica}
-                </span>
-              ))}
-              {imovel.caracteristicas.length > 3 && (
-                <span className="text-xs text-muted">+{imovel.caracteristicas.length - 3} mais</span>
-              )}
+              <span className="text-xs bg-muted text-muted-foreground px-2 py-1 rounded">
+                {imovel.numVagasGaragem} vaga{imovel.numVagasGaragem !== 1 ? 's' : ''}
+              </span>
+              <span className="text-xs bg-muted text-muted-foreground px-2 py-1 rounded">
+                Andar {imovel.andar}
+              </span>
+              <span className="text-xs bg-muted text-muted-foreground px-2 py-1 rounded">
+                Apto {imovel.apartamento}
+              </span>
             </div>
           )}
         </div>

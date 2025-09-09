@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 
-interface LogEntry {
-  message: string;
-  type: 'info' | 'success' | 'error';
-  timestamp: string;
-}
+// interface LogEntry {
+//   message: string;
+//   type: 'info' | 'success' | 'error';
+//   timestamp: string;
+// } // Interface não utilizada
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 

@@ -96,7 +96,7 @@ class AsaasService {
   }
 
   // Busca contratos (mock, pois não há endpoint real)
-  async getContratos(clienteId: string): Promise<Contrato[]> {
+  async getContratos(_clienteId: string): Promise<Contrato[]> {
     try {
       return [
         {

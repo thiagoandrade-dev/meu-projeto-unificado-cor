@@ -23,7 +23,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { api } from "@/services/apiService";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import axios, { AxiosError } from "axios"; // Adicionado para correção
+import axios from "axios"; // Adicionado para correção
 
 const NovoUsuario = () => {
   const { toast } = useToast();

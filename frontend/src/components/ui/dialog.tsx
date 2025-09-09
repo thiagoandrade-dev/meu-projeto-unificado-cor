@@ -65,6 +65,7 @@ const DialogOverlay = React.forwardRef<
         console.log('🔍 DialogOverlay desmontado');
       };
     }
+    return undefined;
   }, []);
   
   return (

@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const TestDashboard = () => {
-  const [logs, setLogs] = useState<Array<{message: string, type: string, time: string}>>([]);
+  const [logs, setLogs] = useState<Array<{message: string, type: 'info' | 'success' | 'error', time: string}>>([]);
 
   const addLog = (message: string, type: 'info' | 'success' | 'error' = 'info') => {
     const newLog = {

@@ -1,7 +1,6 @@
 // Local: frontend/src/services/juridicoService.ts
 
 import { api, handleApiError } from './apiService'; // CORREÇÃO: Importando corretamente
-import axios from 'axios';
 import { CasoJuridicoAPI, CasoJuridicoInput, ApiResponse } from '@/types/juridico';
 
 // --- SUAS INTERFACES ORIGINAIS (MANTIDAS E COMPLETADAS) ---
@@ -65,21 +64,24 @@ export const juridicoService = {
         const { data } = await api.get<ApiResponse<CasoJuridicoAPI[]>>('/juridico');
         // O backend retorna casos jurídicos, vamos adaptar para a interface esperada
         if (data.success && data.data) {
-          return data.data.map((caso: CasoJuridicoAPI) => ({
-            _id: caso._id,
-            titulo: caso.titulo || 'Caso Jurídico',
-            tipo: caso.tipoAcao || 'Outros',
-            descricao: caso.descricao || '',
-            autor: caso.advogadoResponsavel || 'Sistema',
-            contratoRelacionado: caso.contratoId,
-            imovelRelacionado: caso.imovelId,
-            status: caso.status || 'Ativo',
-            tags: caso.tags || [],
-            observacoes: caso.observacoes || '',
-            dataCriacao: caso.createdAt || new Date().toISOString(),
-            createdAt: caso.createdAt,
-            updatedAt: caso.updatedAt
-          }));
+          return data.data.map((caso: CasoJuridicoAPI): DocumentoJuridico => {
+            const documento: DocumentoJuridico = {
+              _id: caso._id,
+              titulo: caso.titulo || 'Caso Jurídico',
+              tipo: caso.tipoAcao || 'Outros',
+              descricao: caso.descricao || '',
+              autor: caso.advogadoResponsavel || 'Sistema',
+              status: caso.status || 'Ativo',
+              tags: caso.tags || [],
+              dataCriacao: caso.createdAt || new Date().toISOString()
+            };
+            if (caso.contratoId) documento.contratoRelacionado = caso.contratoId;
+            if (caso.imovelId) documento.imovelRelacionado = caso.imovelId;
+            if (caso.observacoes) documento.observacoes = caso.observacoes;
+            if (caso.createdAt) documento.createdAt = caso.createdAt;
+            if (caso.updatedAt) documento.updatedAt = caso.updatedAt;
+            return documento;
+          });
         }
         return [];
       } catch (error) { throw handleApiError(error, 'listar casos jurídicos'); }
@@ -145,22 +147,25 @@ export const juridicoService = {
         const { data } = await api.get<ApiResponse<CasoJuridicoAPI[]>>('/juridico');
         // O backend retorna casos jurídicos, vamos adaptar para a interface de processos
         if (data.success && data.data) {
-          return data.data.map((caso: CasoJuridicoAPI) => ({
-            _id: caso._id,
-            numero: caso.numeroProcesso || `PROC-${caso._id?.slice(-6)}`,
-            tipo: (caso.tipoAcao as ProcessoTipo) || 'Outros',
-            contratoId: caso.contratoId || '',
-            status: (caso.status as ProcessoStatus) || 'Aberto',
-            prioridade: (caso.prioridade as ProcessoPrioridade) || 'Média',
-            descricao: caso.descricao || '',
-            advogadoResponsavel: caso.advogadoResponsavel || 'Sistema',
-            dataAbertura: caso.createdAt || new Date().toISOString(),
-            dataPrazo: caso.dataPrazo,
-            documentos: caso.documentos || [],
-            observacoes: caso.observacoes || '',
-            valor: caso.valor || 0,
-            partesEnvolvidas: caso.partesEnvolvidas || 'Não informado'
-          }));
+          return data.data.map((caso: CasoJuridicoAPI): ProcessoJuridico => {
+            const processo: ProcessoJuridico = {
+              _id: caso._id,
+              numero: caso.numeroProcesso || `PROC-${caso._id?.slice(-6)}`,
+              tipo: (caso.tipoAcao as ProcessoTipo) || 'Outros',
+              contratoId: caso.contratoId || '',
+              status: (caso.status as ProcessoStatus) || 'Aberto',
+              prioridade: (caso.prioridade as ProcessoPrioridade) || 'Média',
+              descricao: caso.descricao || '',
+              advogadoResponsavel: caso.advogadoResponsavel || 'Sistema',
+              dataAbertura: caso.createdAt || new Date().toISOString(),
+              partesEnvolvidas: caso.partesEnvolvidas || 'Não informado'
+            };
+            if (caso.dataPrazo) processo.dataPrazo = caso.dataPrazo;
+            if (caso.documentos) processo.documentos = caso.documentos;
+            if (caso.observacoes) processo.observacoes = caso.observacoes;
+            if (caso.valor !== undefined) processo.valor = caso.valor;
+            return processo;
+          });
         }
         return [];
       } catch (error) { throw handleApiError(error, 'listar processos jurídicos'); }

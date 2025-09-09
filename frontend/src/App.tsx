@@ -8,7 +8,8 @@ import {
   Navigate,
 } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
-import { AuthContext, User } from "@/contexts/AuthContext"; // <-- IMPORTAÇÃO ATUALIZADA
+import { AuthContext } from "@/contexts/AuthContext"; // <-- IMPORTAÇÃO ATUALIZADA
+import { Inquilino } from "@/services/apiService";
 
 
 
@@ -55,7 +56,7 @@ const ProtectedRoute = ({ children, requiredRole }: { children: JSX.Element, req
 };
 
 function App() {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<Inquilino | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Função para limpar overlays de diálogo invisíveis
@@ -194,10 +195,11 @@ function App() {
       try {
         const parsedUser = JSON.parse(storedUser);
         setUser({
-            id: parsedUser.id || parsedUser._id,
+            _id: parsedUser.id || parsedUser._id, // Compatibilidade com ambos os formatos
             nome: parsedUser.nome,
             email: parsedUser.email,
-            perfil: parsedUser.perfil
+            perfil: parsedUser.perfil,
+            status: parsedUser.status || 'ativo' // Valor padrão se não existir
         });
       } catch (error) {
         console.error("Erro ao ler dados do usuário do localStorage", error);

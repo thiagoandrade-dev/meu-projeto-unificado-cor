@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Navbar from "@/components/Navbar";
-import Logo from "@/components/Logo";
+// import Logo from "@/components/Logo"; // Não utilizado
 import Footer from "@/components/Footer";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff, LogIn, UserPlus } from "lucide-react";
@@ -57,10 +57,11 @@ const Login = () => {
       localStorage.setItem("user", JSON.stringify(usuario));
       
       setUser({
-        id: String(usuario.id || usuario._id), 
+        _id: usuario.id || '', // Backend retorna 'id' que é mapeado de _id
         nome: usuario.nome,
         email: usuario.email,
-        perfil: usuario.perfil 
+        perfil: usuario.perfil,
+        status: 'ativo' // Valor padrão, pois não vem na resposta do login
       });
       
       toast({

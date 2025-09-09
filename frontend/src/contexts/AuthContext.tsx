@@ -1,19 +1,12 @@
 // Local: frontend/src/contexts/AuthContext.tsx
 
 import { createContext } from 'react';
-
-// Tipagem para o usuário que será usado no contexto
-export interface User {
-  id: string;
-  nome: string;
-  email: string;
-  perfil: "admin" | "inquilino";
-}
+import { Inquilino } from '@/services/apiService';
 
 // Tipagem para a estrutura do nosso contexto de autenticação
 export interface AuthContextType {
-  user: User | null;
-  setUser: React.Dispatch<React.SetStateAction<User | null>>;
+  user: Inquilino | null;
+  setUser: React.Dispatch<React.SetStateAction<Inquilino | null>>;
   loading: boolean;
 }
 

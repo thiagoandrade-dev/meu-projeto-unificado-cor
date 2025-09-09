@@ -6,7 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Home,
   FileText,
-  Users,
   BarChart3,
   DollarSign,
   Bell,
@@ -23,7 +22,7 @@ import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, R
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import dashboardService, { DashboardCompleto } from "@/services/dashboardService";
+import { default as dashboardService, DashboardCompleto } from "@/services/dashboardService";
 
 const Dashboard = () => {
   const { toast } = useToast();
@@ -451,10 +450,6 @@ const Dashboard = () => {
                 <div className="mt-6">
                   <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
                     {dashboardData.graficos.receitaPorCategoria.map((item, index) => {
-                      // Calcular a posição inicial para cada segmento
-                      const previousPercentages = dashboardData.graficos.receitaPorCategoria
-                        .slice(0, index)
-                        .reduce((sum, i) => sum + i.percentual, 0);
                       
                       return (
                         <div

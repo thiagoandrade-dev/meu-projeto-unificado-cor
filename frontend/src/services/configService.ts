@@ -1,5 +1,5 @@
 import { api } from './apiService';
-import { ApiError, getErrorMessage, isApiError } from '@/types/api';
+import { getErrorMessage } from '@/types/api';
 
 export interface EmailConfig {
   smtpHost: string;

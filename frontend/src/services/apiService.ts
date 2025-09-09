@@ -2,6 +2,20 @@
 
 import axios, { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 
+// Tipo para dados de imagem
+export interface ImageData {
+  original: string;
+  thumbnail?: string;
+  medium?: string;
+  large?: string;
+  webp?: string;
+  orientation?: "landscape" | "portrait" | "square" | "unknown";
+  dimensions?: {
+    width?: number;
+    height?: number;
+  };
+}
+
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 export const api = axios.create({
@@ -41,17 +55,61 @@ api.interceptors.response.use(
 
 export interface Imovel {
   _id: string;
-  grupo: number;
-  bloco: string;
-  andar: number;
-  apartamento: number;
-  configuracaoPlanta: "1Q" | "2Q" | "3Q" | "4Q" | "Cobertura" | "Studio";
-  areaUtil: number;
-  numVagasGaragem: number;
-  tipoVagaGaragem: "Coberta" | "Descoberta";
-  preco: number;
-  statusAnuncio: "Disponível para Venda" | "Disponível para Locação";
-  endereco: {
+  grupo: number; // obrigatório
+  bloco: "A" | "B" | "C" | "D" | "E" | "F" | "G"; // obrigatório
+  andar: number; // obrigatório
+  apartamento: number; // obrigatório
+  configuracaoPlanta: "Padrão (2 dorms)" | "2 dorms + Despensa" | "2 dorms + Dependência" | "Padrão (3 dorms)" | "3 dorms + Dependência"; // obrigatório
+  areaUtil: number; // obrigatório
+  numVagasGaragem: number; // obrigatório
+  tipoVagaGaragem: "Coberta" | "Descoberta"; // obrigatório
+  preco: number; // obrigatório
+  statusAnuncio: "Disponível para Venda" | "Disponível para Locação" | "Locado Ativo" | "Vendido" | "Reservado" | "Indisponível" | "Em Reforma"; // obrigatório
+  imagens?: ImageData[];
+  fotoPrincipal?: string;
+  caracteristicas?: string[];
+  dataStatusAtual?: string;
+  observacoesStatus?: string;
+  contratoId?: string;
+  destaque?: boolean;
+  historico?: {
+    tipo: "venda" | "reversao_venda" | "locacao_iniciada" | "locacao_finalizada" | "reforma" | "manutencao" | "status_alterado";
+    data: string;
+    comprador?: {
+      nome?: string;
+      cpf?: string;
+      email?: string;
+      telefone?: string;
+    };
+    valorVenda?: number;
+    documentosEntregues?: string[];
+    motivo?: string;
+    observacoes?: string;
+    statusAnterior?: string;
+    novoStatus?: string;
+    dataRegistro?: string;
+    usuarioResponsavel?: string;
+  }[];
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+/**
+ * Interface UNIFICADA e COMPLETA para Inquilino.
+ * Contém todos os campos necessários para login, registro e gerenciamento.
+ */
+export interface Inquilino {
+  _id: string;
+  email: string; // obrigatório
+  senha?: string; // opcional no frontend (não retornada nas consultas)
+  nome: string; // obrigatório
+  perfil: "admin" | "inquilino" | "proprietario" | "corretor"; // obrigatório
+  status: "ativo" | "inativo" | "pendente"; // obrigatório
+  telefone?: string;
+  cpf?: string;
+  rg?: string;
+  dataNascimento?: string;
+  endereco?: {
     rua?: string;
     numero?: string;
     complemento?: string;
@@ -60,34 +118,26 @@ export interface Imovel {
     estado?: string;
     cep?: string;
   };
-  caracteristicas?: string[];
-  imagens?: string[];
-  fotoPrincipal?: number;
-  descricao?: string;
-  destaque?: boolean;
+  dadosBancarios?: {
+    banco?: string;
+    agencia?: string;
+    conta?: string;
+    tipoConta?: "Corrente" | "Poupança";
+  };
+  imovelId?: string;
+  asaasCustomerId?: string;
+  resetPasswordToken?: string;
+  resetPasswordExpires?: string;
+  dataCadastro?: string;
+  ultimoAcesso?: string;
   createdAt?: string;
   updatedAt?: string;
-}
-
-/**
- * Interface UNIFICADA e COMPLETA para Usuário.
- * Contém todos os campos necessários para login, registro e gerenciamento.
- */
-export interface Usuario {
-  _id: string;
-  nome: string;
-  email: string;
-  telefone: string;
-  perfil: "inquilino" | "admin";
-  status: "Ativo" | "Inativo";
-  cpf: string;  
-  rg: string;   
 }
 
 
 export interface AuthResponse {
   token: string;
-  usuario: Usuario;
+  usuario: Inquilino;
 }
 
 // --- FUNÇÃO AUXILIAR DE TRATAMENTO DE ERRO ---
@@ -110,6 +160,14 @@ export const imoveisService = {
       return response.data;
     } catch (error) { 
       throw handleApiError(error, 'listar imóveis'); 
+    }
+  },
+  getDestaque: async (): Promise<Imovel[]> => {
+    try {
+      const response = await api.get<Imovel[]>('/imoveis/destaque');
+      return response.data;
+    } catch (error) { 
+      throw handleApiError(error, 'listar imóveis em destaque'); 
     }
   },
   getById: async (id: string): Promise<Imovel> => {
@@ -147,9 +205,9 @@ export const authService = {
       return { token, usuario };
     } catch (error) { throw handleApiError(error, 'fazer login'); }
   },
-  register: async (userData: Omit<Usuario, '_id' | 'dataRegistro' | 'status'> & { senha?: string }): Promise<Usuario> => {
+  register: async (userData: Omit<Inquilino, '_id' | 'dataCadastro' | 'status'> & { senha?: string }): Promise<Inquilino> => {
     try {
-      const response = await api.post<Usuario>('/auth/register', userData);
+        const response = await api.post<Inquilino>('/auth/register', userData);
       return response.data;
     } catch (error) { throw handleApiError(error, 'registrar novo usuário'); }
   },
@@ -164,21 +222,21 @@ export const authService = {
  * NOVO SERVIÇO DEDICADO PARA GERENCIAMENTO DE USUÁRIOS (CRUD)
  */
 export const usuariosService = {
-  getAll: async (): Promise<Usuario[]> => {
+  getAll: async (): Promise<Inquilino[]> => {
     try {
-      const response = await api.get<Usuario[]>('/usuarios');
+        const response = await api.get<Inquilino[]>('/usuarios');
       return response.data;
     } catch(error) { throw handleApiError(error, 'listar usuários'); }
   },
-  create: async (userData: Omit<Usuario, '_id' | 'dataRegistro'> & { senha?: string }): Promise<Usuario> => {
+  create: async (userData: Omit<Inquilino, '_id' | 'dataCadastro'> & { senha?: string }): Promise<Inquilino> => {
     try {
-      const response = await api.post<Usuario>('/usuarios', userData);
+        const response = await api.post<Inquilino>('/usuarios', userData);
       return response.data;
     } catch(error) { throw handleApiError(error, 'criar usuário'); }
   },
-  update: async (id: string, userData: Partial<Omit<Usuario, '_id'>>): Promise<Usuario> => {
+  update: async (id: string, userData: Partial<Omit<Inquilino, '_id'>>): Promise<Inquilino> => {
     try {
-      const response = await api.put<Usuario>(`/usuarios/${id}`, userData);
+        const response = await api.put<Inquilino>(`/usuarios/${id}`, userData);
       return response.data;
     } catch(error) { throw handleApiError(error, `atualizar usuário ${id}`); }
   },
@@ -187,9 +245,9 @@ export const usuariosService = {
       await api.delete(`/usuarios/${id}`);
     } catch (error) { throw handleApiError(error, `deletar usuário ${id}`); }
   },
-  updateStatus: async (id: string, status: 'Ativo' | 'Inativo'): Promise<Usuario> => {
+  updateStatus: async (id: string, status: 'ativo' | 'inativo'): Promise<Inquilino> => {
     try {
-      const response = await api.patch<Usuario>(`/usuarios/${id}/status`, { status });
+        const response = await api.patch<Inquilino>(`/usuarios/${id}/status`, { status });
       return response.data;
     } catch (error) { throw handleApiError(error, `atualizar status do usuário ${id}`); }
   }

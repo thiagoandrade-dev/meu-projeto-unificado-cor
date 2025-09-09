@@ -99,11 +99,14 @@ const Relatorios = () => {
     
     setLoading(true);
     try {
-      const request = {
+      const request: { periodo: string; dataInicio?: string; dataFim?: string } = {
         periodo: selectedPeriod,
-        dataInicio: selectedPeriod === "custom" ? dateRange.from : undefined,
-        dataFim: selectedPeriod === "custom" ? dateRange.to : undefined,
       };
+      
+      if (selectedPeriod === "custom") {
+        if (dateRange.from) request.dataInicio = dateRange.from;
+        if (dateRange.to) request.dataFim = dateRange.to;
+      }
 
       const relatorio = await relatorioService.gerarRelatorio(selectedType, request);
       setRelatorioGerado(relatorio);
