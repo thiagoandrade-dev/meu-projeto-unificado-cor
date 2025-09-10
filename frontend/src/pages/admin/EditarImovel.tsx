@@ -29,7 +29,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { buildImageUrl } from "@/utils/imageUtils";
-import { api } from "@/services/apiService";
+import { api, imoveisService } from "@/services/apiService";
 
 const EditarImovel = () => {
   const { id } = useParams<{ id: string }>();
@@ -275,11 +275,8 @@ const EditarImovel = () => {
         }
       }
       
-      await api.put(`/imoveis/${id}`, imovelData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      // Enviar requisição usando o serviço com timeout maior
+      await imoveisService.update(id!, imovelData);
       
       toast({
         title: "Sucesso",

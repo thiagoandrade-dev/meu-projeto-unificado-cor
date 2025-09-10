@@ -24,7 +24,15 @@ export const api = axios.create({
   timeout: 5000, // Reduzido de 10s para 5s para melhor responsividade
 });
 
+// Instância específica para uploads com timeout maior
+export const apiUpload = axios.create({
+  baseURL: API_URL,
+  headers: { 'Content-Type': 'multipart/form-data' },
+  timeout: 60000, // 60 segundos para uploads de imagens
+});
+
 // --- INTERCEPTORS ---
+// Interceptors para api padrão
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const token = localStorage.getItem('token');
@@ -38,6 +46,33 @@ api.interceptors.request.use(
 );
 
 api.interceptors.response.use(
+  (response: AxiosResponse) => response,
+  (error: AxiosError) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login?session_expired=true';
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
+// Interceptors para apiUpload
+apiUpload.interceptors.request.use(
+  (config: InternalAxiosRequestConfig) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers = config.headers ?? {};
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error: AxiosError) => Promise.reject(error)
+);
+
+apiUpload.interceptors.response.use(
   (response: AxiosResponse) => response,
   (error: AxiosError) => {
     if (error.response?.status === 401) {
@@ -176,15 +211,15 @@ export const imoveisService = {
       return response.data;
     } catch (error) { throw handleApiError(error, `buscar o imóvel ${id}`); }
   },
-  create: async (imovelData: Omit<Imovel, '_id'>): Promise<Imovel> => {
+  create: async (imovelData: FormData): Promise<Imovel> => {
     try {
-      const response = await api.post<Imovel>('/imoveis', imovelData);
+      const response = await apiUpload.post<Imovel>('/imoveis', imovelData);
       return response.data;
     } catch (error) { throw handleApiError(error, 'criar imóvel'); }
   },
-  update: async (id: string, imovelData: Partial<Omit<Imovel, '_id'>>): Promise<Imovel> => {
+  update: async (id: string, imovelData: FormData): Promise<Imovel> => {
     try {
-      const response = await api.put<Imovel>(`/imoveis/${id}`, imovelData);
+      const response = await apiUpload.put<Imovel>(`/imoveis/${id}`, imovelData);
       return response.data;
     } catch (error) { throw handleApiError(error, `atualizar o imóvel ${id}`); }
   },

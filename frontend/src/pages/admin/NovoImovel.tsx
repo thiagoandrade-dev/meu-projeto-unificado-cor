@@ -26,7 +26,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { api } from "@/services/apiService";
+import { api, imoveisService } from "@/services/apiService";
 import axios from "axios";
 
 // Definindo tipos literais para o formulário baseados no modelo backend
@@ -355,12 +355,8 @@ const [imagensPreview, setImagensPreview] = useState<string[]>([]);
       imovelData.append('fotoPrincipal', fotoPrincipalIndex.toString());
     }
       
-      // Enviar requisição
-      await api.post('/imoveis', imovelData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
+      // Enviar requisição usando o serviço com timeout maior
+      await imoveisService.create(imovelData);
       
       toast({
         title: "Imóvel criado com sucesso",
