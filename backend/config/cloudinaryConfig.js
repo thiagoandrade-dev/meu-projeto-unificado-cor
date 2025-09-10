@@ -1,5 +1,4 @@
 const cloudinary = require('cloudinary').v2;
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const multer = require('multer');
 
 // Configuração do Cloudinary
@@ -9,25 +8,10 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// Configuração do storage para multer
-const storage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: {
-    folder: 'imoveis', // Pasta no Cloudinary onde as imagens serão armazenadas
-    allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
-    transformation: [
-      {
-        width: 1200,
-        height: 800,
-        crop: 'limit',
-        quality: 'auto:good',
-        format: 'webp'
-      }
-    ]
-  },
-});
+// Configuração do multer para upload em memória
+const storage = multer.memoryStorage();
 
-// Configuração do multer com Cloudinary
+// Configuração do multer
 const upload = multer({ 
   storage: storage,
   limits: {
@@ -42,8 +26,40 @@ const upload = multer({
   }
 });
 
+// Função para fazer upload para o Cloudinary
+const uploadToCloudinary = (buffer, options = {}) => {
+  return new Promise((resolve, reject) => {
+    const uploadOptions = {
+      folder: 'imoveis',
+      resource_type: 'auto',
+      format: 'webp',
+      quality: 'auto:good',
+      transformation: [
+        {
+          width: 1200,
+          height: 800,
+          crop: 'limit'
+        }
+      ],
+      ...options
+    };
+
+    cloudinary.uploader.upload_stream(
+      uploadOptions,
+      (error, result) => {
+        if (error) {
+          reject(error);
+        } else {
+          resolve(result);
+        }
+      }
+    ).end(buffer);
+  });
+};
+
 module.exports = {
   cloudinary,
   upload,
-  storage
+  storage,
+  uploadToCloudinary
 };

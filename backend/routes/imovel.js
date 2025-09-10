@@ -4,7 +4,7 @@ const { body, validationResult } = require("express-validator");
 const Imovel = require("../models/Imovel");
 const imovelController = require('../controllers/imovelController');
 const imageProcessor = require('../utils/imageProcessor');
-const { upload: uploadCloudinary } = require('../config/cloudinaryConfig');
+const { upload: uploadCloudinary, uploadToCloudinary } = require('../config/cloudinaryConfig');
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
@@ -173,9 +173,12 @@ router.post("/", uploadImovel.array("imagens", 10), imovelValidationRules(), val
       
       for (const file of req.files) {
         try {
-          // Com Cloudinary, as imagens já estão processadas e otimizadas
-          // file.path contém a URL do Cloudinary
-          const cloudinaryUrl = file.path;
+          // Upload da imagem para o Cloudinary usando buffer
+          const uploadResult = await uploadToCloudinary(file.buffer, {
+            public_id: `imovel_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+          });
+          
+          const cloudinaryUrl = uploadResult.secure_url;
           
           // Gerar diferentes tamanhos usando transformações do Cloudinary
           const baseUrl = cloudinaryUrl.split('/upload/')[0] + '/upload/';
@@ -189,21 +192,17 @@ router.post("/", uploadImovel.array("imagens", 10), imovelValidationRules(), val
             webp: `${baseUrl}q_auto,f_webp/${imagePath}`,
             orientation: 'landscape', // Cloudinary já otimiza a orientação
             dimensions: {
-              width: file.width || 1200,
-              height: file.height || 800
+              width: uploadResult.width || 1200,
+              height: uploadResult.height || 800
             },
-            cloudinary_public_id: file.public_id
+            cloudinary_public_id: uploadResult.public_id
           });
           
           console.log(`Imagem processada no Cloudinary: ${file.originalname} - ${cloudinaryUrl}`);
         } catch (processError) {
           console.error(`Erro ao processar imagem ${file.originalname}:`, processError);
-          // Em caso de erro, usar a URL original do Cloudinary
-          imagensProcessadas.push({
-            original: file.path,
-            orientation: 'unknown',
-            cloudinary_public_id: file.public_id
-          });
+          // Em caso de erro, pular esta imagem
+          continue;
         }
       }
       
@@ -394,8 +393,12 @@ router.put("/:id", uploadImovel.array("imagens", 10), imovelValidationRules(), v
       
       for (const file of req.files) {
         try {
-          // Com Cloudinary, as imagens já estão processadas e otimizadas
-          const cloudinaryUrl = file.path;
+          // Upload da imagem para o Cloudinary usando buffer
+          const uploadResult = await uploadToCloudinary(file.buffer, {
+            public_id: `imovel_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+          });
+          
+          const cloudinaryUrl = uploadResult.secure_url;
           
           // Gerar diferentes tamanhos usando transformações do Cloudinary
           const baseUrl = cloudinaryUrl.split('/upload/')[0] + '/upload/';
@@ -409,20 +412,17 @@ router.put("/:id", uploadImovel.array("imagens", 10), imovelValidationRules(), v
             webp: `${baseUrl}q_auto,f_webp/${imagePath}`,
             orientation: 'landscape',
             dimensions: {
-              width: file.width || 1200,
-              height: file.height || 800
+              width: uploadResult.width || 1200,
+              height: uploadResult.height || 800
             },
-            cloudinary_public_id: file.public_id
+            cloudinary_public_id: uploadResult.public_id
           });
           
           console.log(`Imagem atualizada no Cloudinary: ${file.originalname} - ${cloudinaryUrl}`);
         } catch (processError) {
           console.error(`Erro ao processar imagem ${file.originalname}:`, processError);
-          imagensProcessadas.push({
-            original: file.path,
-            orientation: 'unknown',
-            cloudinary_public_id: file.public_id
-          });
+          // Em caso de erro, pular esta imagem
+          continue;
         }
       }
       
