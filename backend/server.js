@@ -41,10 +41,11 @@ app.use(
       directives: {
         ...helmet.contentSecurityPolicy.getDefaultDirectives(),
         "script-src": ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
-        "img-src": ["'self'", "data:", "http://localhost:5000"],
+        "img-src": ["'self'", "data:", "http://localhost:5000", "http://localhost:8081", "https://imobiliaria-firenze-backend.onrender.com", "https://meu-projeto-unificado-cor.vercel.app", "https://*.vercel.app"],
       },
     },
-    crossOriginResourcePolicy: { policy: "cross-origin" }
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    crossOriginEmbedderPolicy: false
   })
 );
 

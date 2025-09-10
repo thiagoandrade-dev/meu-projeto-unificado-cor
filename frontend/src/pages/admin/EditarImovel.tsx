@@ -28,6 +28,7 @@ import {
 
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { buildImageUrl } from "@/utils/imageUtils";
 import { api } from "@/services/apiService";
 
 const EditarImovel = () => {
@@ -665,7 +666,7 @@ const EditarImovel = () => {
                           fotoPrincipalIndex === index ? 'border-primary ring-2 ring-primary/20' : 'border-border hover:border-primary/50'
                         }`}>
                           <img
-                            src={`http://localhost:5000/uploads/imoveis/${imagem}`}
+                            src={buildImageUrl(imagem)}
                             alt={`Imagem ${index + 1}`}
                             className="w-full h-32 object-cover"
                             onClick={() => setFotoPrincipalIndex(index)}

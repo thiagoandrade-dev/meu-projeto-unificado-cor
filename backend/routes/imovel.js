@@ -4,11 +4,16 @@ const { body, validationResult } = require("express-validator");
 const Imovel = require("../models/Imovel");
 const imovelController = require('../controllers/imovelController');
 const imageProcessor = require('../utils/imageProcessor');
+const { upload: uploadCloudinary } = require('../config/cloudinaryConfig');
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 
-// Configuração do Multer para upload de imagens de imóveis
+// Usando configuração do Cloudinary
+const uploadImovel = uploadCloudinary;
+
+// Manter configuração local como backup (comentada)
+/*
 const imovelStorage = multer.diskStorage({
   destination: function (req, file, cb) {
     const uploadPath = "uploads/imoveis/"; // Relativo à raiz do backend
@@ -23,7 +28,7 @@ const imovelStorage = multer.diskStorage({
   }
 });
 
-const uploadImovel = multer({
+const uploadImovelLocal = multer({
   storage: imovelStorage,
   limits: { fileSize: 5 * 1024 * 1024 }, // Limite de 5MB por arquivo
   fileFilter: function (req, file, cb) {
@@ -56,6 +61,7 @@ const uploadImovel = multer({
     cb(new Error(`Erro: Apenas arquivos de imagem são permitidos. Formatos aceitos: JPEG, JPG, JFIF, PNG, GIF, WEBP. Arquivo enviado: ${file.originalname} (${file.mimetype})`));
   }
 });
+*/
 
 // Array de validações para criação e atualização de imóveis
 const imovelValidationRules = () => {
@@ -129,6 +135,7 @@ const imovelValidationRules = () => {
       "Indisponível", 
       "Em Reforma"
     ]).withMessage("STATUS_ANUNCIO inválido."),
+    body("destaque").optional().isBoolean().withMessage("DESTAQUE deve ser um valor booleano (true/false)."),
   ];
 };
 
@@ -159,38 +166,43 @@ router.post("/", uploadImovel.array("imagens", 10), imovelValidationRules(), val
     const dadosImovel = { ...req.body };
     
     if (req.files && req.files.length > 0) {
-      console.log(`Processando ${req.files.length} imagens para o imóvel...`);
+      console.log(`Processando ${req.files.length} imagens para o imóvel via Cloudinary...`);
       
-      // Processar cada imagem carregada
+      // Processar cada imagem carregada no Cloudinary
       const imagensProcessadas = [];
       
       for (const file of req.files) {
         try {
-          // Processar a imagem original
-          const resultadoProcessamento = await imageProcessor.processImage(file.path, {
-            sizes: ['thumbnail', 'medium', 'large'],
-            generateWebP: true,
-            quality: 85
-          });
+          // Com Cloudinary, as imagens já estão processadas e otimizadas
+          // file.path contém a URL do Cloudinary
+          const cloudinaryUrl = file.path;
           
-          // Adicionar informações da imagem processada
+          // Gerar diferentes tamanhos usando transformações do Cloudinary
+          const baseUrl = cloudinaryUrl.split('/upload/')[0] + '/upload/';
+          const imagePath = cloudinaryUrl.split('/upload/')[1];
+          
           imagensProcessadas.push({
-            original: file.path.replace(/\\/g, "/"),
-            thumbnail: resultadoProcessamento.thumbnail?.replace(/\\/g, "/"),
-            medium: resultadoProcessamento.medium?.replace(/\\/g, "/"),
-            large: resultadoProcessamento.large?.replace(/\\/g, "/"),
-            webp: resultadoProcessamento.webp?.replace(/\\/g, "/"),
-            orientation: resultadoProcessamento.orientation,
-            dimensions: resultadoProcessamento.dimensions
+            original: cloudinaryUrl,
+            thumbnail: `${baseUrl}c_fill,w_300,h_200,q_auto,f_webp/${imagePath}`,
+            medium: `${baseUrl}c_fill,w_600,h_400,q_auto,f_webp/${imagePath}`,
+            large: `${baseUrl}c_fill,w_1200,h_800,q_auto,f_webp/${imagePath}`,
+            webp: `${baseUrl}q_auto,f_webp/${imagePath}`,
+            orientation: 'landscape', // Cloudinary já otimiza a orientação
+            dimensions: {
+              width: file.width || 1200,
+              height: file.height || 800
+            },
+            cloudinary_public_id: file.public_id
           });
           
-          console.log(`Imagem processada: ${file.originalname} (${resultadoProcessamento.orientation})`);
+          console.log(`Imagem processada no Cloudinary: ${file.originalname} - ${cloudinaryUrl}`);
         } catch (processError) {
           console.error(`Erro ao processar imagem ${file.originalname}:`, processError);
-          // Em caso de erro no processamento, manter a imagem original
+          // Em caso de erro, usar a URL original do Cloudinary
           imagensProcessadas.push({
-            original: file.path.replace(/\\/g, "/"),
-            orientation: 'unknown'
+            original: file.path,
+            orientation: 'unknown',
+            cloudinary_public_id: file.public_id
           });
         }
       }
@@ -212,6 +224,17 @@ router.post("/", uploadImovel.array("imagens", 10), imovelValidationRules(), val
     console.error("Erro ao criar imóvel:", err);
     if (err.name === "ValidationError") return res.status(400).json({ erro: "Erro de validação: " + err.message, detalhes: err.errors });
     res.status(500).json({ erro: "Erro interno ao criar imóvel: " + err.message });
+  }
+});
+
+// Rota GET para buscar imóveis em destaque (deve vir antes da rota /:id)
+router.get("/destaque", async (req, res) => {
+  try {
+    const imoveisDestaque = await Imovel.find({ destaque: true }).limit(3);
+    res.json(imoveisDestaque);
+  } catch (err) {
+    console.error("Erro ao buscar imóveis em destaque:", err);
+    res.status(500).json({ erro: "Erro ao buscar imóveis em destaque: " + err.message });
   }
 });
 
@@ -364,18 +387,50 @@ router.put("/:id", uploadImovel.array("imagens", 10), imovelValidationRules(), v
   try {
     const dadosAtualizacao = { ...req.body };
     if (req.files && req.files.length > 0) {
-      // Aqui você pode decidir se quer adicionar às imagens existentes ou substituí-las.
-      // Este exemplo adiciona as novas e mantém as antigas se `req.body.imagens` já existir e for um array.
-      // Para substituir, você buscaria o imóvel, removeria as imagens antigas do sistema de arquivos e atualizaria o array.
-      const novasImagens = req.files.map(file => file.path.replace(/\\/g, "/"));
-      // Se quiser substituir completamente as imagens antigas:
-      // dadosAtualizacao.imagens = novasImagens;
-      // Se quiser adicionar às existentes (precisaria carregar o imóvel primeiro para pegar as imagens antigas ou esperar que o frontend envie as antigas que devem ser mantidas):
-      // Por simplicidade, vamos substituir por enquanto. O frontend precisaria reenviar as imagens que devem ser mantidas.
-      dadosAtualizacao.imagens = novasImagens;
+      console.log(`Atualizando ${req.files.length} imagens para o imóvel via Cloudinary...`);
+      
+      // Processar cada imagem carregada no Cloudinary
+      const imagensProcessadas = [];
+      
+      for (const file of req.files) {
+        try {
+          // Com Cloudinary, as imagens já estão processadas e otimizadas
+          const cloudinaryUrl = file.path;
+          
+          // Gerar diferentes tamanhos usando transformações do Cloudinary
+          const baseUrl = cloudinaryUrl.split('/upload/')[0] + '/upload/';
+          const imagePath = cloudinaryUrl.split('/upload/')[1];
+          
+          imagensProcessadas.push({
+            original: cloudinaryUrl,
+            thumbnail: `${baseUrl}c_fill,w_300,h_200,q_auto,f_webp/${imagePath}`,
+            medium: `${baseUrl}c_fill,w_600,h_400,q_auto,f_webp/${imagePath}`,
+            large: `${baseUrl}c_fill,w_1200,h_800,q_auto,f_webp/${imagePath}`,
+            webp: `${baseUrl}q_auto,f_webp/${imagePath}`,
+            orientation: 'landscape',
+            dimensions: {
+              width: file.width || 1200,
+              height: file.height || 800
+            },
+            cloudinary_public_id: file.public_id
+          });
+          
+          console.log(`Imagem atualizada no Cloudinary: ${file.originalname} - ${cloudinaryUrl}`);
+        } catch (processError) {
+          console.error(`Erro ao processar imagem ${file.originalname}:`, processError);
+          imagensProcessadas.push({
+            original: file.path,
+            orientation: 'unknown',
+            cloudinary_public_id: file.public_id
+          });
+        }
+      }
+      
+      dadosAtualizacao.imagens = imagensProcessadas;
+      
       // Se fotoPrincipal não foi definida, usar a primeira imagem como padrão
-      if (!dadosAtualizacao.fotoPrincipal && dadosAtualizacao.imagens.length > 0) {
-        dadosAtualizacao.fotoPrincipal = dadosAtualizacao.imagens[0];
+      if (!dadosAtualizacao.fotoPrincipal && imagensProcessadas.length > 0) {
+        dadosAtualizacao.fotoPrincipal = imagensProcessadas[0].large || imagensProcessadas[0].original;
       }
     } else if (dadosAtualizacao.imagens === undefined) {
         // Se o campo imagens não for enviado, não alteramos as imagens existentes.

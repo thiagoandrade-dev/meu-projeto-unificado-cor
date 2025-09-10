@@ -1,6 +1,6 @@
 // Utilitário para construir URLs de imagens
 
-// Obter a URL base da API (sem o /api no final)
+// Obter a URL base da API (sem o /api no final) - mantido para compatibilidade
 const getBaseURL = (): string => {
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
   // Remove /api do final se existir
@@ -9,7 +9,7 @@ const getBaseURL = (): string => {
 
 /**
  * Constrói a URL completa para uma imagem
- * @param imagePath - Caminho da imagem armazenado no banco (ex: 'uploads/imoveis/imagem.jpg')
+ * @param imagePath - URL da imagem (pode ser Cloudinary ou caminho local)
  * @returns URL completa da imagem
  */
 export const buildImageUrl = (imagePath: string | undefined): string => {
@@ -17,7 +17,7 @@ export const buildImageUrl = (imagePath: string | undefined): string => {
     return '/placeholder-imovel.svg';
   }
   
-  // Se já é uma URL completa, retorna como está
+  // Se já é uma URL completa (Cloudinary ou outra), retorna como está
   if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
     return imagePath;
   }
@@ -27,6 +27,7 @@ export const buildImageUrl = (imagePath: string | undefined): string => {
     return imagePath;
   }
   
+  // Para compatibilidade com imagens antigas (uploads locais)
   const baseUrl = getBaseURL();
   
   // Remove barra inicial se existir para evitar duplicação

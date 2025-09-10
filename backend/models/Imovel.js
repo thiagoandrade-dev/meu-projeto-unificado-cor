@@ -117,6 +117,10 @@ const ImovelSchema = new mongoose.Schema({
     ref: 'Contrato',
     default: null // Referência ao contrato ativo (se houver)
   },
+  destaque: {
+    type: Boolean,
+    default: false // Define se o imóvel deve aparecer em destaque na página inicial
+  },
   historico: {
     type: [{
       tipo: {
