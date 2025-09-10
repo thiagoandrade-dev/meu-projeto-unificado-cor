@@ -24,11 +24,11 @@ export const api = axios.create({
   timeout: 5000, // Reduzido de 10s para 5s para melhor responsividade
 });
 
-// Instância específica para uploads com timeout maior - v2.0
+// Instância específica para uploads com timeout maior - v3.0
 export const apiUpload = axios.create({
   baseURL: API_URL,
   headers: { 'Content-Type': 'multipart/form-data' },
-  timeout: 60000, // 60 segundos para uploads de imagens (múltiplas fotos)
+  timeout: 120000, // 120 segundos para uploads de múltiplas imagens
 });
 
 // --- INTERCEPTORS ---
