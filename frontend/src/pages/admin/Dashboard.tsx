@@ -1,6 +1,6 @@
 // frontend/src/pages/admin/Dashboard.tsx
 import { useState, useEffect, useCallback } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import AdminSidebar from "@/components/AdminSidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -16,7 +16,8 @@ import {
   TrendingDown,
   Calendar,
   Mail,
-  RefreshCw
+  RefreshCw,
+  ArrowLeft
 } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import { Button } from "@/components/ui/button";
@@ -26,24 +27,43 @@ import { default as dashboardService, DashboardCompleto } from "@/services/dashb
 
 const Dashboard = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [dashboardData, setDashboardData] = useState<DashboardCompleto | null>(null);
+  const [authError, setAuthError] = useState(false);
 
   // Função para carregar os dados do dashboard, com useCallback para evitar warning do ESLint
   const carregarDadosDashboard = useCallback(async () => {
     try {
       setLoading(true);
+      setAuthError(false);
       const data = await dashboardService.getDashboardCompleto();
       setDashboardData(data);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Erro ao carregar dados do dashboard:", error);
-      toast({
-        title: "Erro ao carregar dados",
-        description: "Não foi possível carregar os dados do dashboard",
-        variant: "destructive",
-      });
+      
+      // Verificar se é erro de autenticação
+       const isAxiosError = error && typeof error === 'object' && 'response' in error;
+       const errorMessage = error && typeof error === 'object' && 'message' in error ? (error as Error).message : '';
+       
+       const errorStatus = isAxiosError && error && typeof error === 'object' && 'response' in error && error.response && typeof error.response === 'object' && 'status' in error.response ? (error.response as { status: number }).status : null;
+       
+       if ((errorStatus === 401) || errorMessage.includes('401')) {
+        setAuthError(true);
+        toast({
+          title: "Sessão expirada",
+          description: "Sua sessão expirou. Faça login novamente.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Erro ao carregar dados",
+          description: "Não foi possível carregar os dados do dashboard",
+          variant: "destructive",
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -124,9 +144,25 @@ const Dashboard = () => {
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
           <AlertTriangle size={48} className="text-danger mx-auto mb-4" />
-          <h2 className="text-xl font-semibold mb-2">Erro ao carregar dados</h2>
-          <p className="text-muted mb-4">Não foi possível carregar os dados do dashboard</p>
-          <Button onClick={carregarDadosDashboard}>Tentar novamente</Button>
+          <h2 className="text-xl font-semibold mb-2">
+            {authError ? "Sessão expirada" : "Erro ao carregar dados"}
+          </h2>
+          <p className="text-muted mb-4">
+            {authError 
+              ? "Sua sessão expirou. Faça login novamente para continuar." 
+              : "Não foi possível carregar os dados do dashboard"
+            }
+          </p>
+          <div className="flex gap-2 justify-center">
+            {authError ? (
+              <Button onClick={() => navigate('/login')} className="flex items-center gap-2">
+                <ArrowLeft size={16} />
+                Voltar ao Login
+              </Button>
+            ) : (
+              <Button onClick={carregarDadosDashboard}>Tentar novamente</Button>
+            )}
+          </div>
         </div>
       </div>
     );

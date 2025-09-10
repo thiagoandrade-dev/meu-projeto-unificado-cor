@@ -9,8 +9,8 @@ interface ImageData {
   webp?: string;
   orientation?: 'landscape' | 'portrait' | 'square' | 'unknown';
   dimensions?: {
-    width: number;
-    height: number;
+    width?: number;
+    height?: number;
   };
 }
 

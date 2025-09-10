@@ -9,31 +9,39 @@ import { Car, Ruler, Building, Calendar, Tag, MapPin, Phone, MessageSquare } fro
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { AxiosError } from 'axios';
-import { buildImageUrls } from '@/utils/imageUtils';
+
 import SmartImage from '@/components/SmartImage';
 
 // Componente para a galeria de imagens
 const ImovelGaleria = ({ imagens, fotoPrincipal }: { imagens: ImageData[]; fotoPrincipal?: number | undefined }) => {
-  // Extrair URLs das imagens (podem ser strings ou objetos)
-  const imagensUrls = imagens.map(img => typeof img === 'string' ? img : img.original || '');
-  // Construir URLs completas das imagens
-  const imagensComUrls = buildImageUrls(imagensUrls);
   // Usar a foto principal se definida, senão usar a primeira imagem
   const indiceFotoPrincipal = fotoPrincipal ?? 0;
-  const imagemPrincipalInicial = imagensComUrls[indiceFotoPrincipal] || imagensComUrls[0];
+  const imagemPrincipalInicial = (imagens && imagens.length > 0) ? (imagens[indiceFotoPrincipal] || imagens[0]) : null;
   const [imagemPrincipal, setImagemPrincipal] = useState(imagemPrincipalInicial);
+
+  // Verificar se há imagens válidas
+  if (!imagens || imagens.length === 0) {
+    return (
+      <div className="h-96 rounded-lg mb-4 bg-gray-200 flex items-center justify-center">
+        <p className="text-gray-500">Nenhuma imagem disponível</p>
+      </div>
+    );
+  }
 
   return (
     <div>
-      <SmartImage
-        src={imagemPrincipal}
-        alt="Foto principal do imóvel"
-        aspectRatio="landscape"
-        containerClassName="h-96 rounded-lg mb-4"
-        className="rounded-lg"
-      />
+      {imagemPrincipal && (
+        <SmartImage
+          src={imagemPrincipal}
+          alt="Foto principal do imóvel"
+          aspectRatio="landscape"
+          containerClassName="h-96 rounded-lg mb-4"
+          className="rounded-lg"
+          size="large"
+        />
+      )}
       <div className="grid grid-cols-5 gap-2">
-        {imagensComUrls.slice(0, 5).map((imagem, index) => (
+        {imagens.slice(0, 5).map((imagem, index) => (
           <div
             key={index}
             className={`cursor-pointer transition-transform duration-200 hover:scale-105 ${imagem === imagemPrincipal ? 'ring-2 ring-imobiliaria-azul rounded-md' : ''}`}
@@ -45,6 +53,7 @@ const ImovelGaleria = ({ imagens, fotoPrincipal }: { imagens: ImageData[]; fotoP
               aspectRatio="square"
               containerClassName="h-24 rounded-md"
               className="rounded-md"
+              size="thumbnail"
             />
           </div>
         ))}

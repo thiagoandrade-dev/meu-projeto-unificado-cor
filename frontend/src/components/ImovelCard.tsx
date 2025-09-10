@@ -4,7 +4,6 @@ import { Home, MapPin, Ruler, Bed, Bath, Heart } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
 import { Imovel } from "@/services/apiService";
-import { buildImageUrl } from "@/utils/imageUtils";
 import SmartImage from "@/components/SmartImage";
 
 interface ImovelCardProps {
@@ -31,11 +30,12 @@ const ImovelCard = ({ imovel, featured = false }: ImovelCardProps) => {
         {/* Imagem */}
         <div className={`relative ${featured ? 'lg:w-2/5' : ''} overflow-hidden`}>
           <SmartImage
-            src={buildImageUrl(imovel.imagens?.[0]?.original || '')}
+            src={imovel.imagens?.[0] || '/placeholder-imovel.svg'}
             alt={`${imovel.configuracaoPlanta} - Grupo ${imovel.grupo}, Bloco ${imovel.bloco}`}
             aspectRatio={featured ? 'landscape' : 'square'}
             className="transition-transform duration-500 group-hover:scale-105"
             containerClassName={featured ? '' : 'h-48'}
+            size="medium"
           />
           <Badge 
             className={`absolute top-3 left-3 ${
