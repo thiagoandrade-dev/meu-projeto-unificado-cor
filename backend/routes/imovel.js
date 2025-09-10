@@ -168,10 +168,8 @@ router.post("/", uploadImovel.array("imagens", 10), imovelValidationRules(), val
     if (req.files && req.files.length > 0) {
       console.log(`Processando ${req.files.length} imagens para o imóvel via Cloudinary...`);
       
-      // Processar cada imagem carregada no Cloudinary
-      const imagensProcessadas = [];
-      
-      for (const file of req.files) {
+      // Processar imagens em paralelo para melhor performance
+      const imagensPromises = req.files.map(async (file) => {
         try {
           // Upload da imagem para o Cloudinary usando buffer
           const uploadResult = await uploadToCloudinary(file.buffer, {
@@ -184,7 +182,9 @@ router.post("/", uploadImovel.array("imagens", 10), imovelValidationRules(), val
           const baseUrl = cloudinaryUrl.split('/upload/')[0] + '/upload/';
           const imagePath = cloudinaryUrl.split('/upload/')[1];
           
-          imagensProcessadas.push({
+          console.log(`Imagem processada no Cloudinary: ${file.originalname} - ${cloudinaryUrl}`);
+          
+          return {
             original: cloudinaryUrl,
             thumbnail: `${baseUrl}c_fill,w_300,h_200,q_auto,f_webp/${imagePath}`,
             medium: `${baseUrl}c_fill,w_600,h_400,q_auto,f_webp/${imagePath}`,
@@ -196,15 +196,16 @@ router.post("/", uploadImovel.array("imagens", 10), imovelValidationRules(), val
               height: uploadResult.height || 800
             },
             cloudinary_public_id: uploadResult.public_id
-          });
-          
-          console.log(`Imagem processada no Cloudinary: ${file.originalname} - ${cloudinaryUrl}`);
+          };
         } catch (processError) {
           console.error(`Erro ao processar imagem ${file.originalname}:`, processError);
-          // Em caso de erro, pular esta imagem
-          continue;
+          return null; // Retorna null para imagens com erro
         }
-      }
+      });
+      
+      // Aguardar todas as imagens serem processadas em paralelo
+      const resultados = await Promise.all(imagensPromises);
+      const imagensProcessadas = resultados.filter(img => img !== null); // Remove imagens com erro
       
       dadosImovel.imagens = imagensProcessadas;
       
@@ -388,10 +389,8 @@ router.put("/:id", uploadImovel.array("imagens", 10), imovelValidationRules(), v
     if (req.files && req.files.length > 0) {
       console.log(`Atualizando ${req.files.length} imagens para o imóvel via Cloudinary...`);
       
-      // Processar cada imagem carregada no Cloudinary
-      const imagensProcessadas = [];
-      
-      for (const file of req.files) {
+      // Processar imagens em paralelo para melhor performance
+      const imagensPromises = req.files.map(async (file) => {
         try {
           // Upload da imagem para o Cloudinary usando buffer
           const uploadResult = await uploadToCloudinary(file.buffer, {
@@ -404,7 +403,9 @@ router.put("/:id", uploadImovel.array("imagens", 10), imovelValidationRules(), v
           const baseUrl = cloudinaryUrl.split('/upload/')[0] + '/upload/';
           const imagePath = cloudinaryUrl.split('/upload/')[1];
           
-          imagensProcessadas.push({
+          console.log(`Imagem atualizada no Cloudinary: ${file.originalname} - ${cloudinaryUrl}`);
+          
+          return {
             original: cloudinaryUrl,
             thumbnail: `${baseUrl}c_fill,w_300,h_200,q_auto,f_webp/${imagePath}`,
             medium: `${baseUrl}c_fill,w_600,h_400,q_auto,f_webp/${imagePath}`,
@@ -416,15 +417,16 @@ router.put("/:id", uploadImovel.array("imagens", 10), imovelValidationRules(), v
               height: uploadResult.height || 800
             },
             cloudinary_public_id: uploadResult.public_id
-          });
-          
-          console.log(`Imagem atualizada no Cloudinary: ${file.originalname} - ${cloudinaryUrl}`);
+          };
         } catch (processError) {
           console.error(`Erro ao processar imagem ${file.originalname}:`, processError);
-          // Em caso de erro, pular esta imagem
-          continue;
+          return null; // Retorna null para imagens com erro
         }
-      }
+      });
+      
+      // Aguardar todas as imagens serem processadas em paralelo
+      const resultados = await Promise.all(imagensPromises);
+      const imagensProcessadas = resultados.filter(img => img !== null); // Remove imagens com erro
       
       dadosAtualizacao.imagens = imagensProcessadas;
       
