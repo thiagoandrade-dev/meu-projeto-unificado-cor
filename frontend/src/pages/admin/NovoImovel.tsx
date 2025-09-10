@@ -1,4 +1,5 @@
 // frontend/src/pages/admin/NovoImovel.tsx
+// Cache bust: v1.1
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AdminSidebar from "@/components/AdminSidebar";
