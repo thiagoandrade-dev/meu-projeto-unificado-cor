@@ -26,7 +26,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { api, imoveisService } from "@/services/apiService";
+import { imoveisService } from "@/services/apiService";
 import axios from "axios";
 
 // Definindo tipos literais para o formulário baseados no modelo backend
