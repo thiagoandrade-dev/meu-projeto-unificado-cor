@@ -1,34 +1,16 @@
 const express = require('express');
 const router = express.Router();
 const Juridico = require('../models/Juridico');
-const auth = require('./auth');
-const multer = require('multer');
+const verificarToken = require('../middlewares/verificarToken');
+const Multer = require('multer');
 const path = require('path');
-const fs = require('fs');
+const { cloudinary } = require('../config/cloudinaryConfig');
+const uploadMemory = Multer({ storage: Multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
-// Configuração de upload para documentos jurídicos
-const storage = multer.diskStorage({
-  destination: function(req, file, cb) {
-    const dir = './uploads/juridico';
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    cb(null, dir);
-  },
-  filename: function(req, file, cb) {
-    cb(null, `doc-${Date.now()}${path.extname(file.originalname)}`);
-  }
-});
-
-const upload = multer({ 
-  storage,
-  limits: {
-    fileSize: 10 * 1024 * 1024 // 10MB
-  }
-});
+// Descontinuado armazenamento local; usar memória + Cloudinary
 
 // Listar todos os casos jurídicos
-router.get('/', auth, async (req, res) => {
+router.get('/', verificarToken, async (req, res) => {
   try {
     const casos = await Juridico.find()
       .populate('imovelId', 'grupo bloco andar apartamento')
@@ -44,7 +26,7 @@ router.get('/', auth, async (req, res) => {
 });
 
 // Obter caso jurídico por ID
-router.get('/:id', auth, async (req, res) => {
+router.get('/:id', verificarToken, async (req, res) => {
   try {
     const caso = await Juridico.findById(req.params.id)
       .populate('imovelId', 'grupo bloco andar apartamento')
@@ -63,7 +45,7 @@ router.get('/:id', auth, async (req, res) => {
 });
 
 // Criar novo caso jurídico
-router.post('/', auth, async (req, res) => {
+router.post('/', verificarToken, async (req, res) => {
   try {
     const novoCaso = new Juridico(req.body);
     await novoCaso.save();
@@ -76,7 +58,7 @@ router.post('/', auth, async (req, res) => {
 });
 
 // Atualizar caso jurídico
-router.put('/:id', auth, async (req, res) => {
+router.put('/:id', verificarToken, async (req, res) => {
   try {
     const caso = await Juridico.findByIdAndUpdate(
       req.params.id, 
@@ -96,7 +78,7 @@ router.put('/:id', auth, async (req, res) => {
 });
 
 // Excluir caso jurídico
-router.delete('/:id', auth, async (req, res) => {
+router.delete('/:id', verificarToken, async (req, res) => {
   try {
     const caso = await Juridico.findByIdAndDelete(req.params.id);
     
@@ -122,7 +104,7 @@ router.delete('/:id', auth, async (req, res) => {
 });
 
 // Upload de documentos para um caso jurídico
-router.post('/:id/documentos', auth, upload.array('documentos', 5), async (req, res) => {
+router.post('/:id/documentos', verificarToken, uploadMemory.array('documentos', 5), async (req, res) => {
   try {
     const caso = await Juridico.findById(req.params.id);
     
@@ -130,11 +112,20 @@ router.post('/:id/documentos', auth, upload.array('documentos', 5), async (req, 
       return res.status(404).json({ success: false, message: 'Caso jurídico não encontrado' });
     }
     
-    const novosDocs = req.files.map(file => ({
-      nome: file.originalname,
-      caminho: file.path,
-      dataUpload: new Date()
-    }));
+    const novosDocs = [];
+    for (const file of (req.files || [])) {
+      const timestamp = Date.now();
+      const originalName = (file.originalname || 'documento').replace(/[^a-zA-Z0-9.-]/g, '_');
+      const publicId = `juridico/${req.params.id}/${timestamp}_${originalName}`;
+      const uploadRes = await new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream({ resource_type: 'raw', public_id: publicId }, (err, result) => {
+          if (err) return reject(err);
+          resolve(result);
+        });
+        stream.end(file.buffer);
+      });
+      novosDocs.push({ nome: publicId, caminho: uploadRes.secure_url, dataUpload: new Date() });
+    }
     
     caso.documentos = [...caso.documentos, ...novosDocs];
     await caso.save();
@@ -151,36 +142,22 @@ router.post('/:id/documentos', auth, upload.array('documentos', 5), async (req, 
 });
 
 // Excluir documento de um caso jurídico
-router.delete('/:id/documentos/:docId', auth, async (req, res) => {
+router.delete('/:id/documentos/:docId', verificarToken, async (req, res) => {
   try {
     const caso = await Juridico.findById(req.params.id);
-    
     if (!caso) {
       return res.status(404).json({ success: false, message: 'Caso jurídico não encontrado' });
     }
-    
     const documento = caso.documentos.id(req.params.docId);
-    
     if (!documento) {
       return res.status(404).json({ success: false, message: 'Documento não encontrado' });
     }
-    
-    // Remover o arquivo físico
-    const caminho = path.join(__dirname, '..', documento.caminho);
-    if (fs.existsSync(caminho)) {
-      fs.unlinkSync(caminho);
+    if (/^https?:\/\//i.test(documento.caminho) && documento.nome) {
+      try { await cloudinary.uploader.destroy(documento.nome, { resource_type: 'raw' }); } catch {}
     }
-    
-    // Remover da lista de documentos
-    documento.remove();
-    await caso.save();
-    
-    res.json({ 
-      success: true, 
-      message: 'Documento excluído com sucesso' 
-    });
+    await Juridico.updateOne({ _id: req.params.id }, { $pull: { documentos: { _id: req.params.docId } } });
+    res.json({ success: true, message: 'Documento excluído com sucesso' });
   } catch (error) {
-    console.error('Erro ao excluir documento:', error);
     res.status(500).json({ success: false, message: 'Erro ao excluir documento', error: error.message });
   }
 });

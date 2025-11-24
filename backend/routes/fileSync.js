@@ -5,7 +5,7 @@ const verificarToken = require('../middlewares/authMiddleware');
 
 // Middleware para verificar se é admin
 const verificarAdmin = (req, res, next) => {
-  if (req.user && req.user.perfil === 'admin') {
+  if (req.usuario && req.usuario.perfil === 'admin') {
     next();
   } else {
     return res.status(403).json({ erro: 'Acesso negado. Apenas administradores podem executar esta operação.' });

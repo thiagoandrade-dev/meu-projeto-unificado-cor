@@ -128,9 +128,9 @@ const saveEmailConfig = async (req, res) => {
 // Testar configuração de e-mail
 const testEmailConfig = async (req, res) => {
   try {
-    const { testEmail } = req.body;
-    
-    if (!testEmail) {
+    const { testEmail, to } = req.body;
+    const target = testEmail || to;
+    if (!target) {
       return res.status(400).json({ erro: 'E-mail de teste é obrigatório' });
     }
 
@@ -145,7 +145,7 @@ const testEmailConfig = async (req, res) => {
 
     // Enviar e-mail de teste
     const emailData = {
-      to: testEmail,
+      to: target,
       subject: 'Teste de Configuração de E-mail',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">

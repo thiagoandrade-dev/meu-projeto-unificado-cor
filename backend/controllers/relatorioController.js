@@ -70,7 +70,7 @@ const gerarRelatorioFinanceiro = async (req, res) => {
     let contratosAtivos = 0;
 
     contratos.forEach(contrato => {
-      if (contrato.status === 'ativo') {
+      if ((contrato.status || '').toLowerCase() === 'ativo') {
         contratosAtivos++;
         receitaTotal += contrato.valorAluguel || 0;
         
@@ -129,7 +129,7 @@ const gerarRelatorioImoveis = async (req, res) => {
 
     // Calcular ocupação
     const totalImoveis = imoveis.length;
-    const imoveisOcupados = contratos.filter(c => c.status === 'ativo').length;
+    const imoveisOcupados = contratos.filter(c => (c.status || '').toLowerCase() === 'ativo').length;
     const taxaOcupacao = totalImoveis > 0 ? (imoveisOcupados / totalImoveis) * 100 : 0;
 
     // Agrupar por tipo
@@ -142,7 +142,7 @@ const gerarRelatorioImoveis = async (req, res) => {
       porTipo[tipo].total++;
       
       const contratoAtivo = contratos.find(c => 
-        c.imovel._id.toString() === imovel._id.toString() && c.status === 'ativo'
+        c.imovel._id.toString() === imovel._id.toString() && (c.status || '').toLowerCase() === 'ativo'
       );
       if (contratoAtivo) {
         porTipo[tipo].ocupados++;
@@ -204,7 +204,7 @@ const gerarRelatorioContratos = async (req, res) => {
     em30Dias.setDate(em30Dias.getDate() + 30);
     
     const contratosVencendo = contratos.filter(c => 
-      c.dataFim && new Date(c.dataFim) <= em30Dias && c.status === 'ativo'
+      c.dataFim && new Date(c.dataFim) <= em30Dias && (c.status || '').toLowerCase() === 'ativo'
     );
 
     const relatorio = {
@@ -256,7 +256,7 @@ const gerarRelatorioInquilinos = async (req, res) => {
     }).populate('inquilino').populate('imovel');
 
     // Inquilinos ativos
-    const inquilinosAtivos = contratos.filter(c => c.status === 'ativo').map(c => c.inquilino);
+    const inquilinosAtivos = contratos.filter(c => (c.status || '').toLowerCase() === 'ativo').map(c => c.inquilino);
     
     const relatorio = {
       tipo: 'inquilinos',
@@ -267,7 +267,7 @@ const gerarRelatorioInquilinos = async (req, res) => {
         inquilinosAtivos: inquilinosAtivos.length,
         inquilinos: inquilinos.map(i => {
           const contratoAtivo = contratos.find(c => 
-            c.inquilino._id.toString() === i._id.toString() && c.status === 'ativo'
+            c.inquilino._id.toString() === i._id.toString() && (c.status || '').toLowerCase() === 'ativo'
           );
           return {
             id: i._id,

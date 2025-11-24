@@ -15,6 +15,27 @@ class FileSync {
     this.juridicoPath = path.join(this.uploadsPath, 'juridico');
   }
 
+  isUrl(str) {
+    return typeof str === 'string' && /^https?:\/\//i.test(str);
+  }
+
+  extractLocalFileName(imageEntry) {
+    if (typeof imageEntry === 'string') {
+      if (this.isUrl(imageEntry)) return null;
+      return path.basename(imageEntry);
+    }
+    if (imageEntry && typeof imageEntry === 'object') {
+      const candidates = [imageEntry.original, imageEntry.thumbnail, imageEntry.medium, imageEntry.large, imageEntry.webp];
+      for (const c of candidates) {
+        if (typeof c === 'string' && !this.isUrl(c)) {
+          return path.basename(c);
+        }
+      }
+      return null;
+    }
+    return null;
+  }
+
   /**
    * Verifica se um arquivo existe fisicamente
    */
@@ -76,9 +97,8 @@ class FileSync {
       imoveis.forEach(imovel => {
         if (imovel.imagens && Array.isArray(imovel.imagens)) {
           imovel.imagens.forEach(imagem => {
-            // Extrair apenas o nome do arquivo
-            const fileName = path.basename(imagem);
-            imagensNoBanco.add(fileName);
+            const fileName = this.extractLocalFileName(imagem);
+            if (fileName) imagensNoBanco.add(fileName);
           });
         }
       });
@@ -149,20 +169,27 @@ class FileSync {
       for (const imovel of imoveis) {
         if (imovel.imagens && Array.isArray(imovel.imagens)) {
           const imagensValidas = imovel.imagens.filter(imagem => {
-            const fileName = path.basename(imagem);
-            const filePath = path.join(this.imoveisPath, fileName);
-            return this.fileExists(filePath);
+            if (typeof imagem === 'string') {
+              if (this.isUrl(imagem)) return true;
+              const fileName = path.basename(imagem);
+              const filePath = path.join(this.imoveisPath, fileName);
+              return this.fileExists(filePath);
+            }
+            if (imagem && typeof imagem === 'object') {
+              // Preservar objetos (p.ex. Cloudinary)
+              return true;
+            }
+            return false;
           });
 
           if (imagensValidas.length !== imovel.imagens.length) {
             imagensRemovidas += imovel.imagens.length - imagensValidas.length;
             imovel.imagens = imagensValidas;
-            
-            // Ajustar fotoPrincipal se necessário
-            if (imovel.fotoPrincipal >= imagensValidas.length) {
+
+            if (typeof imovel.fotoPrincipal === 'number' && imovel.fotoPrincipal >= imagensValidas.length) {
               imovel.fotoPrincipal = imagensValidas.length > 0 ? 0 : undefined;
             }
-            
+
             await imovel.save();
             imoveisCorrigidos++;
           }

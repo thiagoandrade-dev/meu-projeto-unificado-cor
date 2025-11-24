@@ -72,11 +72,13 @@ const criarContrato = async (req, res) => {
     }
 
     const {
-      numero,
+      codigo,
+      tipo,
       inquilinoId,
       imovelId,
       dataInicio,
       dataFim,
+      duracaoMeses,
       valorAluguel,
       valorCondominio,
       valorIPTU,
@@ -91,7 +93,18 @@ const criarContrato = async (req, res) => {
     // Se um arquivo foi enviado, salvar o caminho
     let arquivoContrato = null;
     if (req.file) {
-      arquivoContrato = req.file.path.replace(/\\/g, "/");
+      const { cloudinary } = require('../config/cloudinaryConfig');
+      const uploadResult = await new Promise((resolve, reject) => {
+        const timestamp = Date.now();
+        const originalName = (req.file.originalname || 'contrato').replace(/[^a-zA-Z0-9.-]/g, '_');
+        const publicId = `contratos/${inquilinoId || 'unknown'}/${timestamp}_${originalName}`;
+        const stream = cloudinary.uploader.upload_stream({ resource_type: 'raw', public_id: publicId }, (err, result) => {
+          if (err) return reject(err);
+          resolve(result);
+        });
+        stream.end(req.file.buffer);
+      });
+      arquivoContrato = uploadResult.secure_url;
     }
 
     // Verificar se inquilino e imóvel existem
@@ -108,7 +121,7 @@ const criarContrato = async (req, res) => {
     // Verificar se já existe contrato ativo para o imóvel
     const contratoExistente = await Contrato.findOne({
       imovelId,
-      status: { $in: ['ativo', 'pendente'] }
+      status: { $in: ['Ativo', 'Pendente'] }
     });
 
     if (contratoExistente) {
@@ -116,11 +129,13 @@ const criarContrato = async (req, res) => {
     }
 
     const novoContrato = await Contrato.create({
-      numero,
+      codigo,
+      tipo,
       inquilinoId,
       imovelId,
       dataInicio,
       dataFim,
+      duracaoMeses,
       valorAluguel,
       valorCondominio,
       valorIPTU,
@@ -131,7 +146,7 @@ const criarContrato = async (req, res) => {
       percentualReajusteAnual,
       indiceReajuste,
       arquivoContrato,
-      status: 'ativo'
+      status: 'Ativo'
     });
 
     const contratoPopulado = await Contrato.findById(novoContrato._id)
@@ -157,11 +172,13 @@ const atualizarContrato = async (req, res) => {
     }
 
     const {
-      numero,
+      codigo,
+      tipo,
       inquilinoId,
       imovelId,
       dataInicio,
       dataFim,
+      duracaoMeses,
       valorAluguel,
       valorCondominio,
       valorIPTU,
@@ -179,14 +196,27 @@ const atualizarContrato = async (req, res) => {
 
     // Se um novo arquivo foi enviado, atualizar o caminho
     if (req.file) {
-      dadosAtualizacao.arquivoContrato = req.file.path.replace(/\\/g, "/");
+      const { cloudinary } = require('../config/cloudinaryConfig');
+      const uploadResult = await new Promise((resolve, reject) => {
+        const timestamp = Date.now();
+        const originalName = (req.file.originalname || 'contrato').replace(/[^a-zA-Z0-9.-]/g, '_');
+        const publicId = `contratos/${req.params.id}/${timestamp}_${originalName}`;
+        const stream = cloudinary.uploader.upload_stream({ resource_type: 'raw', public_id: publicId }, (err, result) => {
+          if (err) return reject(err);
+          resolve(result);
+        });
+        stream.end(req.file.buffer);
+      });
+      dadosAtualizacao.arquivoContrato = uploadResult.secure_url;
     }
 
-    if (numero) dadosAtualizacao.numero = numero;
+    if (codigo) dadosAtualizacao.codigo = codigo;
+    if (tipo) dadosAtualizacao.tipo = tipo;
     if (inquilinoId) dadosAtualizacao.inquilinoId = inquilinoId;
     if (imovelId) dadosAtualizacao.imovelId = imovelId;
     if (dataInicio) dadosAtualizacao.dataInicio = dataInicio;
     if (dataFim) dadosAtualizacao.dataFim = dataFim;
+    if (duracaoMeses) dadosAtualizacao.duracaoMeses = duracaoMeses;
     if (valorAluguel) dadosAtualizacao.valorAluguel = valorAluguel;
     if (valorCondominio !== undefined) dadosAtualizacao.valorCondominio = valorCondominio;
     if (valorIPTU !== undefined) dadosAtualizacao.valorIPTU = valorIPTU;
@@ -197,7 +227,25 @@ const atualizarContrato = async (req, res) => {
     if (percentualReajusteAnual !== undefined) dadosAtualizacao.percentualReajusteAnual = percentualReajusteAnual;
     if (indiceReajuste) dadosAtualizacao.indiceReajuste = indiceReajuste;
     if (arquivoContrato) dadosAtualizacao.arquivoContrato = arquivoContrato;
-    if (status) dadosAtualizacao.status = status;
+    if (status) {
+      const map = {
+        ativo: 'Ativo',
+        pendente: 'Pendente',
+        vencido: 'Vencido',
+        rescindido: 'Rescindido',
+        finalizado: 'Finalizado',
+        Ativo: 'Ativo',
+        Pendente: 'Pendente',
+        Vencido: 'Vencido',
+        Rescindido: 'Rescindido',
+        Finalizado: 'Finalizado',
+      };
+      const normalized = map[status];
+      if (!normalized) {
+        return res.status(400).json({ erro: "Status inválido. Use 'Ativo', 'Pendente', 'Vencido', 'Rescindido' ou 'Finalizado'." });
+      }
+      dadosAtualizacao.status = normalized;
+    }
 
     const contratoAtualizado = await Contrato.findByIdAndUpdate(
       req.params.id,
@@ -239,13 +287,26 @@ const excluirContrato = async (req, res) => {
 const atualizarStatusContrato = async (req, res) => {
   try {
     const { status } = req.body;
-    if (!status || !["ativo", "inativo", "vencido", "finalizado", "pendente"].includes(status)) {
-      return res.status(400).json({ erro: "Status inválido. Use 'ativo', 'inativo', 'vencido', 'finalizado' ou 'pendente'." });
+    const map = {
+      ativo: 'Ativo',
+      pendente: 'Pendente',
+      vencido: 'Vencido',
+      rescindido: 'Rescindido',
+      finalizado: 'Finalizado',
+      Ativo: 'Ativo',
+      Pendente: 'Pendente',
+      Vencido: 'Vencido',
+      Rescindido: 'Rescindido',
+      Finalizado: 'Finalizado',
+    };
+    const normalized = map[status];
+    if (!normalized) {
+      return res.status(400).json({ erro: "Status inválido. Use 'Ativo', 'Pendente', 'Vencido', 'Rescindido' ou 'Finalizado'." });
     }
 
     const contratoAtualizado = await Contrato.findByIdAndUpdate(
       req.params.id,
-      { status },
+      { status: normalized },
       { new: true }
     ).populate('inquilinoId', 'nome email telefone cpf rg')
      .populate('imovelId', 'grupo bloco andar apartamento configuracaoPlanta endereco');
@@ -268,7 +329,9 @@ const atualizarStatusContrato = async (req, res) => {
 const downloadContrato = async (req, res) => {
   try {
     const { id } = req.params;
-    const { perfil, id: usuarioId } = req.user;
+    const usuario = req.usuario || {};
+    const perfil = usuario.perfil;
+    const usuarioId = usuario.id;
 
     const contrato = await Contrato.findById(id);
     if (!contrato) {
@@ -293,23 +356,16 @@ const downloadContrato = async (req, res) => {
       });
     }
 
-    const filePath = path.resolve(contrato.arquivoContrato);
-    
-    // Verificar se o arquivo existe
-    if (!fs.existsSync(filePath)) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Arquivo físico não encontrado' 
-      });
+    if (/^https?:\/\//i.test(contrato.arquivoContrato)) {
+      return res.redirect(302, contrato.arquivoContrato);
     }
-
-    // Definir o nome do arquivo para download
-    const fileName = `contrato-${contrato.numero || contrato._id}.${path.extname(filePath).substring(1)}`;
-    
+    const filePath = path.resolve(contrato.arquivoContrato);
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ success: false, message: 'Arquivo físico não encontrado' });
+    }
+    const fileName = `contrato-${contrato.codigo || contrato._id}.${path.extname(filePath).substring(1)}`;
     res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
     res.setHeader('Content-Type', 'application/octet-stream');
-    
-    // Enviar o arquivo
     res.sendFile(filePath);
 
   } catch (error) {

@@ -16,8 +16,20 @@ const config = {
   }
 };
 
+function ensureConfigured(res) {
+  if (!ASAAS_API_KEY) {
+    return res.status(503).json({
+      erro: 'Integração Asaas não configurada',
+      detalhes: 'Defina ASAAS_API_KEY no .env e selecione ambiente via NODE_ENV'
+    });
+  }
+  return null;
+}
+
 const criarCliente = async (req, res) => {
   try {
+    const notConfigured = ensureConfigured(res);
+    if (notConfigured) return;
     const { nome, email, cpfCnpj, celular, inquilinoId } = req.body;
 
     const response = await axios.post(`${ASAAS_BASE_URL}/customers`, {
@@ -32,7 +44,7 @@ const criarCliente = async (req, res) => {
     // Vincula o ID do cliente Asaas ao Inquilino
     if (inquilinoId) {
       await Inquilino.findByIdAndUpdate(inquilinoId, {
-        asaasCustomerId: customer._id
+        asaasCustomerId: customer.id
       });
     }
 
@@ -46,6 +58,8 @@ const criarCliente = async (req, res) => {
 
 const criarCobranca = async (req, res) => {
   try {
+    const notConfigured = ensureConfigured(res);
+    if (notConfigured) return;
     const { customerId, valor, vencimento, descricao } = req.body;
 
     const response = await axios.post(`${ASAAS_BASE_URL}/payments`, {
@@ -65,6 +79,8 @@ const criarCobranca = async (req, res) => {
 
 const listarBoletos = async (req, res) => {
   try {
+    const notConfigured = ensureConfigured(res);
+    if (notConfigured) return;
     const { customerId } = req.params;
     const response = await axios.get(`${ASAAS_BASE_URL}/payments?customer=${customerId}`, config);
     res.status(200).json(response.data.data);
@@ -76,6 +92,8 @@ const listarBoletos = async (req, res) => {
 
 const baixarBoletoPDF = async (req, res) => {
   try {
+    const notConfigured = ensureConfigured(res);
+    if (notConfigured) return;
     const { boletoId } = req.params;
     const response = await axios.get(`${ASAAS_BASE_URL}/payments/${boletoId}/bankSlipPdf`, {
       ...config,

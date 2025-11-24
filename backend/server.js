@@ -25,22 +25,29 @@ const relatorioRoutes = require('./routes/relatorio');
 const configRoutes = require('./routes/configRoutes');
 const notificacaoAutomaticaRoutes = require('./routes/notificacaoAutomaticaRoutes');
 const fileSyncRoutes = require('./routes/fileSync');
+const chatbotRoutes = require('./routes/chatbot');
 const app = express();
 
 // =============================================
 // 2. MIDDLEWARES (ORDEM IMPORTA!)
 // =============================================
 app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  if (process.env.NODE_ENV !== "production") {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  }
   next();
 });
+
+const isProd = process.env.NODE_ENV === "production";
+const scriptSrc = ["'self'", "https://cdn.jsdelivr.net"];
+if (!isProd) scriptSrc.push("'unsafe-inline'");
 
 app.use(
   helmet({
     contentSecurityPolicy: {
       directives: {
         ...helmet.contentSecurityPolicy.getDefaultDirectives(),
-        "script-src": ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
+        "script-src": scriptSrc,
         "img-src": ["'self'", "data:", "http://localhost:5000", "http://localhost:8081", "https://imobiliaria-firenze-backend.onrender.com", "https://meu-projeto-unificado-cor.vercel.app", "https://*.vercel.app"],
       },
     },
@@ -147,6 +154,7 @@ app.use('/api/relatorios', relatorioRoutes);
 app.use('/api/config', configRoutes);
 app.use('/api/notificacoes-automaticas', notificacaoAutomaticaRoutes);
 app.use('/api/file-sync', fileSyncRoutes);
+app.use('/api/chatbot', chatbotRoutes);
 // Rota raiz para verificar se o servidor está funcionando
 app.get("/", (req, res) => {
   res.json({
@@ -202,21 +210,21 @@ app.use("/api-docs",
 // 6. ARQUIVOS ESTÁTICOS (FRONTEND)
 // =============================================
 // Middleware específico para uploads com headers CORS
-app.use("/uploads", (req, res, next) => {
-  // Adicionar headers CORS para arquivos estáticos
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
-  next();
-}, express.static(path.join(__dirname, "uploads"))); // Arquivos de upload
+if (process.env.SERVE_UPLOADS === 'true') {
+  app.use("/uploads", (req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+    next();
+  }, express.static(path.join(__dirname, "uploads")));
 
-app.use("/contratos", (req, res, next) => {
-  // Adicionar headers CORS para arquivos de contratos
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
-  next();
-}, express.static(path.join(__dirname, "uploads/contratos"))); // Arquivos de contratos
+  app.use("/contratos", (req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+    next();
+  }, express.static(path.join(__dirname, "uploads/contratos")));
+}
 //app.use(express.static(path.join(__dirname, "../frontend/public")));
 //app.use("/admin", express.static(path.join(__dirname, "../frontend/admin")));
 
@@ -236,7 +244,11 @@ app.use((req, res) => {
 });
 
 app.use((err, req, res, next) => {
-  console.error("🔥 Erro:", err.stack);
+  if (process.env.NODE_ENV !== 'production') {
+    console.error("🔥 Erro:", err.stack);
+  } else {
+    console.error("🔥 Erro:", err.message);
+  }
   
   // Erros de upload
   if (err.code === 'LIMIT_FILE_SIZE') {
@@ -258,7 +270,7 @@ app.use((err, req, res, next) => {
 
   res.status(500).json({ 
     erro: "Erro interno no servidor",
-    detalhes: process.env.NODE_ENV === "development" ? err.message : undefined
+    detalhes: process.env.NODE_ENV !== "production" ? err.message : undefined
   });
 });
 

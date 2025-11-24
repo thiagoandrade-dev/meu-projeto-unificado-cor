@@ -360,6 +360,19 @@ router.get("/seed", verificarToken, async (req, res) => {
 });
 
 // Rota GET para buscar um imóvel por ID (acesso público para visitantes)
+// Migrar imagens deve vir antes de rotas paramétricas
+router.post("/migrate-images", verificarToken, async (req, res) => {
+  try {
+    const resultado = await Imovel.updateMany(
+      { imagens: { $exists: false } },
+      { $set: { imagens: [] } }
+    );
+    res.json({ mensagem: "Migração concluída com sucesso!", imoveisAtualizados: resultado.modifiedCount });
+  } catch (err) {
+    res.status(500).json({ erro: "Erro na migração: " + err.message });
+  }
+});
+
 router.get("/:id", async (req, res) => {
   try {
     const { id } = req.params;
@@ -490,23 +503,7 @@ router.delete("/:id", async (req, res) => {
 });
 
 // Rota para migrar imóveis existentes adicionando campo imagens
-router.post("/migrate-images", verificarToken, async (req, res) => {
-  try {
-    // Atualizar todos os imóveis que não possuem o campo imagens
-    const resultado = await Imovel.updateMany(
-      { imagens: { $exists: false } },
-      { $set: { imagens: [] } }
-    );
-    
-    res.json({ 
-      mensagem: "Migração concluída com sucesso!", 
-      imoveisAtualizados: resultado.modifiedCount 
-    });
-  } catch (err) {
-    console.error("Erro na migração:", err);
-    res.status(500).json({ erro: "Erro na migração: " + err.message });
-  }
-});
+// rota migrar-imagens movida acima
 
 // Rotas para gestão de vendas
 // Finalizar venda de um imóvel
