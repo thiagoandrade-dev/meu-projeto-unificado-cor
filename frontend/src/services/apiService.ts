@@ -207,8 +207,48 @@ export const imoveisService = {
   },
   getById: async (id: string): Promise<Imovel> => {
     try {
-      const response = await api.get<Imovel>(`/imoveis/${id}`);
-      return response.data;
+      const response = await api.get<any>(`/imoveis/${id}`);
+      const data = response.data || {};
+      const normalizeImage = (img: any): ImageData => {
+        if (!img) return { original: '' };
+        if (typeof img === 'string') return { original: img, thumbnail: img, medium: img, large: img };
+        return {
+          original: img.original || img.medium || img.large || img.thumbnail || '',
+          thumbnail: img.thumbnail,
+          medium: img.medium,
+          large: img.large,
+          webp: img.webp,
+          orientation: img.orientation,
+          dimensions: img.dimensions
+        };
+      };
+      const imagensRaw = Array.isArray(data.imagens) ? data.imagens : Array.isArray(data.imagensUrls) ? data.imagensUrls : [];
+      const imagens: ImageData[] = (imagensRaw as any[]).map(normalizeImage).filter(i => i.original);
+      const fotoPrincipalCandidate = data.fotoPrincipal || data.fotoPrincipalUrl || (imagens[0]?.large || imagens[0]?.original);
+      const result: Imovel = {
+        _id: data._id,
+        grupo: data.grupo,
+        bloco: data.bloco,
+        andar: data.andar,
+        apartamento: data.apartamento,
+        configuracaoPlanta: data.configuracaoPlanta,
+        areaUtil: data.areaUtil,
+        numVagasGaragem: data.numVagasGaragem,
+        tipoVagaGaragem: data.tipoVagaGaragem,
+        preco: data.preco,
+        statusAnuncio: data.statusAnuncio,
+        imagens,
+        fotoPrincipal: fotoPrincipalCandidate,
+        caracteristicas: data.caracteristicas,
+        dataStatusAtual: data.dataStatusAtual,
+        observacoesStatus: data.observacoesStatus,
+        contratoId: data.contratoId,
+        destaque: data.destaque,
+        historico: data.historico,
+        createdAt: data.createdAt,
+        updatedAt: data.updatedAt
+      };
+      return result;
     } catch (error) { throw handleApiError(error, `buscar o imóvel ${id}`); }
   },
   create: async (imovelData: FormData): Promise<Imovel> => {

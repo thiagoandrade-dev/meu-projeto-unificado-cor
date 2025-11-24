@@ -153,7 +153,24 @@ router.get("/", async (req, res) => {
   try {
     const filtro = {}; // Adicione seus filtros aqui se necessário
     const imoveis = await Imovel.find(filtro);
-    res.json(imoveis);
+    const baseUploads = `${req.protocol}://${req.get('host')}/uploads/imoveis/`;
+    const normalize = (img) => {
+      if (!img) return null;
+      if (typeof img === 'string') {
+        if (/^https?:\/\//i.test(img)) return img;
+        return process.env.SERVE_UPLOADS === 'true' ? baseUploads + img : null;
+      }
+      if (typeof img === 'object') {
+        return img.large || img.original || img.thumbnail || img.webp || null;
+      }
+      return null;
+    };
+    const resposta = imoveis.map((i) => {
+      const imagensUrls = Array.isArray(i.imagens) ? i.imagens.map(normalize).filter(Boolean) : [];
+      const fotoPrincipalUrl = i.fotoPrincipal || (imagensUrls[0] || null);
+      return { ...i.toObject(), imagensUrls, fotoPrincipalUrl };
+    });
+    res.json(resposta);
   } catch (err) {
     console.error("Erro ao buscar imóveis:", err);
     res.status(500).json({ erro: "Erro ao buscar imóveis: " + err.message });
@@ -382,9 +399,23 @@ router.get("/:id", async (req, res) => {
       return res.status(404).json({ erro: "Imóvel não encontrado. ID inválido." });
     }
     
-    const imovel = await Imovel.findById(id);
-    if (!imovel) return res.status(404).json({ erro: "Imóvel não encontrado." });
-    res.json(imovel);
+  const imovel = await Imovel.findById(id);
+  if (!imovel) return res.status(404).json({ erro: "Imóvel não encontrado." });
+    const baseUploads = `${req.protocol}://${req.get('host')}/uploads/imoveis/`;
+    const normalize = (img) => {
+      if (!img) return null;
+      if (typeof img === 'string') {
+        if (/^https?:\/\//i.test(img)) return img;
+        return process.env.SERVE_UPLOADS === 'true' ? baseUploads + img : null;
+      }
+      if (typeof img === 'object') {
+        return img.large || img.original || img.thumbnail || img.webp || null;
+      }
+      return null;
+    };
+    const imagensUrls = Array.isArray(imovel.imagens) ? imovel.imagens.map(normalize).filter(Boolean) : [];
+    const fotoPrincipalUrl = imovel.fotoPrincipal || (imagensUrls[0] || null);
+    res.json({ ...imovel.toObject(), imagensUrls, fotoPrincipalUrl });
   } catch (err) {
     console.error("Erro ao buscar imóvel por ID:", err);
     // Se for erro de cast (ID inválido), retornar 404 ao invés de 500
